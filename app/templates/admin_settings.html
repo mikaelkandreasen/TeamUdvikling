@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Runder{% endblock %}
+{% block content %}
+<h1>Evalueringsrunder – {{ team['name'] }}</h1>
+<form method="post" class="card">{{ csrf() }}
+  {% for i in infos %}<div class="row"><div><label>Runde {{ i['no'] }} – navn</label><input type="text" name="label_{{ i['no'] }}" value="{{ i['label'] }}" maxlength="60"></div>
+  <div><label>Dato</label><input type="date" name="date_{{ i['no'] }}" value="{{ i['date'] }}"></div></div>{% endfor %}
+  <div class="actions"><button class="btn">Gem</button></div></form>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Hold{% endblock %}
+{% block content %}
+<h1>Hold</h1>
+<form method="post" class="card">{{ csrf() }}<h2>Opret hold</h2>
+  <div class="row"><div><label for="n">Holdnavn</label><input id="n" type="text" name="name" placeholder="fx U11 piger" required maxlength="80"></div>
+  <div><label for="s">Sæson (valgfri)</label><input id="s" type="text" name="season" placeholder="2026/27" maxlength="20"></div></div>
+  <div class="actions"><button class="btn">Opret</button></div></form>
+{% for t in teams %}
+<div class="card"><h2>{{ t['name'] }}{% if t['season'] %} <span class="muted">({{ t['season'] }})</span>{% endif %}</h2>
+  <p class="muted">{{ t['players'] }} spillere · {{ t['trainers'] }} tilknyttede trænere (administratorer har altid adgang)</p>
+  <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='rename') }}">{{ csrf() }}
+    <div class="row"><div><input type="text" name="name" value="{{ t['name'] }}" aria-label="Holdnavn" maxlength="80"></div><div><input type="text" name="season" value="{{ t['season'] or '' }}" aria-label="Sæson" maxlength="20"></div></div>
+    <div class="actions"><button class="btn sec">Gem navn</button></div></form>
+  <details><summary>Slet hold</summary>
+    <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='delete') }}">{{ csrf() }}
+      <p class="muted small">Sletter holdet og alle dets spillere, evalueringer, svar og udviklingsdata permanent. Skriv holdets navn for at bekræfte.</p>
+      <input type="text" name="confirm" placeholder="{{ t['name'] }}" autocomplete="off"><div class="actions"><button class="btn danger">Slet permanent</button></div></form></details>
+</div>
+{% else %}<div class="card">Der er endnu ingen hold.</div>{% endfor %}
+{% endblock %}

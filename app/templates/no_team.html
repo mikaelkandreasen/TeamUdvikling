@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Intet hold{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Intet hold endnu</h1>
+  {% if user['role'] == 'admin' %}
+    <p>Der er ikke oprettet nogen hold. Opret det første hold, og tilknyt derefter trænere.</p>
+    <a class="btn" href="{{ url_for('admin.teams') }}">Opret hold</a>
+  {% else %}
+    <p>Din konto er ikke tilknyttet et hold endnu. Bed administratoren om at tildele dig et hold.</p>
+  {% endif %}
+</div>
+{% endblock %}

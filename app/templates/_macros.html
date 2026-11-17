@@ -1,0 +1,21 @@
+{# Importér med: {% from "_macros.html" import csrf, scale, heatcell with context %} #}
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro scale(name, value=None, big=False) %}
+<div class="scale{{ ' big' if big }}" role="radiogroup">
+  {% for v in [1,2,3,4,5] %}
+    <input type="radio" name="{{ name }}" id="{{ name }}_{{ v }}" value="{{ v }}" {{ 'checked' if value == v }}>
+    <label for="{{ name }}_{{ v }}">{{ v }}</label>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro heatcell(v, label=None) %}
+<td class="score" {% if label %}data-label="{{ label }}"{% endif %} style="background:{{ v|heat }}">{{ v|dk }}</td>
+{% endmacro %}
+
+{% macro rounds_nav(endpoint, current, infos) %}
+<div class="filters">
+  {% for i in infos %}<a href="{{ url_for(endpoint, rnd=i['no']) }}" class="{{ 'on' if i['no'] == current }}">{{ i['label'] }}</a>{% endfor %}
+</div>
+{% endmacro %}

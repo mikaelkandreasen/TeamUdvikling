@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}Motivation – {{ p['name'] }}{% endblock %}
+{% block content %}
+<h1>Motivation – {{ p['name'] }}</h1>
+{% include "_motivation_body.html" %}
+<div class="actions noprint"><button class="btn" data-print>Udskriv</button></div>
+{% endblock %}

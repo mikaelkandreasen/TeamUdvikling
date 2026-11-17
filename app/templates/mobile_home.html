@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}Hjem{% endblock %}
+{% block content %}
+<div class="tiles">
+  <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">Evaluér<small>{{ prog[cur-1]['label'] }}</small></a>
+  <a class="tile" href="{{ url_for('motivation.tablet_list') }}">Spillerskema<small>til tablet/telefon</small></a>
+  <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">Overblik<small>hele holdet</small></a>
+  <a class="tile alt" href="{{ url_for('devdata.matrix') }}">Fremmøde<small>trivsel &amp; motorik</small></a>
+</div>
+<h2>Spillere ({{ cards|length }})</h2>
+{% for c in cards %}
+<div class="pcard">
+  <span class="badge" style="background:{{ c['samlet']|heat }}">{{ c['samlet']|dk or '–' }}</span>
+  <div class="nm"><a href="{{ url_for('evaluation.profile', pid=c['p']['id']) }}" style="text-decoration:none;color:inherit">{{ c['p']['name'] }}</a>
+    <div class="sub">{{ c['p']['position'] or 'ingen position' }}</div></div>
+  <div class="acts">
+    <a href="{{ url_for('evaluation.eval_form', rnd=cur, pid=c['p']['id']) }}" aria-label="Evaluér">✅</a>
+    <a href="{{ url_for('reports.report', pid=c['p']['id']) }}" aria-label="Rapport">📄</a>
+  </div>
+</div>
+{% else %}
+<div class="card">Ingen spillere endnu. <a href="{{ url_for('players.new') }}">Opret den første</a>.</div>
+{% endfor %}
+<div class="actions"><a class="btn sec block" href="{{ url_for('main.home', desktop=1) }}">Vis fuld version</a></div>
+{% endblock %}

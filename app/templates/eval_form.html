@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf, scale with context %}{% block title %}{{ p['name'] }} – {{ info['label'] }}{% endblock %}
+{% block content %}
+<h1>{{ p['name'] }}</h1>
+<p class="muted">{{ info['label'] }} · {{ p['position'] or 'ingen position' }} · {{ model.EVAL_SCALE }}. Lad et felt stå tomt, hvis du ikke kan vurdere det.</p>
+<form method="post">{{ csrf() }}
+{% for role in ROLES %}
+<details class="role" {{ 'open' if loop.first }}>
+  <summary>{{ role }}</summary>
+  <p class="muted small">{{ model.ROLE_DEF[role] }}</p>
+  {% for c in criteria if c['role'] == role %}
+  <div class="crit"><b>{{ c['skill'] }}</b><div class="muted small">{{ c['desc'] }}</div>{{ scale('c%d' % c['idx'], scores.get(c['idx'])) }}</div>
+  {% endfor %}
+</details>
+{% endfor %}
+<div class="stickybar">
+  <button class="btn" name="go" value="stay">Gem</button>
+  {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}
+</div>
+</form>
+<div class="actions">{% if prev_id %}<a class="btn sec" href="{{ url_for('evaluation.eval_form', rnd=rnd, pid=prev_id) }}">‹ Forrige</a>{% endif %}
+  <a class="btn sec" href="{{ url_for('evaluation.eval_round', rnd=rnd) }}">Til listen</a></div>
+{% endblock %}

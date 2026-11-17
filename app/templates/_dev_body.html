@@ -1,0 +1,30 @@
+{# Forventer: d (fra devdata.report_data), p (spiller) #}
+{% set m = d['m'] %}{% set a = d['avg'] %}{% set dev = m['dev'] %}
+<h3>Relativ alder</h3>
+<div class="scroll"><table><tbody>
+  <tr><td>Fødselsdato</td><td>{{ p['birth_date']|date_dk }}</td></tr>
+  <tr><td>Fødselskvartal</td><td>{{ 'Q%d'|format(m['q']) if m['q'] else '' }}</td></tr>
+  <tr><td>Måneder efter 1. januar</td><td>{{ m['months']|dk }}</td></tr>
+  {% if d['note'] %}<tr><td colspan="2"><i>{{ d['note'] }}</i></td></tr>{% endif %}
+</tbody></table></div>
+<h3>Fremmøde, trivsel og motorik</h3>
+<div class="scroll"><table>
+  <thead><tr><th></th><th class="num">Spiller</th><th class="num">Holdet</th></tr></thead>
+  <tbody>
+  <tr><td>Fremmøde til træning</td><td class="num">{{ m['att']|pct }}</td><td class="num">{{ a['att']|pct }}</td></tr>
+  <tr><td>Deltagelse i kampe</td><td class="num">{{ m['matchp']|pct }}</td><td class="num">{{ a['matchp']|pct }}</td></tr>
+  {% for k, label in [('t1', model.TRIVSEL[0]), ('t2', model.TRIVSEL[1]), ('t3', model.TRIVSEL[2])] %}
+  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
+  <tr class="avg"><td>Trivsel (gennemsnit)</td><td class="num">{{ m['trivsel']|dk }}</td><td class="num">{{ a['trivsel']|dk }}</td></tr>
+  {% for k, label in [('m1', model.MOTORIK[0]), ('m2', model.MOTORIK[1]), ('m3', model.MOTORIK[2]), ('m4', model.MOTORIK[3])] %}
+  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
+  <tr class="avg"><td>Motorik (gennemsnit)</td><td class="num">{{ m['motorik']|dk }}</td><td class="num">{{ a['motorik']|dk }}</td></tr>
+  </tbody></table></div>
+<h3>Handleplan</h3>
+<div class="scroll"><table><tbody>
+  <tr><td>Fokusområde 1</td><td>{{ p['focus1'] or '' }}</td></tr><tr><td>Fokusområde 2</td><td>{{ p['focus2'] or '' }}</td></tr>
+  <tr><td>Træners tiltag</td><td>{{ (dev['tiltag'] if dev else '') or '' }}</td></tr>
+  <tr><td>Spillerens eget mål</td><td>{{ (dev['eget_maal'] if dev else '') or '' }}</td></tr>
+  <tr><td>Opfølgningsdato</td><td>{{ (dev['followup'] if dev else '')|date_dk }}</td></tr>
+  <tr><td>Status</td><td>{{ (dev['status'] if dev else '') or '' }}</td></tr>
+</tbody></table></div>

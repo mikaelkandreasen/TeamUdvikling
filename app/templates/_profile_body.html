@@ -1,0 +1,13 @@
+{# Delt mellem profil og rapport. Forventer: p, rnd, res, radar, role_rows, samlet, crit_rows, strongest, weakest, infos, age_note #}
+{% from "_macros.html" import heatcell with context %}
+{% if radar %}<div class="card">{{ radar }}</div>{% else %}<div class="card muted">Ingen evalueringer endnu for denne spiller.</div>{% endif %}
+<div class="scroll"><table>
+  <thead><tr><th>Rolle</th>{% for i in infos %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for rr in role_rows %}<tr><td>{{ rr['role'] }}</td>{% for v in rr['vals'] %}{{ heatcell(v) }}{% endfor %}</tr>{% endfor %}
+  <tr class="avg"><td>Samlet</td>{% for v in samlet %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr></tbody></table></div>
+{% if strongest %}
+<div class="row" style="margin-top:.8rem">
+  <div class="card"><h3>Styrker</h3>{% for c, v in strongest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
+  <div class="card"><h3>Udviklingsområder</h3>{% for c, v in weakest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
+</div>
+{% endif %}

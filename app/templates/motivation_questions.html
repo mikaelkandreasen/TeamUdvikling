@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Ret spørgsmål{% endblock %}
+{% block content %}
+<h1>Ret spørgsmål</h1>
+<p class="muted">Der er tre kategorier. Skriv teksten i en tom plads for at tage et ekstra spørgsmål i brug; ryd feltet for at fjerne det (svar bevares men vises ikke). Gælder kun for {{ team['name'] }}.</p>
+<form method="post">{{ csrf() }}
+{% for c, title in cats.items() %}
+<div class="card"><label>Kategoriens titel</label><input type="text" name="title_{{ c }}" value="{{ title }}" maxlength="120">
+  {% for q in qs if q['cat'] == c %}<label>Spørgsmål {{ loop.index }}</label><input type="text" name="q_{{ q['qidx'] }}" value="{{ q['text'] }}" maxlength="250" placeholder="(ledig plads)">{% endfor %}
+</div>
+{% endfor %}
+<div class="stickybar"><button class="btn">Gem</button><a class="btn sec" href="{{ url_for('motivation.matrix') }}">Tilbage</a></div>
+</form>
+{% endblock %}

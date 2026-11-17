@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Log ind{% endblock %}
+{% block content %}
+<div class="login card">
+  <h1>Log ind</h1>
+  <form method="post" autocomplete="on">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="u">Brugernavn</label><input id="u" type="text" name="username" autocomplete="username" autocapitalize="none" required autofocus>
+    <label for="p">Adgangskode</label><input id="p" type="password" name="password" autocomplete="current-password" required>
+    <div class="actions"><button class="btn block">Fortsæt</button></div>
+  </form>
+  <p class="muted small">Efter adgangskoden skal du angive en engangskode fra din autentificeringsapp (2FA).</p>
+</div>
+{% endblock %}

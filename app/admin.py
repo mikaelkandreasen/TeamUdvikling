@@ -1,0 +1,233 @@
+"""Administration: hold, brugere (med holdtilknytning), runder, backup, Excel-eksport og revisionslog."""
+import io
+import secrets
+
+from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
+from werkzeug.security import generate_password_hash
+
+from . import model
+from .auth import admin_required
+from .db import audit, backup, create_team, get_db, set_setting
+from .helpers import round_info, team_id
+
+bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+@bp.before_request
+@admin_required
+def _guard():
+    return None
+
+
+@bp.route("/")
+def index():
+    return render_template("admin_index.html")
+
+
+# ----------------------------------------------------------------------------- hold
+def _team_rows(db):
+    return db.execute(
+        "SELECT t.*, (SELECT COUNT(*) FROM players p WHERE p.team_id=t.id) AS players, "
+        "(SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id=t.id) AS trainers FROM teams t ORDER BY t.name COLLATE NOCASE").fetchall()
+
+
+@bp.route("/teams", methods=["GET", "POST"])
+def teams():
+    db = get_db()
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()[:80]
+        if not name:
+            flash("Holdnavn mangler.", "error")
+        elif db.execute("SELECT 1 FROM teams WHERE name=?", (name,)).fetchone():
+            flash("Der findes allerede et hold med det navn.", "error")
+        else:
+            create_team(db, name, request.form.get("season", "").strip()[:20])
+            audit(db, g.user["username"], "hold_oprettet", name)
+            db.commit()
+            flash(f"Holdet '{name}' er oprettet.", "ok")
+            return redirect(url_for("admin.teams"))
+    return render_template("admin_teams.html", teams=_team_rows(db))
+
+
+@bp.route("/teams/<int:tid>/<action>", methods=["POST"])
+def team_action(tid, action):
+    db = get_db()
+    t = db.execute("SELECT * FROM teams WHERE id=?", (tid,)).fetchone()
+    if not t:
+        abort(404)
+    if action == "rename":
+        name = request.form.get("name", "").strip()[:80]
+        clash = db.execute("SELECT 1 FROM teams WHERE name=? AND id<>?", (name, tid)).fetchone()
+        if not name or clash:
+            flash("Ugyldigt eller optaget holdnavn.", "error")
+        else:
+            db.execute("UPDATE teams SET name=?, season=? WHERE id=?", (name, request.form.get("season", "").strip()[:20] or None, tid))
+            audit(db, g.user["username"], "hold_omdøbt", f"{t['name']} -> {name}")
+            flash("Gemt.", "ok")
+    elif action == "delete":
+        if request.form.get("confirm", "").strip() != t["name"]:
+            flash("Skriv holdets navn præcist for at bekræfte sletning.", "error")
+        else:
+            db.execute("DELETE FROM settings WHERE key LIKE ?", (f"t{tid}:%",))
+            db.execute("DELETE FROM teams WHERE id=?", (tid,))  # CASCADE: spillere, evalueringer, svar, udviklingsdata
+            audit(db, g.user["username"], "hold_slettet", t["name"])
+            flash(f"Holdet '{t['name']}' og alle dets data er slettet.", "ok")
+    else:
+        abort(404)
+    db.commit()
+    return redirect(url_for("admin.teams"))
+
+
+# --------------------------------------------------------------------------- brugere
+def _render_users(db, temp=None, temp_user=None):
+    users = db.execute("SELECT * FROM users ORDER BY username").fetchall()
+    mem = {}
+    for r in db.execute("SELECT user_id, team_id FROM user_teams"):
+        mem.setdefault(r["user_id"], set()).add(r["team_id"])
+    return render_template("admin_users.html", users=users, mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user)
+
+
+def _set_user_teams(db, uid, team_ids):
+    valid = {r["id"] for r in db.execute("SELECT id FROM teams")}
+    db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
+    for t in {int(x) for x in team_ids if str(x).isdigit()} & valid:
+        db.execute("INSERT INTO user_teams(user_id,team_id) VALUES(?,?)", (uid, t))
+
+
+@bp.route("/users", methods=["GET", "POST"])
+def users():
+    db = get_db()
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        name = request.form.get("display_name", "").strip() or username
+        role = "admin" if request.form.get("role") == "admin" else "trainer"
+        if not username:
+            flash("Brugernavn mangler.", "error")
+        elif db.execute("SELECT 1 FROM users WHERE username=?", (username,)).fetchone():
+            flash("Brugernavnet findes allerede.", "error")
+        else:
+            temp = secrets.token_urlsafe(12)
+            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at) VALUES(?,?,?,?,1,datetime('now'))",
+                             (username, name, generate_password_hash(temp), role))
+            _set_user_teams(db, cur.lastrowid, request.form.getlist("teams"))
+            audit(db, g.user["username"], "bruger_oprettet", f"{username} ({role})")
+            db.commit()
+            flash(f"Bruger '{username}' oprettet. Midlertidig adgangskode vises kun nu.", "ok")
+            return _render_users(db, temp, username)
+    return _render_users(db)
+
+
+@bp.route("/users/<int:uid>/<action>", methods=["POST"])
+def user_action(uid, action):
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not u:
+        abort(404)
+    temp = None
+    if action == "teams":
+        _set_user_teams(db, uid, request.form.getlist("teams"))
+        flash("Holdtilknytning gemt.", "ok")
+    elif action == "reset-2fa":
+        db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0 WHERE id=?", (uid,))
+        db.execute("DELETE FROM recovery_codes WHERE user_id=?", (uid,))
+        flash("2FA nulstillet – brugeren skal oprette den igen ved næste login.", "ok")
+    elif action == "reset-password":
+        temp = secrets.token_urlsafe(12)
+        db.execute("UPDATE users SET pw_hash=?, must_change_pw=1 WHERE id=?", (generate_password_hash(temp), uid))
+        flash("Adgangskode nulstillet. Den midlertidige kode vises kun nu.", "ok")
+    elif action == "unlock":
+        db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (uid,))
+        flash("Konto låst op.", "ok")
+    elif action == "delete":
+        if uid == g.user["id"]:
+            flash("Du kan ikke slette dig selv.", "error")
+            return redirect(url_for("admin.users"))
+        if u["role"] == "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
+            flash("Der skal altid være mindst én administrator.", "error")
+            return redirect(url_for("admin.users"))
+        db.execute("DELETE FROM users WHERE id=?", (uid,))
+        flash("Bruger slettet (træners egne evalueringer slettes også).", "ok")
+    else:
+        abort(404)
+    audit(db, g.user["username"], f"bruger_{action}", u["username"])
+    db.commit()
+    return _render_users(db, temp, u["username"] if temp else None)
+
+
+# ------------------------------------------------------------------- indstillinger mv.
+@bp.route("/settings", methods=["GET", "POST"])
+def settings():
+    db = get_db()
+    tid = team_id()
+    if request.method == "POST":
+        for r in model.ROUNDS:
+            set_setting(db, tid, f"round_label_{r}", (request.form.get(f"label_{r}") or "").strip()[:60])
+            d = (request.form.get(f"date_{r}") or "").strip()
+            set_setting(db, tid, f"round_date_{r}", d if model.parse_date(d) else "")
+        db.commit()
+        flash("Gemt.", "ok")
+        return redirect(url_for("admin.settings"))
+    return render_template("admin_settings.html", infos=round_info(db))
+
+
+@bp.route("/backup", methods=["POST"])
+def make_backup():
+    dest = backup(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"])
+    audit(get_db(), g.user["username"], "backup_hentet")
+    get_db().commit()
+    return send_file(dest, as_attachment=True, download_name="u11-backup.db")
+
+
+@bp.route("/audit")
+def audit_log():
+    rows = get_db().execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT 300").fetchall()
+    return render_template("admin_audit.html", rows=rows)
+
+
+@bp.route("/export.xlsx")
+def export_xlsx():
+    """Excel-eksport af det aktive holds data."""
+    from openpyxl import Workbook
+    db = get_db()
+    tid = team_id()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Spillere"
+    ws.append(["Id", "Navn", "Fødselsdato", "Trøje", "Position", "Sekundær", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"])
+    for p in db.execute("SELECT * FROM players WHERE team_id=? ORDER BY name COLLATE NOCASE", (tid,)):
+        ws.append([p["id"], p["name"], p["birth_date"], p["shirt_no"], p["position"], p["position2"], p["foot"],
+                   p["start_date"], p["focus1"], p["focus2"], p["notes"], p["active"]])
+    ws = wb.create_sheet("Evalueringer")
+    ws.append(["Runde", "Spiller", "Træner", "Rolle", "Nøglefærdighed", "Score"])
+    for r in db.execute("SELECT e.round, p.name pn, u.display_name un, e.crit, e.score FROM evaluations e "
+                        "JOIN players p ON p.id=e.player_id JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? "
+                        "ORDER BY e.round, p.name, u.display_name, e.crit", (tid,)):
+        c = model.CRITERIA[r["crit"]]
+        ws.append([r["round"], r["pn"], r["un"], c["role"], c["skill"], r["score"]])
+    ws = wb.create_sheet("Teamoversigt")
+    ws.append(["Runde", "Spiller"] + model.ROLES + ["Samlet", "Enighed", "Fortolkning"])
+    rounds = model.load_rounds(db, tid)
+    names = {p["id"]: p["name"] for p in db.execute("SELECT id,name FROM players WHERE team_id=?", (tid,))}
+    for rnd in model.ROUNDS:
+        for pid, res in sorted(rounds[rnd].items(), key=lambda kv: names.get(kv[0], "")):
+            ws.append([rnd, names.get(pid)] + [None if v is None else round(v, 2) for v in res["roles"]] +
+                      [None if res["samlet"] is None else round(res["samlet"], 2),
+                       None if res["enighed"] is None else round(res["enighed"], 2), res["fortolkning"]])
+    ws = wb.create_sheet("Motivation")
+    ws.append(["Spiller", "Kategori", "Spørgsmål", "Score"])
+    for r in db.execute("SELECT p.name pn, c.title, q.text, a.score FROM motivation_answers a JOIN players p ON p.id=a.player_id "
+                        "JOIN motivation_questions q ON q.qidx=a.qidx AND q.team_id=p.team_id "
+                        "JOIN motivation_categories c ON c.cat=q.cat AND c.team_id=p.team_id WHERE p.team_id=? ORDER BY p.name, q.qidx", (tid,)):
+        ws.append([r["pn"], r["title"], r["text"], r["score"]])
+    ws = wb.create_sheet("Udviklingsdata")
+    ws.append(["Spiller", "Træninger", "Kampe"] + model.TRIVSEL + model.MOTORIK + ["Tiltag", "Spillerens mål", "Opfølgning", "Status"])
+    for r in db.execute("SELECT p.name, d.* FROM devdata d JOIN players p ON p.id=d.player_id WHERE p.team_id=? ORDER BY p.name", (tid,)):
+        ws.append([r["name"], r["trainings"], r["matches"], r["t1"], r["t2"], r["t3"], r["m1"], r["m2"], r["m3"], r["m4"],
+                   r["tiltag"], r["eget_maal"], r["followup"], r["status"]])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    audit(db, g.user["username"], "excel_eksport", g.team["name"])
+    db.commit()
+    return send_file(buf, as_attachment=True, download_name=f"u11-eksport-{g.team['name']}.xlsx".replace(" ", "_").replace("/", "-"),
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

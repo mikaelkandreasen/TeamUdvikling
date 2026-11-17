@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% block title %}Hjem{% endblock %}
+{% block content %}
+<h1>Hjem{% if team %} – {{ team['name'] }}{% endif %}</h1>
+{% if not players %}
+<div class="card">
+  <h2>Kom i gang</h2>
+  <ol>
+    <li><a href="{{ url_for('players.new') }}">Opret spillerne</a> (navn, fødselsdato, position).</li>
+    <li>Under <a href="{{ url_for('admin.settings') if user['role']=='admin' else url_for('evaluation.eval_home') }}">Evaluering</a>: hver træner scorer spillerne 1–5 på de 24 kriterier.</li>
+    <li>Lad spillerne udfylde <a href="{{ url_for('motivation.tablet_list') }}">motivationsskemaet</a> på en tablet.</li>
+    <li>Registrér fremmøde, trivsel og motorik under <a href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>.</li>
+    <li>Udskriv eller del en <a href="{{ url_for('reports.index') }}">spillerrapport</a> til samtalen.</li>
+  </ol>
+</div>
+{% endif %}
+<div class="card">
+  <h2>Min evaluering</h2>
+  {% for r in prog %}
+  <p><a href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">{{ r['label'] }}</a>
+     <span class="muted">{{ r['done'] }} af {{ r['total'] }} spillere færdige</span></p>
+  <div class="bar"><i style="width:{{ (100 * r['done'] / r['total']) if r['total'] else 0 }}%"></i></div>
+  {% endfor %}
+</div>
+<div class="tiles">
+  <a class="tile" href="{{ url_for('players.index') }}">Spillere<small>{{ players|length }} aktive</small></a>
+  <a class="tile" href="{{ url_for('evaluation.team') }}">Teamoversigt<small>roller og samlet score</small></a>
+  <a class="tile" href="{{ url_for('motivation.matrix') }}">Motivation<small>svar pr. spiller</small></a>
+  <a class="tile" href="{{ url_for('devdata.matrix') }}">Udviklingsdata<small>alder, fremmøde, trivsel</small></a>
+  <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling<small>runde for runde</small></a>
+  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder<small>roller og færdigheder</small></a>
+  <a class="tile alt" href="{{ url_for('reports.index') }}">Rapporter<small>én side pr. spiller</small></a>
+  <a class="tile alt" href="{{ url_for('main.mobile') }}">Mobilvisning<small>til banen</small></a>
+</div>
+{% endblock %}

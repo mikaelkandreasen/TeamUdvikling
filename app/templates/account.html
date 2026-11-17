@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Min konto{% endblock %}
+{% block content %}
+<h1>Min konto</h1>
+<div class="card"><b>{{ user['display_name'] }}</b> ({{ user['username'] }}) · {{ 'Administrator' if user['role'] == 'admin' else 'Træner' }}
+  <div class="muted small">Hold: {% for t in teams %}{{ t['name'] }}{{ ', ' if not loop.last }}{% else %}ingen{% endfor %}</div></div>
+<div class="card"><h2>Skift adgangskode</h2>
+  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="password">
+    <label>Nuværende adgangskode</label><input type="password" name="old" autocomplete="current-password" required>
+    <label>Ny adgangskode (mindst 12 tegn)</label><input type="password" name="new" autocomplete="new-password" required>
+    <label>Gentag ny adgangskode</label><input type="password" name="new2" autocomplete="new-password" required>
+    <div class="actions"><button class="btn">Skift</button></div></form></div>
+<div class="card"><h2>Gendannelseskoder</h2>
+  <p class="muted">Du har {{ codes_left }} ubrugte gendannelseskoder.</p>
+  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="recovery">
+    <label>Adgangskode (bekræftelse)</label><input type="password" name="old" autocomplete="current-password" required>
+    <div class="actions"><button class="btn sec">Opret nye koder (gamle ugyldiggøres)</button></div></form></div>
+{% endblock %}

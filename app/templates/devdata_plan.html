@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Handleplan – {{ p['name'] }}{% endblock %}
+{% block content %}
+<h1>Handleplan – {{ p['name'] }}</h1>
+<div class="card"><b>Fokusområder</b> (rettes under <a href="{{ url_for('players.edit', pid=p['id']) }}">spilleren</a>):<br>
+  1. {{ p['focus1'] or '–' }}<br>2. {{ p['focus2'] or '–' }}</div>
+<form method="post" class="card">{{ csrf() }}
+  <label for="t">Træners tiltag</label><textarea id="t" name="tiltag" maxlength="1000">{{ (d['tiltag'] if d else '') or '' }}</textarea>
+  <label for="e">Spillerens eget mål</label><textarea id="e" name="eget_maal" maxlength="1000">{{ (d['eget_maal'] if d else '') or '' }}</textarea>
+  <div class="row"><div><label for="f">Opfølgningsdato</label><input id="f" type="date" name="followup" value="{{ (d['followup'] if d else '') or '' }}"></div>
+  <div><label for="s">Status</label><select id="s" name="status"><option value=""></option>{% for x in model.STATUSES %}<option {{ 'selected' if d and d['status'] == x }}>{{ x }}</option>{% endfor %}</select></div></div>
+  <div class="actions"><button class="btn">Gem</button><a class="btn sec" href="{{ url_for('reports.report', pid=p['id']) }}">Rapport</a></div>
+</form>
+{% endblock %}

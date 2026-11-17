@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Rapporter{% endblock %}
+{% block content %}
+<h1>Rapporter</h1>
+<div class="actions"><a class="btn" href="{{ url_for('reports.report_all') }}">Alle spillere (til print)</a></div>
+{% for p in players %}
+<div class="pcard"><div class="nm">{{ p['name'] }}<div class="sub">{{ p['position'] or '' }}</div></div>
+  <div class="acts"><a href="{{ url_for('reports.report', pid=p['id']) }}" aria-label="Rapport">📄</a>
+  <a href="{{ url_for('motivation.report', pid=p['id']) }}" aria-label="Motivation">💬</a></div></div>
+{% else %}<div class="card">Ingen spillere endnu.</div>{% endfor %}
+{% endblock %}

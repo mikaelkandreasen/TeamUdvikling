@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Spillerrapport{% endblock %}
+{% block content %}
+<div class="actions noprint"><button class="btn" data-print>Udskriv / gem som PDF</button>
+  {% if bundles|length == 1 %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=bundles[0]['p']['id']) }}">Handleplan</a>{% endif %}</div>
+{% for b in bundles %}{% set p = b['p'] %}
+<section class="report">
+  <h1>Spillerrapport – {{ p['name'] }}</h1>
+  <p class="muted">{{ team['name'] }} · {{ p['position'] or 'ingen position' }}{% if p['position2'] %} / {{ p['position2'] }}{% endif %} · {{ b['prof']['infos'][b['prof']['rnd'] - 1]['label'] }}</p>
+  <h2>Færdigheder</h2>
+  {% with rnd=b['prof']['rnd'], radar=b['prof']['radar'], role_rows=b['prof']['role_rows'], samlet=b['prof']['samlet'],
+          strongest=b['prof']['strongest'], weakest=b['prof']['weakest'], infos=b['prof']['infos'] %}{% include "_profile_body.html" %}{% endwith %}
+  <h2>Motivation og træningsønsker</h2>
+  {% with data=b['mot'] %}{% include "_motivation_body.html" %}{% endwith %}
+  <h2>Udvikling</h2>
+  {% with d=b['dev'] %}{% include "_dev_body.html" %}{% endwith %}
+  <p class="muted small">Rapporten er et oplæg til dialog med spilleren og forældrene – ikke til at rangere. Alder, fysisk modenhed og trivsel påvirker udviklingen lige så meget som talent.</p>
+</section>
+{% else %}<div class="card">Ingen spillere.</div>{% endfor %}
+{% endblock %}

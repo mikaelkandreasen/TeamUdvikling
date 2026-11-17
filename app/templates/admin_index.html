@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Administration{% endblock %}
+{% block content %}
+<h1>Administration</h1>
+<div class="tiles">
+  <a class="tile" href="{{ url_for('admin.teams') }}">Hold<small>opret og administrer</small></a>
+  <a class="tile" href="{{ url_for('admin.users') }}">Brugere<small>trænere, hold, 2FA</small></a>
+  <a class="tile alt" href="{{ url_for('admin.settings') }}">Runder<small>navne og datoer ({{ team['name'] if team else 'intet hold' }})</small></a>
+  <a class="tile alt" href="{{ url_for('admin.audit_log') }}">Revisionslog<small>logins og ændringer</small></a>
+  <a class="tile alt" href="{{ url_for('admin.export_xlsx') }}">Excel-eksport<small>aktivt hold</small></a>
+</div>
+<div class="card" style="margin-top:.9rem"><h2>Backup</h2>
+  <p class="muted small">Der tages automatisk en sikkerhedskopi (maks. én pr. døgn, de seneste 14 gemmes) i /data/backups. Her kan du hente en kopi af hele databasen.</p>
+  <form method="post" action="{{ url_for('admin.make_backup') }}">{{ csrf() }}<button class="btn sec">Hent backup af databasen</button></form></div>
+{% endblock %}

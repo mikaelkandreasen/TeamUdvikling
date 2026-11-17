@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Revisionslog{% endblock %}
+{% block content %}
+<h1>Revisionslog</h1>
+<div class="scroll"><table class="responsive"><thead><tr><th>Tid</th><th>Bruger</th><th>Handling</th><th>Detalje</th></tr></thead>
+<tbody>{% for r in rows %}<tr><td class="name">{{ r['ts'] }}</td><td data-label="Bruger">{{ r['user'] or '' }}</td><td data-label="Handling">{{ r['action'] }}</td><td data-label="Detalje">{{ r['detail'] or '' }}</td></tr>
+{% else %}<tr><td class="name">Ingen poster.</td></tr>{% endfor %}</tbody></table></div>
+<p class="muted small">De seneste 300 hændelser. Loggen indeholder aldrig scores eller adgangskoder.</p>
+{% endblock %}

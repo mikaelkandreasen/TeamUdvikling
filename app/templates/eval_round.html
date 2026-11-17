@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}{{ info['label'] }}{% endblock %}
+{% block content %}
+<h1>{{ info['label'] }}</h1>
+<p class="muted">Vælg en spiller for at score. {{ model.EVAL_SCALE }}.</p>
+{% for p in players %}
+{% set n = mine.get(p['id'], 0) %}
+<a class="pcard" href="{{ url_for('evaluation.eval_form', rnd=rnd, pid=p['id']) }}">
+  <span class="badge" style="background:{{ '#c6efce' if n == 24 else ('#ffeb9c' if n else '#eee') }}">{{ n }}/24</span>
+  <div class="nm">{{ p['name'] }}<div class="sub">{{ p['position'] or '' }} · {{ others.get(p['id'], 0) }} træner(e) har scoret</div></div><span>›</span>
+</a>
+{% else %}<div class="card">Ingen spillere. <a href="{{ url_for('players.new') }}">Opret spillere først</a>.</div>{% endfor %}
+{% endblock %}

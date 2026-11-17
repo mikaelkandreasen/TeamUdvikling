@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}2FA{% endblock %}
+{% block content %}
+<div class="login card">
+  <h1>To-faktor-kode</h1>
+  <p>Skriv den 6-cifrede kode fra din autentificeringsapp, eller en gendannelseskode.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="c">Kode</label>
+    <input id="c" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" required autofocus>
+    <div class="actions"><button class="btn block">Log ind</button></div>
+  </form>
+  <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec block">Annullér</button></form>
+</div>
+{% endblock %}

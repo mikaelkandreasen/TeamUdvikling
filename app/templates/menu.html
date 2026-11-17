@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}Menu{% endblock %}
+{% block content %}
+<h1>Menu</h1>
+<div class="tiles">
+  <a class="tile alt" href="{{ url_for('evaluation.team') }}">Teamoversigt</a>
+  <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling</a>
+  <a class="tile alt" href="{{ url_for('evaluation.position_view') }}">Position &amp; bane</a>
+  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder</a>
+  <a class="tile alt" href="{{ url_for('motivation.matrix') }}">Motivation</a>
+  <a class="tile alt" href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>
+  <a class="tile alt" href="{{ url_for('main.criteria') }}">Skala &amp; kriterier</a>
+  <a class="tile alt" href="{{ url_for('auth.account') }}">Min konto</a>
+  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">Administration</a>{% endif %}
+</div>
+{% endblock %}

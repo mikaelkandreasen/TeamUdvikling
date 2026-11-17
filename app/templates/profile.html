@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}{{ p['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ p['name'] }}</h1>
+<p class="muted">{{ p['position'] or 'ingen position' }}{% if p['position2'] %} / {{ p['position2'] }}{% endif %}{% if p['foot'] %} · {{ p['foot'] }} fod{% endif %}</p>
+<div class="filters">{% for i in infos %}<a href="{{ url_for('evaluation.profile', pid=p['id'], runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}</div>
+{% include "_profile_body.html" %}
+{% if age_note %}<div class="card"><b>Relativ alder:</b> {{ age_note }}</div>{% endif %}
+{% if p['focus1'] or p['focus2'] %}<div class="card"><b>Fokus:</b> {{ p['focus1'] or '' }}{% if p['focus2'] %} · {{ p['focus2'] }}{% endif %}</div>{% endif %}
+<h2>Alle 24 kriterier</h2>
+<div class="scroll"><table class="responsive"><thead><tr><th>Rolle</th><th>Færdighed</th>{% for i in infos %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for cr in crit_rows %}<tr><td class="name">{{ cr['c']['role'] }} – {{ cr['c']['skill'] }}</td><td data-label="Færdighed">{{ cr['c']['skill'] }}</td>
+    {% for v in cr['vals'] %}{{ heatcell(v, infos[loop.index0]['label']) }}{% endfor %}</tr>{% endfor %}</tbody></table></div>
+<div class="actions"><a class="btn" href="{{ url_for('reports.report', pid=p['id'], runde=rnd) }}">Åbn rapport</a>
+  <a class="btn sec" href="{{ url_for('devdata.plan', pid=p['id']) }}">Handleplan</a>
+  <a class="btn sec" href="{{ url_for('players.edit', pid=p['id']) }}">Ret spiller</a></div>
+{% endblock %}

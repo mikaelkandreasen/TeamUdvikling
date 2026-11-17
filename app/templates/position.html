@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}Position &amp; bane{% endblock %}
+{% block content %}
+<h1>Position &amp; bane</h1>
+<div class="filters">
+  <a href="{{ url_for('evaluation.position_view', type='primaer', pos=pos, runde=rnd) }}" class="{{ 'on' if kind == 'position' }}">Primær position</a>
+  <a href="{{ url_for('evaluation.position_view', type='sekundaer', pos=pos, runde=rnd) }}" class="{{ 'on' if kind == 'position2' }}">Sekundær position</a>
+</div>
+<div class="filters">
+  <a href="{{ url_for('evaluation.position_view', type='sekundaer' if kind == 'position2' else 'primaer', runde=rnd) }}" class="{{ 'on' if not pos }}">Alle</a>
+  {% for x in POSITIONS %}<a href="{{ url_for('evaluation.position_view', type='sekundaer' if kind == 'position2' else 'primaer', pos=x, runde=rnd) }}" class="{{ 'on' if pos == x }}">{{ x }}</a>{% endfor %}
+</div>
+<div class="filters">{% for i in rounds_info %}<a href="{{ url_for('evaluation.position_view', type='sekundaer' if kind == 'position2' else 'primaer', pos=pos, runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}</div>
+<div class="card">{{ pitch }}</div>
+<div class="scroll"><table class="responsive">
+  <thead><tr><th>Spiller</th><th>Position</th>{% for r in ROLES %}<th class="num">{{ r }}</th>{% endfor %}<th class="num">Samlet</th></tr></thead>
+  <tbody>{% for x in items %}<tr><td class="name"><a href="{{ url_for('evaluation.profile', pid=x['p']['id']) }}">{{ x['p']['name'] }}</a></td>
+    <td data-label="Position">{{ x['p'][kind] or '' }}</td>
+    {% for i in range(4) %}{{ heatcell(x['roles'][i], ROLES[i]) }}{% endfor %}{{ heatcell(x['samlet'], 'Samlet') }}</tr>
+  {% else %}<tr><td class="name">Ingen spillere på denne position.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}
