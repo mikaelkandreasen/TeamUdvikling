@@ -18,17 +18,22 @@ services:
       # 1 når siden kun nås via HTTPS (reverse proxy). Skal være 0 ved ren http på LAN.
       COOKIE_SECURE: ${COOKIE_SECURE:-0}
       # Valgfri engangskode, der kræves for at oprette første administrator.
+      # Tom = appen laver selv en engangskode (se container-loggen / /data/setup_token).
       SETUP_TOKEN: ${SETUP_TOKEN:-}
+      # Antal reverse proxies foran appen (typisk 1). Giver ægte klient-IP til login-spærre. 0 = ingen proxy.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-0}
     volumes:
       - u11-data:/data          # database + automatiske backups (/data/backups)
     ports:
-      - "${U11_PORT:-1020}:8000"
+      - "${U11_BIND:-0.0.0.0}:${U11_PORT:-1020}:8000"   # U11_BIND=127.0.0.1 hvis reverse proxy kører på samme maskine
     read_only: true
     tmpfs:
       - /tmp
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
+    pids_limit: 200
+    mem_limit: 512m
 
 volumes:
   u11-data:

@@ -24,6 +24,9 @@ Appen kører på **port 1020** (`U11_PORT`).
 5. Opdatering: `scripts/release.sh X.Y.Z` → `git push && git push --tags` → **Redeploy / pull** i Dockhand.
 Alternativ: sæt `U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version>` for at bruge det image, som GitHub Actions udgiver.
 
+## Internet og sikkerhed
+Kør kun bag HTTPS-reverse proxy med `COOKIE_SECURE=1` og `TRUSTED_PROXIES=1`; helst bag VPN/Cloudflare Access, da der er børnedata. Se **docs/SECURITY.md** (checkliste) og **docs/GDPR.md**. Første opsætning kræver en engangskode, som står i container-loggen (`docker logs u11-udvikling`) og i `/data/setup_token`.
+
 ## Klubprofil
 **Administration → Klubprofil**: klubnavn, adresse/kontakt, hjemmeside, fodtekst på rapporter, primær farve og logo (PNG/JPEG/WebP, maks. 512 kB). Vises i header, på loginsiden og på rapporterne.
 Persistente data ligger i volumen `u11-data` (`/data`): `u11.db`, `backups/` (automatisk, maks. én pr. døgn, 14 gemmes) og `secret_key`.

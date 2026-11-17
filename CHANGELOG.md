@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Sikkerhed
+- **Kritisk:** første opsætning kræver nu altid en engangskode (genereres automatisk, vises i log/`/data/setup_token`, slettes efter brug).
+- Login-spærre pr. IP (429), `TRUSTED_PROXIES` til korrekt klient-IP bag reverse proxy.
+- Sessioner bindes til adgangskoden (stjålne cookies dør ved skift); nulstilling af 2FA afbryder aktive sessioner.
+- Excel-eksport neutraliserer formler; gendannelseskoder 48 bit med nøglet hash; strengere `next`-validering.
+- HSTS, Permissions-Policy, COOP/CORP, `__Host-`-cookie ved HTTPS; `/healthz` viser ikke version.
+- Compose: `pids_limit`, `mem_limit`, valgfri `U11_BIND`; gunicorn-grænser; fastlåste afhængigheder; Dependabot, `pip-audit` og `bandit` i CI.
+- Pentest som regressionstests (`tests/test_security.py`) og `docs/SECURITY.md`.
+
+### GDPR
+- Offentlig side `/privatliv`, admin-side *Dataoprydning* (slet inaktive spillere), audit-log slettes efter 12 mdr., `docs/GDPR.md` (dataregister, rettigheder, DPIA, brud).
+
 ## [0.2.0] - 2026-11-17
 
 ### Tilføjet

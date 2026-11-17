@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Dataoprydning{% endblock %}
+{% block content %}
+<h1>Dataoprydning</h1>
+<p class="muted">Data om børn skal ikke opbevares længere end nødvendigt. Marker spillere som inaktive, når de stopper, og slet dem her. Sletningen fjerner evalueringer, motivation og udviklingsdata. Automatiske backups overskrives inden for 14 dage.</p>
+<div class="card">
+  {% if rows %}<ul>{% for r in rows %}<li>{{ r['tn'] }}: <b>{{ r['n'] }}</b> inaktive spillere</li>{% endfor %}</ul>
+  <form method="post">{{ csrf() }}<label><input type="checkbox" name="confirm" value="ja"> Ja, slet alle inaktive spillere permanent</label>
+    <div class="actions"><button class="btn danger">Slet inaktive spillere</button></div></form>
+  {% else %}<p>Ingen inaktive spillere.</p>{% endif %}
+</div>
+{% endblock %}

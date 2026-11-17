@@ -89,7 +89,7 @@ def test_recovery_code_logs_in_once(app):
     page = c.get("/2fa/setup").get_data(as_text=True)
     secret = re.search(r'class="secret">([A-Z2-7]+)<', page).group(1)
     html = c.post("/2fa/setup", {"code": totp.totp(secret)}, page="/2fa/setup").get_data(as_text=True)
-    code = re.findall(r"<div>([0-9a-f]{4}-[0-9a-f]{4})</div>", html)[0]
+    code = re.findall(r"<div>([0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4})</div>", html)[0]
     d = Client(app)
     d.c.get("/login")
     d.post("/login", {"username": "admin", "password": PW}, page="/login")

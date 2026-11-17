@@ -5,7 +5,7 @@
   <p>Opret den første administrator. Derefter sætter du to-faktor-login op.</p>
   <form method="post" autocomplete="off">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% if need_token %}<label for="t">Opsætningskode (fra serverens indstillinger)</label><input id="t" type="password" name="setup_token" required>{% endif %}
+    {% if need_token %}<label for="t">Opsætningskode (står i serverens log og i filen <code>/data/setup_token</code>, eller i miljøvariablen SETUP_TOKEN)</label><input id="t" type="password" name="setup_token" required>{% endif %}
     <label for="u">Brugernavn</label><input id="u" type="text" name="username" autocapitalize="none" required>
     <label for="n">Navn</label><input id="n" type="text" name="display_name">
     <label for="p">Adgangskode (mindst 12 tegn)</label><input id="p" type="password" name="password" autocomplete="new-password" required>

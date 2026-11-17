@@ -25,8 +25,19 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: test "v$(cat VERSION)" = "${GITHUB_REF_NAME}"
 
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pip-audit bandit
+      - run: pip-audit -r requirements.txt
+      - run: bandit -q -r app -ll
+
   image:
-    needs: test
+    needs: [test, security]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

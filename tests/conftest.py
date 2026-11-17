@@ -12,7 +12,7 @@ PW = "correct-horse-battery-12"
 def app(tmp_path, monkeypatch):
     monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("SECRET_KEY", raising=False)
-    monkeypatch.delenv("SETUP_TOKEN", raising=False)
+    monkeypatch.setenv("SETUP_TOKEN", "test-setup-token")
     return create_app({"TESTING": True})
 
 
@@ -31,6 +31,8 @@ class Client:
 
     def post(self, path, data=None, page=None, **kw):
         data = dict(data or {})
+        if path == "/setup" and "setup_token" not in data:
+            data["setup_token"] = "test-setup-token"
         data["csrf_token"] = self.token(page or path)
         return self.c.post(path, data=data, **kw)
 

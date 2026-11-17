@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS devdata(
   m1 INTEGER, m2 INTEGER, m3 INTEGER, m4 INTEGER,
   tiltag TEXT, eget_maal TEXT, followup TEXT, status TEXT);
 CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY, ts TEXT NOT NULL, user TEXT, action TEXT NOT NULL, detail TEXT);
+CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
 
 
@@ -117,6 +119,16 @@ def set_setting(db, team_id, key, value):
 def audit(db, user, action, detail=""):
     db.execute("INSERT INTO audit_log(ts,user,action,detail) VALUES(datetime('now','localtime'),?,?,?)",
                (user, action, detail))
+
+
+AUDIT_RETENTION_DAYS = 365
+
+
+def purge_old(db):
+    """Dataminimering: audit-log slettes efter 12 måneder; gamle loginforsøg ryddes."""
+    db.execute("DELETE FROM audit_log WHERE ts < datetime('now','localtime',?)", (f"-{AUDIT_RETENTION_DAYS} days",))
+    db.execute("DELETE FROM login_attempts WHERE ts < ?", (int(time.time()) - 3600,))
+    db.commit()
 
 
 def backup(db_path, backup_dir, keep=14):

@@ -184,6 +184,14 @@ def audit_log():
     return render_template("admin_audit.html", rows=rows)
 
 
+def _append(ws, row):
+    """Tilføj række; tekst der starter med '=' gemmes som ren tekst (beskyttelse mod formel-injektion i Excel)."""
+    ws.append(row)
+    for c in ws[ws.max_row]:
+        if isinstance(c.value, str) and c.value[:1] in ("=", "+", "-", "@"):
+            c.data_type = "s"
+
+
 @bp.route("/export.xlsx")
 def export_xlsx():
     """Excel-eksport af det aktive holds data."""
@@ -193,36 +201,36 @@ def export_xlsx():
     wb = Workbook()
     ws = wb.active
     ws.title = "Spillere"
-    ws.append(["Id", "Navn", "Fødselsdato", "Trøje", "Position", "Sekundær", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"])
+    _append(ws, ["Id", "Navn", "Fødselsdato", "Trøje", "Position", "Sekundær", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"])
     for p in db.execute("SELECT * FROM players WHERE team_id=? ORDER BY name COLLATE NOCASE", (tid,)):
-        ws.append([p["id"], p["name"], p["birth_date"], p["shirt_no"], p["position"], p["position2"], p["foot"],
+        _append(ws, [p["id"], p["name"], p["birth_date"], p["shirt_no"], p["position"], p["position2"], p["foot"],
                    p["start_date"], p["focus1"], p["focus2"], p["notes"], p["active"]])
     ws = wb.create_sheet("Evalueringer")
-    ws.append(["Runde", "Spiller", "Træner", "Rolle", "Nøglefærdighed", "Score"])
+    _append(ws, ["Runde", "Spiller", "Træner", "Rolle", "Nøglefærdighed", "Score"])
     for r in db.execute("SELECT e.round, p.name pn, u.display_name un, e.crit, e.score FROM evaluations e "
                         "JOIN players p ON p.id=e.player_id JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? "
                         "ORDER BY e.round, p.name, u.display_name, e.crit", (tid,)):
         c = model.CRITERIA[r["crit"]]
-        ws.append([r["round"], r["pn"], r["un"], c["role"], c["skill"], r["score"]])
+        _append(ws, [r["round"], r["pn"], r["un"], c["role"], c["skill"], r["score"]])
     ws = wb.create_sheet("Teamoversigt")
-    ws.append(["Runde", "Spiller"] + model.ROLES + ["Samlet", "Enighed", "Fortolkning"])
+    _append(ws, ["Runde", "Spiller"] + model.ROLES + ["Samlet", "Enighed", "Fortolkning"])
     rounds = model.load_rounds(db, tid)
     names = {p["id"]: p["name"] for p in db.execute("SELECT id,name FROM players WHERE team_id=?", (tid,))}
     for rnd in model.ROUNDS:
         for pid, res in sorted(rounds[rnd].items(), key=lambda kv: names.get(kv[0], "")):
-            ws.append([rnd, names.get(pid)] + [None if v is None else round(v, 2) for v in res["roles"]] +
+            _append(ws, [rnd, names.get(pid)] + [None if v is None else round(v, 2) for v in res["roles"]] +
                       [None if res["samlet"] is None else round(res["samlet"], 2),
                        None if res["enighed"] is None else round(res["enighed"], 2), res["fortolkning"]])
     ws = wb.create_sheet("Motivation")
-    ws.append(["Spiller", "Kategori", "Spørgsmål", "Score"])
+    _append(ws, ["Spiller", "Kategori", "Spørgsmål", "Score"])
     for r in db.execute("SELECT p.name pn, c.title, q.text, a.score FROM motivation_answers a JOIN players p ON p.id=a.player_id "
                         "JOIN motivation_questions q ON q.qidx=a.qidx AND q.team_id=p.team_id "
                         "JOIN motivation_categories c ON c.cat=q.cat AND c.team_id=p.team_id WHERE p.team_id=? ORDER BY p.name, q.qidx", (tid,)):
-        ws.append([r["pn"], r["title"], r["text"], r["score"]])
+        _append(ws, [r["pn"], r["title"], r["text"], r["score"]])
     ws = wb.create_sheet("Udviklingsdata")
-    ws.append(["Spiller", "Træninger", "Kampe"] + model.TRIVSEL + model.MOTORIK + ["Tiltag", "Spillerens mål", "Opfølgning", "Status"])
+    _append(ws, ["Spiller", "Træninger", "Kampe"] + model.TRIVSEL + model.MOTORIK + ["Tiltag", "Spillerens mål", "Opfølgning", "Status"])
     for r in db.execute("SELECT p.name, d.* FROM devdata d JOIN players p ON p.id=d.player_id WHERE p.team_id=? ORDER BY p.name", (tid,)):
-        ws.append([r["name"], r["trainings"], r["matches"], r["t1"], r["t2"], r["t3"], r["m1"], r["m2"], r["m3"], r["m4"],
+        _append(ws, [r["name"], r["trainings"], r["matches"], r["t1"], r["t2"], r["t3"], r["m1"], r["m2"], r["m3"], r["m4"],
                    r["tiltag"], r["eget_maal"], r["followup"], r["status"]])
     buf = io.BytesIO()
     wb.save(buf)
@@ -269,3 +277,21 @@ def club_profile():
 
 
 MAX_UPLOAD = club.MAX_LOGO_BYTES
+
+
+# ----------------------------------------------------------------------------- dataoprydning (GDPR)
+@bp.route("/retention", methods=["GET", "POST"])
+def retention():
+    db = get_db()
+    if request.method == "POST":
+        if request.form.get("confirm") != "ja":
+            flash("Sletning kræver bekræftelse.", "error")
+        else:
+            n = db.execute("SELECT COUNT(*) FROM players WHERE active=0").fetchone()[0]
+            db.execute("DELETE FROM players WHERE active=0")
+            audit(db, g.user["username"], "inaktive_spillere_slettet", f"antal={n}")
+            db.commit()
+            flash(f"{n} inaktive spillere og alle deres data er slettet (kopier i automatiske backups forsvinder inden for 14 dage).", "ok")
+        return redirect(url_for("admin.retention"))
+    rows = db.execute("SELECT t.name tn, COUNT(*) n FROM players p JOIN teams t ON t.id=p.team_id WHERE p.active=0 GROUP BY t.id ORDER BY t.name").fetchall()
+    return render_template("admin_retention.html", rows=rows)

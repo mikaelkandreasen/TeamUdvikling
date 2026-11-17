@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import io
+import os
 import secrets
 import time
 from functools import wraps
@@ -11,7 +12,7 @@ from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import totp
-from .db import audit, backup_if_due, get_db
+from .db import audit, backup_if_due, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
 MAX_FAILS = 5
@@ -20,7 +21,9 @@ MIN_PW = 12
 IDLE_SECONDS = 45 * 60
 _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
-PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo"}
+IP_MAX_FAILS = 20          # fejlede forsøg pr. IP pr. IP_WINDOW (beskytter mod password spraying og låse-DoS)
+IP_WINDOW = 600
+PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy"}
 PRE_2FA = {"auth.login_2fa", "auth.twofa_setup", "auth.logout", "auth.force_password"}
 
 
@@ -37,12 +40,52 @@ def admin_required(view):
     return wrapped
 
 
+def _key():
+    return current_app.config["SECRET_KEY"].encode()
+
+
+def _pwv(pw_hash):
+    """Sessionsbinding: ændres adgangskoden, dør alle eksisterende sessioner (stjålne cookies)."""
+    return hmac.new(_key(), pw_hash.encode(), hashlib.sha256).hexdigest()[:24]
+
+
+def _bind(pw_hash):
+    session["pwv"] = _pwv(pw_hash)
+
+
+def _safe_next(nxt):
+    if not nxt or not nxt.startswith("/") or nxt.startswith("//") or "\\" in nxt or any(ord(c) < 32 for c in nxt):
+        return ""
+    return nxt
+
+
+def client_ip():
+    return request.remote_addr or "?"
+
+
+def throttled(db):
+    n = db.execute("SELECT COUNT(*) FROM login_attempts WHERE ip=? AND ts>?", (client_ip(), int(time.time()) - IP_WINDOW)).fetchone()[0]
+    return n >= IP_MAX_FAILS
+
+
+def record_fail(db):
+    db.execute("INSERT INTO login_attempts(ip,ts) VALUES(?,?)", (client_ip(), int(time.time())))
+    db.commit()
+
+
+def _too_many():
+    return ("For mange mislykkede forsøg fra din forbindelse. Vent et par minutter og prøv igen.", 429, {"Retry-After": str(IP_WINDOW)})
+
+
 def load_user():
     g.user = None
     uid = session.get("uid")
     if uid:
         row = get_db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-        if row and time.time() - session.get("seen", 0) < IDLE_SECONDS:
+        valid = (row and time.time() - session.get("seen", 0) < IDLE_SECONDS
+                 and hmac.compare_digest(session.get("pwv", ""), _pwv(row["pw_hash"]))
+                 and not (session.get("stage") == "ok" and not row["totp_enabled"]))   # 2FA nulstillet → ud
+        if valid:
             g.user = row
             session["seen"] = int(time.time())
         else:
@@ -68,16 +111,21 @@ def gate():
     return None
 
 
+def _norm_code(code):
+    return code.strip().lower().replace("-", "")
+
+
 def _hash_code(code):
-    return hashlib.sha256(code.strip().lower().replace("-", "").encode()).hexdigest()
+    """Nøglet hash (HMAC) – en lækket database alene kan ikke bruges til at gætte gendannelseskoder offline."""
+    return hmac.new(_key(), _norm_code(code).encode(), hashlib.sha256).hexdigest()
 
 
 def new_recovery_codes(db, uid, n=8):
     db.execute("DELETE FROM recovery_codes WHERE user_id=?", (uid,))
     codes = []
     for _ in range(n):
-        c = secrets.token_hex(4)
-        codes.append(f"{c[:4]}-{c[4:]}")
+        c = secrets.token_hex(6)
+        codes.append(f"{c[:4]}-{c[4:8]}-{c[8:]}")
         db.execute("INSERT INTO recovery_codes(user_id,code_hash) VALUES(?,?)", (uid, _hash_code(c)))
     return codes
 
@@ -111,9 +159,10 @@ def _finish_login(db, user):
     audit(db, user["username"], "login")
     db.commit()
     try:
+        purge_old(db)
         backup_if_due(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"])
-    except Exception:  # backup må aldrig blokere et login
-        current_app.logger.exception("Automatisk backup fejlede")
+    except Exception:  # backup/oprydning må aldrig blokere et login
+        current_app.logger.exception("Automatisk backup/oprydning fejlede")
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -122,26 +171,30 @@ def login():
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
         return redirect(url_for("auth.setup"))
     if request.method == "POST":
+        if throttled(db):
+            return _too_many()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         user = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
         generic = "Forkert brugernavn eller adgangskode, eller kontoen er midlertidigt låst."
         if not user:
             check_password_hash(_DUMMY_HASH, password)
+            record_fail(db)
             flash(generic, "error")
         elif user["locked_until"] > time.time():
             flash(generic, "error")
         elif not check_password_hash(user["pw_hash"], password):
             _fail(db, user)
+            record_fail(db)
             flash(generic, "error")
         else:
             _ok(db, user)
             session.clear()
             session["uid"] = user["id"]
             session["seen"] = int(time.time())
+            _bind(user["pw_hash"])
             session["stage"] = "pw_ok" if user["totp_enabled"] else "needs_setup"
-            nxt = request.args.get("next", "")
-            session["next"] = nxt if nxt.startswith("/") and not nxt.startswith("//") else ""
+            session["next"] = _safe_next(request.args.get("next", ""))
             return redirect(url_for("auth.login_2fa") if user["totp_enabled"] else url_for("auth.twofa_setup"))
     return render_template("login.html")
 
@@ -153,6 +206,8 @@ def login_2fa():
     db = get_db()
     user = g.user
     if request.method == "POST":
+        if throttled(db):
+            return _too_many()
         code = request.form.get("code", "")
         if user["locked_until"] > time.time():
             flash("Kontoen er midlertidigt låst. Prøv igen senere.", "error")
@@ -165,7 +220,7 @@ def login_2fa():
                 nxt = session.pop("next", "")
                 return redirect(nxt or url_for("main.home"))
             rc = db.execute("SELECT id FROM recovery_codes WHERE user_id=? AND used=0 AND code_hash=?",
-                            (user["id"], _hash_code(code))).fetchone() if len(code.strip()) >= 8 else None
+                            (user["id"], _hash_code(code))).fetchone() if len(_norm_code(code)) == 12 else None
             if rc:
                 db.execute("UPDATE recovery_codes SET used=1 WHERE id=?", (rc["id"],))
                 audit(db, user["username"], "gendannelseskode_brugt")
@@ -174,6 +229,7 @@ def login_2fa():
                 flash("Gendannelseskode brugt. Overvej at oprette nye koder under Min konto.", "info")
                 return redirect(url_for("main.home"))
             _fail(db, user)
+            record_fail(db)
             flash("Forkert kode.", "error")
             if db.execute("SELECT locked_until FROM users WHERE id=?", (user["id"],)).fetchone()[0] > time.time():
                 session.clear()
@@ -229,13 +285,16 @@ def setup():
     db = get_db()
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] > 0:
         return redirect(url_for("auth.login"))
-    token = current_app.config.get("SETUP_TOKEN", "")
+    token = current_app.config.get("SETUP_TOKEN", "")      # altid sat (miljøvariabel eller engangskode i /data/setup_token)
     if request.method == "POST":
+        if throttled(db):
+            return _too_many()
         username = request.form.get("username", "").strip()
         name = request.form.get("display_name", "").strip() or username
         pw = request.form.get("password", "")
         problem = None
-        if token and not hmac.compare_digest(request.form.get("setup_token", ""), token):
+        if not token or not hmac.compare_digest(request.form.get("setup_token", "").strip(), token):
+            record_fail(db)
             problem = "Forkert opsætningskode."
         elif not username:
             problem = "Brugernavn mangler."
@@ -253,9 +312,14 @@ def setup():
             session.clear()
             session["uid"] = cur.lastrowid
             session["seen"] = int(time.time())
+            _bind(db.execute("SELECT pw_hash FROM users WHERE id=?", (cur.lastrowid,)).fetchone()[0])
             session["stage"] = "needs_setup"
+            try:
+                os.remove(os.path.join(current_app.config["U11_DATA_DIR"], "setup_token"))   # engangskode
+            except OSError:
+                pass
             return redirect(url_for("auth.twofa_setup"))
-    return render_template("setup.html", need_token=bool(token))
+    return render_template("setup.html", need_token=True)
 
 
 @bp.route("/logout", methods=["POST"])
@@ -283,10 +347,11 @@ def account():
                 if problem:
                     flash(problem, "error")
                 else:
-                    db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?",
-                               (generate_password_hash(request.form["new"]), user["id"]))
+                    newhash = generate_password_hash(request.form["new"])
+                    db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                     audit(db, user["username"], "adgangskode_skiftet")
                     db.commit()
+                    _bind(newhash)                      # denne session består; alle andre dør
                     flash("Adgangskoden er skiftet.", "ok")
         elif action == "recovery":
             if not check_password_hash(user["pw_hash"], request.form.get("old", "")):
@@ -316,9 +381,10 @@ def force_password():
             elif check_password_hash(user["pw_hash"], request.form["new"]):
                 flash("Vælg en anden adgangskode end den midlertidige.", "error")
             else:
-                db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?",
-                           (generate_password_hash(request.form["new"]), user["id"]))
+                newhash = generate_password_hash(request.form["new"])
+                db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                 audit(db, user["username"], "adgangskode_skiftet")
                 db.commit()
+                _bind(newhash)
                 return redirect(url_for("main.home"))
     return render_template("force_password.html")

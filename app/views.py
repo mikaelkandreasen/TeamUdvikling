@@ -78,3 +78,9 @@ def club_logo():
     if not c["has_logo"]:
         abort(404)
     return send_file(club.logo_path(), mimetype=club.club_get(get_db())["logo_mime"], conditional=True)
+
+
+@bp.route("/privatliv")
+def privacy():
+    """Offentlig privatlivsinformation (GDPR art. 13). Skabelon – tilpasses af klubben."""
+    return render_template("privacy.html")
