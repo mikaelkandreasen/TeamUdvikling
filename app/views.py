@@ -1,7 +1,7 @@
 """Forside, mobilforside, menu og kriterie-side."""
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, url_for
 
-from . import model, teams
+from . import club, model, teams
 from .db import get_db
 from .helpers import active_players, default_round, round_info, team_id
 
@@ -69,3 +69,12 @@ def no_team():
     if g.get("team"):
         return redirect(url_for("main.home"))
     return render_template("no_team.html")
+
+
+@bp.route("/branding/logo")
+def club_logo():
+    """Klubbens logo (offentligt, så det kan vises på loginsiden)."""
+    c = club.info()
+    if not c["has_logo"]:
+        abort(404)
+    return send_file(club.logo_path(), mimetype=club.club_get(get_db())["logo_mime"], conditional=True)

@@ -4,6 +4,7 @@
   {% if bundles|length == 1 %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=bundles[0]['p']['id']) }}">Handleplan</a>{% endif %}</div>
 {% for b in bundles %}{% set p = b['p'] %}
 <section class="report">
+  {% include "_club_header.html" %}
   <h1>Spillerrapport – {{ p['name'] }}</h1>
   <p class="muted">{{ team['name'] }} · {{ p['position'] or 'ingen position' }}{% if p['position2'] %} / {{ p['position2'] }}{% endif %} · {{ b['prof']['infos'][b['prof']['rnd'] - 1]['label'] }}</p>
   <h2>Færdigheder</h2>
@@ -14,6 +15,7 @@
   <h2>Udvikling</h2>
   {% with d=b['dev'] %}{% include "_dev_body.html" %}{% endwith %}
   <p class="muted small">Rapporten er et oplæg til dialog med spilleren og forældrene – ikke til at rangere. Alder, fysisk modenhed og trivsel påvirker udviklingen lige så meget som talent.</p>
+  {% if club['footer'] %}<p class="small">{{ club['footer'] }}</p>{% endif %}
 </section>
 {% else %}<div class="card">Ingen spillere.</div>{% endfor %}
 {% endblock %}

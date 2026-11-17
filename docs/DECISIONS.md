@@ -19,3 +19,9 @@ Kontekst: første version skal starte uden spillerdata. Valg: ingen importer; ad
 
 ## 005 – Spillerdata kun i databasen, aldrig i repoet
 Valg: `.gitignore` udelukker `data/`, `*.db`, `.env`; tests bruger opdigtede navne.
+
+## D-008 · Klubprofil som globale indstillinger (2026-11-17)
+Gemt i `settings` med nøgler `club:*` (ikke pr. hold). Logo som fil i `/data/branding`, serveret offentligt fra `/branding/logo` (så login kan vise det). Kun PNG/JPEG/WebP efter indholdstjek; SVG afvist (script-risiko).
+
+## D-009 · KampKlar afventer valg (2026-11-17)
+Ingen officiel API. Muligheder: (1) iCal-feed for holdets aktiviteter, (2) uofficiel login-scraper bag feature-flag med krypterede legitimationsoplysninger, (3) manuel/CSV-import. Claude API bruges ikke til datahentning. Børnedata og DBU's vilkår skal vurderes før (2).

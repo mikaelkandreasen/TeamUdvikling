@@ -11,15 +11,21 @@ git clone https://github.com/<DIT-BRUGERNAVN>/u11-udvikling.git && cd u11-udvikl
 cp .env.example .env            # ret SECRET_KEY m.m.
 docker compose up -d --build
 ```
-Åbn `http://<server>:8080` → **Første opsætning** (opretter administrator) → scan QR-kode med en autentificeringsapp → gem gendannelseskoderne.
+Åbn `http://<server>:1020` → **Første opsætning** (opretter administrator) → scan QR-kode med en autentificeringsapp → gem gendannelseskoderne.
 Derefter: **Administration → Hold** (opret hold) → **Brugere** (opret trænere og tilknyt dem til hold) → **Spillere** (opret spillere).
 
-## Deploy med Dockhand
-Dockhand styrer en compose-stack. To veje:
-1. **Fra GHCR-imaget (anbefalet):** push et tag (`v0.1.0`) → GitHub Actions udgiver `ghcr.io/<bruger>/u11-udvikling:0.1.0`. Opret en stack i Dockhand med
-   indholdet af `docker-compose.yml`, sæt `U11_IMAGE`, `SECRET_KEY`, `COOKIE_SECURE`, `U11_PORT` som miljøvariabler, og deploy. Opdatering = vælg nyt tag → redeploy.
-   (Er pakken privat, skal Dockhand/serveren logge ind på `ghcr.io` med et token med `read:packages`.)
-2. **Fra Git:** hvis din Dockhand-version kan deploye en stack direkte fra et Git-repo, peg på dette repo og `docker-compose.yml` (bygger imaget lokalt).
+## Deploy med Dockhand (direkte fra GitHub)
+Appen kører på **port 1020** (`U11_PORT`).
+1. Push repoet til GitHub (privat anbefales; giv Dockhand adgang med en deploy key eller et token).
+2. Dockhand → **Stacks → Ny stack → fra Git repository**: peg på repoet, branch `main`, compose-sti `docker-compose.yml`.
+   Dockhand bygger imaget lokalt fra `Dockerfile` – ingen registry nødvendig.
+3. Miljøvariabler i stacken: `SECRET_KEY` (valgfri, ellers genereres og gemmes i volumen), `COOKIE_SECURE=1` hvis du bruger HTTPS, evt. `SETUP_TOKEN`. `U11_PORT` er 1020 som standard.
+4. Deploy → åbn `http://<server>:1020`.
+5. Opdatering: `scripts/release.sh X.Y.Z` → `git push && git push --tags` → **Redeploy / pull** i Dockhand.
+Alternativ: sæt `U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version>` for at bruge det image, som GitHub Actions udgiver.
+
+## Klubprofil
+**Administration → Klubprofil**: klubnavn, adresse/kontakt, hjemmeside, fodtekst på rapporter, primær farve og logo (PNG/JPEG/WebP, maks. 512 kB). Vises i header, på loginsiden og på rapporterne.
 Persistente data ligger i volumen `u11-data` (`/data`): `u11.db`, `backups/` (automatisk, maks. én pr. døgn, 14 gemmes) og `secret_key`.
 
 ## Opdatering, backup og gendannelse

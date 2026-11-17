@@ -1,9 +1,9 @@
-# Stack til Dockhand / docker compose.
-# 1) Kopiér .env.example til .env (eller sæt variablerne i Dockhand) og ret værdierne.
-# 2) Start: docker compose up -d      (første gang bygges imaget fra Dockerfile, eller hentes fra GHCR)
+# Stack til Dockhand / docker compose. Standard: bygger imaget direkte fra dette repo (Dockhand -> Git-stack).
+# Variabler sættes i Dockhand (eller i .env ved lokal brug – se .env.example). Alle har fornuftige standardværdier.
+# Appen kører på port 1020 på serveren (U11_PORT).
 services:
   u11:
-    image: ${U11_IMAGE:-ghcr.io/CHANGE_ME/u11-udvikling:latest}
+    image: ${U11_IMAGE:-u11-udvikling:local}   # sæt U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version> for at bruge det udgivne image
     build:
       context: .
       args:
@@ -22,7 +22,7 @@ services:
     volumes:
       - u11-data:/data          # database + automatiske backups (/data/backups)
     ports:
-      - "${U11_PORT:-8080}:8000"
+      - "${U11_PORT:-1020}:8000"
     read_only: true
     tmpfs:
       - /tmp

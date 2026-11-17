@@ -22,6 +22,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-019 · Serverside PDF** · M – rapport som PDF-download (fx WeasyPrint) uden browserens print-dialog.
 - **B-020 · Opbevaringspolitik (GDPR)** · M – påmindelse/automatisk anonymisering af inaktive spillere efter N måneder; skabelon til forældreinformation.
 
+- **B-010 · DBU KampKlar-integration** · M/L – Ingen officiel API. Undersøgt: uofficiel scraping af mit.dbu.dk (personligt DBU-login, kan gå i stykker, vilkår uafklarede) eller iCal-link til holdets kampe/aktiviteter. Uklart om andre spilleres tilmeldingsstatus er synlig. Claude API er ikke nødvendigt til hentning. Afventer brugerens valg – se docs/DECISIONS.md.
+
 ## Idéer (uprioriteret)
 - Import fra den gamle Excel-model (engangs-admin-værktøj; bevidst udeladt i v0.1.0, fordi første version skal starte uden spillerdata).
 - Sammenligning af en spiller mod egen tidligere runde i rapporten (tekstlig "hvad har ændret sig").

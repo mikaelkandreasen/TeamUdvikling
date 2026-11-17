@@ -5,9 +5,9 @@ import secrets
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
 from werkzeug.security import generate_password_hash
 
-from . import model
+from . import club, model
 from .auth import admin_required
-from .db import audit, backup, create_team, get_db, set_setting
+from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
 from .helpers import round_info, team_id
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -231,3 +231,41 @@ def export_xlsx():
     db.commit()
     return send_file(buf, as_attachment=True, download_name=f"u11-eksport-{g.team['name']}.xlsx".replace(" ", "_").replace("/", "-"),
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ----------------------------------------------------------------------------- klubprofil
+@bp.route("/club", methods=["GET", "POST"])
+def club_profile():
+    db = get_db()
+    if request.method == "POST":
+        action = request.form.get("action", "save")
+        if action == "remove_logo":
+            club.remove_logo(db)
+            audit(db, g.user["username"], "klublogo_fjernet")
+            db.commit()
+            flash("Logoet er fjernet.", "ok")
+            return redirect(url_for("admin.club_profile"))
+        problem = club.valid_color(request.form.get("color", "").strip())
+        if problem:
+            flash(problem, "error")
+        else:
+            limits = dict(name=80, address=160, email=120, phone=40, website=120, footer=300)
+            for k, n in limits.items():
+                club_set(db, k, (request.form.get(k) or "").strip()[:n])
+            club_set(db, "color", request.form.get("color", "").strip())
+            upload = request.files.get("logo")
+            if upload and upload.filename:
+                err = club.save_logo(db, upload.read(MAX_UPLOAD + 1))
+                if err:
+                    flash(err, "error")
+                    db.commit()
+                    return redirect(url_for("admin.club_profile"))
+                audit(db, g.user["username"], "klublogo_uploadet")
+            audit(db, g.user["username"], "klubprofil_gemt")
+            db.commit()
+            flash("Klubprofilen er gemt.", "ok")
+        return redirect(url_for("admin.club_profile"))
+    return render_template("admin_club.html", c=club_get(db))
+
+
+MAX_UPLOAD = club.MAX_LOGO_BYTES

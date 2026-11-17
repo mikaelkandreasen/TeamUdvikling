@@ -20,7 +20,7 @@ MIN_PW = 12
 IDLE_SECONDS = 45 * 60
 _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
-PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz"}
+PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo"}
 PRE_2FA = {"auth.login_2fa", "auth.twofa_setup", "auth.logout", "auth.force_password"}
 
 

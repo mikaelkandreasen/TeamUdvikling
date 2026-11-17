@@ -7,7 +7,7 @@ from pathlib import Path
 
 from flask import Flask, abort, g, jsonify, request, session
 
-from . import auth, charts, db, model, teams
+from . import auth, charts, club, db, model, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -74,7 +74,9 @@ def create_app(config=None):
         resp.headers.setdefault("Content-Security-Policy",
                                 "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
                                 "script-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'")
-        if request.endpoint != "static":
+        if request.endpoint == "main.club_logo":
+            resp.headers["Cache-Control"] = "public, max-age=3600"
+        elif request.endpoint != "static":
             resp.headers["Cache-Control"] = "no-store"
         return resp
 
@@ -84,7 +86,7 @@ def create_app(config=None):
             if "csrf" not in session:
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
-        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), version=app.config["VERSION"], model=model,
+        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS)
 
     from . import filters

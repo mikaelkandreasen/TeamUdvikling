@@ -1,0 +1,8 @@
+{# Klubhoved til udskrifter: logo + klubnavn + kontaktlinje #}
+{% if club['has_logo'] or club['name'] %}
+<div class="club-head">
+  {% if club['has_logo'] %}<img src="{{ club['logo_url'] }}" alt="" class="club-logo">{% endif %}
+  <div><b>{{ club['name'] }}</b>
+    <div class="muted small">{{ [club['address'], club['email'], club['phone'], club['website']]|select|join(' · ') }}</div></div>
+</div>
+{% endif %}

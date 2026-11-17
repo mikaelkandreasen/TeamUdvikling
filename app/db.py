@@ -143,3 +143,21 @@ def backup_if_due(db_path, backup_dir, hours=24):
         if age < hours * 3600:
             return None
     return backup(db_path, backup_dir)
+
+
+# ------------------------------------------------------------------ klubprofil (gælder alle hold)
+CLUB_FIELDS = ("name", "address", "email", "phone", "website", "footer", "color")
+
+
+def club_get(db):
+    out = {f: "" for f in CLUB_FIELDS + ("logo_mime", "logo_v")}
+    for row in db.execute("SELECT key, value FROM settings WHERE key LIKE 'club:%'"):
+        k = row["key"][5:]
+        if k in out:
+            out[k] = row["value"] or ""
+    return out
+
+
+def club_set(db, key, value):
+    db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+               (f"club:{key}", value))
