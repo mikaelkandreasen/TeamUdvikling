@@ -1,0 +1,34 @@
+# Stack til Dockhand / docker compose.
+# 1) Kopiér .env.example til .env (eller sæt variablerne i Dockhand) og ret værdierne.
+# 2) Start: docker compose up -d      (første gang bygges imaget fra Dockerfile, eller hentes fra GHCR)
+services:
+  u11:
+    image: ${U11_IMAGE:-ghcr.io/CHANGE_ME/u11-udvikling:latest}
+    build:
+      context: .
+      args:
+        VERSION: ${U11_VERSION:-dev}
+    container_name: u11-udvikling
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Copenhagen
+      # Sæt en fast, lang tilfældig nøgle (python3 -c "import secrets;print(secrets.token_hex(32))").
+      # Tom = appen genererer og gemmer en nøgle i /data/secret_key.
+      SECRET_KEY: ${SECRET_KEY:-}
+      # 1 når siden kun nås via HTTPS (reverse proxy). Skal være 0 ved ren http på LAN.
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      # Valgfri engangskode, der kræves for at oprette første administrator.
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
+    volumes:
+      - u11-data:/data          # database + automatiske backups (/data/backups)
+    ports:
+      - "${U11_PORT:-8080}:8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  u11-data:
