@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-17
+
 ### Sikkerhed
 - **Kritisk:** første opsætning kræver nu altid en engangskode (genereres automatisk, vises i log/`/data/setup_token`, slettes efter brug).
 - Login-spærre pr. IP (429), `TRUSTED_PROXIES` til korrekt klient-IP bag reverse proxy.
