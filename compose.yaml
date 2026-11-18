@@ -1,13 +1,10 @@
-# Stack til Dockhand / docker compose. Standard: bygger imaget direkte fra dette repo (Dockhand -> Git-stack).
+# Stack til Dockhand / docker compose. Henter det færdigbyggede image fra GitHub (bygges automatisk af GitHub Actions).
+# Lokal bygning (uden Dockhand): docker compose -f compose.yaml -f compose.build.yaml up --build
 # Variabler sættes i Dockhand (eller i .env ved lokal brug – se .env.example). Alle har fornuftige standardværdier.
 # Appen kører på port 1020 på serveren (U11_PORT).
 services:
   u11:
-    image: ${U11_IMAGE:-u11-udvikling:local}   # sæt U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version> for at bruge det udgivne image
-    build:
-      context: .
-      args:
-        VERSION: ${U11_VERSION:-dev}
+    image: ${U11_IMAGE:-ghcr.io/mikaelkandreasen/u11-udvikling:latest}   # fast version: U11_IMAGE=ghcr.io/mikaelkandreasen/u11-udvikling:0.2.3
     container_name: u11-udvikling
     restart: unless-stopped
     environment:

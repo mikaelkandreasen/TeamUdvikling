@@ -1,0 +1,8 @@
+# Kun til lokal bygning: docker compose -f compose.yaml -f compose.build.yaml up --build
+services:
+  u11:
+    image: u11-udvikling:local
+    build:
+      context: .
+      args:
+        VERSION: ${U11_VERSION:-dev}
