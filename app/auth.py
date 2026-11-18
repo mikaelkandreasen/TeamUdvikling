@@ -88,6 +88,15 @@ def load_user():
         if valid:
             g.user = row
             session["seen"] = int(time.time())
+            vid = session.get("view_as")
+            if vid and row["role"] == "admin":          # administrator ser siden som en træner (skrivebeskyttet)
+                t = get_db().execute("SELECT * FROM users WHERE id=? AND role='trainer'", (vid,)).fetchone()
+                if t:
+                    g.admin_user, g.user, g.viewing = row, t, True
+                else:
+                    session.pop("view_as", None)
+            else:
+                session.pop("view_as", None)
         else:
             session.clear()
 
@@ -104,7 +113,7 @@ def gate():
         if ep in PRE_2FA:
             return None
         return redirect(url_for("auth.login_2fa") if stage == "pw_ok" else url_for("auth.twofa_setup"))
-    if g.user["must_change_pw"] and ep not in PRE_2FA:
+    if g.user["must_change_pw"] and ep not in PRE_2FA and not g.get("viewing"):
         return redirect(url_for("auth.force_password"))
     if not g.get("team") and not ep.startswith(("auth.", "admin.", "main.no_team", "main.switch_team")):
         return redirect(url_for("main.no_team"))
@@ -320,6 +329,16 @@ def setup():
                 pass
             return redirect(url_for("auth.twofa_setup"))
     return render_template("setup.html", need_token=True)
+
+
+@bp.route("/view-as/stop", methods=["POST"])
+def view_as_stop():
+    """Afslut 'se som træner' og gå tilbage til administratorens egen visning."""
+    if g.get("viewing"):
+        audit(get_db(), g.admin_user["username"], "se_som_traener_slut", g.user["username"])
+        get_db().commit()
+    session.pop("view_as", None)
+    return redirect(url_for("admin.users"))
 
 
 @bp.route("/logout", methods=["POST"])

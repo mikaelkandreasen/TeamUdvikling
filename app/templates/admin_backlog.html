@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Backlog{% endblock %}
+{% block content %}
+<h1>Backlog</h1>
+<p class="muted">Opgaver til videreudvikling. Sæt prioritet og status, og flyt punkter op og ned inden for samme prioritet. Færdige punkter lægges nederst.</p>
+<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="add"><h2>Nyt punkt</h2>
+  <label for="t">Titel</label><input id="t" type="text" name="title" maxlength="140" required>
+  <label for="d">Beskrivelse (valgfri)</label><textarea id="d" name="description" maxlength="2000"></textarea>
+  <label for="p">Prioritet</label><select id="p" name="priority">{% for k, v in prios.items() %}<option value="{{ k }}" {{ 'selected' if k == 2 }}>{{ v }}</option>{% endfor %}</select>
+  <div class="actions"><button class="btn">Tilføj</button></div></form>
+{% for it in items %}
+<div class="card" id="i{{ it['id'] }}" style="{{ 'opacity:.65' if it['status'] == 'Færdig' }}">
+  <form method="post">{{ csrf() }}<input type="hidden" name="id" value="{{ it['id'] }}">
+    <input type="text" name="title" value="{{ it['title'] }}" maxlength="140" aria-label="Titel" style="font-weight:700">
+    <textarea name="description" maxlength="2000" aria-label="Beskrivelse" rows="2">{{ it['description'] or '' }}</textarea>
+    <div class="row">
+      <div><label>Prioritet</label><select name="priority">{% for k, v in prios.items() %}<option value="{{ k }}" {{ 'selected' if k == it['priority'] }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label>Status</label><select name="status">{% for s in statuses %}<option {{ 'selected' if s == it['status'] }}>{{ s }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="actions">
+      <button class="btn" name="action" value="save">Gem</button>
+      <button class="btn sec" name="action" value="up" aria-label="Flyt op" {{ 'disabled' if it['status'] == 'Færdig' }}>↑</button>
+      <button class="btn sec" name="action" value="down" aria-label="Flyt ned" {{ 'disabled' if it['status'] == 'Færdig' }}>↓</button>
+      <button class="btn danger" name="action" value="delete" formnovalidate>Slet</button>
+    </div>
+  </form></div>
+{% else %}<div class="card">Backloggen er tom.</div>{% endfor %}
+{% endblock %}

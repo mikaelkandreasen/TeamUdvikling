@@ -5,6 +5,9 @@ Alle data (spillere, evalueringer, motivation, udviklingsdata, indstillinger) h�
 """
 from flask import g, session
 
+from . import model
+from .db import get_setting
+
 
 def accessible_teams(db, user):
     if user["role"] == "admin":
@@ -13,15 +16,26 @@ def accessible_teams(db, user):
                       "ORDER BY t.name COLLATE NOCASE", (user["id"],)).fetchall()
 
 
+def team_rounds(db, team_id):
+    """Evalueringsrunder for et hold (standard 4, 2–8)."""
+    try:
+        n = int(get_setting(db, team_id, "rounds_n") or model.DEFAULT_ROUNDS)
+    except ValueError:
+        n = model.DEFAULT_ROUNDS
+    return tuple(range(1, max(2, min(model.MAX_ROUNDS, n)) + 1))
+
+
 def resolve(db, user):
     """Sætter g.teams (adgangsliste) og g.team (aktivt hold, altid valideret mod adgangslisten)."""
     g.teams = accessible_teams(db, user) if user else []
     g.team = None
+    g.rounds = tuple(range(1, model.DEFAULT_ROUNDS + 1))
     if not g.teams:
         session.pop("team_id", None)
         return
     chosen = next((t for t in g.teams if t["id"] == session.get("team_id")), None) or g.teams[0]
     g.team = chosen
+    g.rounds = team_rounds(db, chosen["id"])
     session["team_id"] = chosen["id"]
 
 

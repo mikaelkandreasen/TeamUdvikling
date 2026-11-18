@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Backlog i Administration** med prioritet (P0–Idé), status, flyt op/ned og redigering; startliste følger med.
+- **Evalueringsrunder pr. hold** (2–8, standard 4): tilføj runde, fjern sidste runde (sletter dens evalueringer) og slet scores pr. runde/træner/spiller (Administration → Evalueringer).
+- **Se siden som træner**: administrator kan se præcis, hvad en bestemt træner ser (skrivebeskyttet, kun trænerens hold). Afsluttes med knap i banneret.
+- Tydeligere valg af flere hold til en træner (funktionen fandtes allerede og er nu dækket af tests).
+
 ## [0.3.0] - 2026-11-18
 
 ### Tilføjet

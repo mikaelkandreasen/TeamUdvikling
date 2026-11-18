@@ -85,7 +85,13 @@ def create_app(config=None):
             sent = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token", "")
             if not sent or not hmac.compare_digest(sent, session.get("csrf", "")):
                 abort(400, "Ugyldig eller udløbet formular (CSRF). Gå tilbage, genindlæs siden og prøv igen.")
-        return auth.gate()
+        blocked = auth.gate()
+        if blocked is not None:
+            return blocked
+        if g.get("viewing") and request.method not in ("GET", "HEAD", "OPTIONS") and request.endpoint not in (
+                "auth.view_as_stop", "auth.logout", "main.switch_team"):
+            abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
+        return None
 
     @app.after_request
     def _headers(resp):
@@ -112,7 +118,7 @@ def create_app(config=None):
             if "csrf" not in session:
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
-        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), version=app.config["VERSION"], model=model,
+        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS)
 
     from . import filters

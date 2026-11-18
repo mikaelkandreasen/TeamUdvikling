@@ -160,7 +160,7 @@ def settings():
     db = get_db()
     tid = team_id()
     if request.method == "POST":
-        for r in model.ROUNDS:
+        for r in g.rounds:
             set_setting(db, tid, f"round_label_{r}", (request.form.get(f"label_{r}") or "").strip()[:60])
             d = (request.form.get(f"date_{r}") or "").strip()
             set_setting(db, tid, f"round_date_{r}", d if model.parse_date(d) else "")
@@ -216,7 +216,7 @@ def export_xlsx():
     _append(ws, ["Runde", "Spiller"] + model.ROLES + ["Samlet", "Enighed", "Fortolkning"])
     rounds = model.load_rounds(db, tid)
     names = {p["id"]: p["name"] for p in db.execute("SELECT id,name FROM players WHERE team_id=?", (tid,))}
-    for rnd in model.ROUNDS:
+    for rnd in g.rounds:
         for pid, res in sorted(rounds[rnd].items(), key=lambda kv: names.get(kv[0], "")):
             _append(ws, [rnd, names.get(pid)] + [None if v is None else round(v, 2) for v in res["roles"]] +
                       [None if res["samlet"] is None else round(res["samlet"], 2),
@@ -341,3 +341,131 @@ def import_template(fmt):
         return Response(importer.template_xlsx(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         headers={"Content-Disposition": "attachment; filename=spillere-skabelon.xlsx"})
     abort(404)
+
+
+# ----------------------------------------------------------------------------- se siden som træner
+@bp.route("/users/<int:uid>/view-as", methods=["POST"])
+def view_as(uid):
+    from flask import session
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE id=? AND role='trainer'", (uid,)).fetchone()
+    if not u:
+        abort(404)
+    session["view_as"] = uid
+    audit(db, g.user["username"], "se_som_traener", u["username"])
+    db.commit()
+    return redirect(url_for("main.home"))
+
+
+# ----------------------------------------------------------------------------- evalueringsrunder og -data
+@bp.route("/evaluations", methods=["GET", "POST"])
+def evaluations():
+    from .teams import team_rounds
+    db = get_db()
+    tid = team_id()
+    n = len(g.rounds)
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add_round":
+            if n >= model.MAX_ROUNDS:
+                flash(f"Der kan højst være {model.MAX_ROUNDS} runder.", "error")
+            else:
+                set_setting(db, tid, "rounds_n", str(n + 1))
+                audit(db, g.user["username"], "runde_tilfoejet", f"{g.team['name']}: {n + 1}")
+                flash(f"Runde {n + 1} er tilføjet.", "ok")
+        elif action == "remove_round":
+            if n <= 2:
+                flash("Der skal mindst være 2 runder.", "error")
+            elif request.form.get("confirm") != "ja":
+                flash("Bekræft, at runden og dens evalueringer skal slettes.", "error")
+            else:
+                db.execute("DELETE FROM evaluations WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
+                db.execute("DELETE FROM settings WHERE key IN (?,?)", (f"t{tid}:round_label_{n}", f"t{tid}:round_date_{n}"))
+                set_setting(db, tid, "rounds_n", str(n - 1))
+                audit(db, g.user["username"], "runde_fjernet", f"{g.team['name']}: runde {n}")
+                flash(f"Runde {n} og dens evalueringer er slettet.", "ok")
+        elif action == "delete_evals":
+            rnd = request.form.get("round", type=int)
+            trainer = request.form.get("trainer", type=int)
+            pid = request.form.get("player", type=int)
+            if rnd not in g.rounds or not trainer:
+                flash("Vælg runde og træner.", "error")
+            elif request.form.get("confirm") != "ja":
+                flash("Bekræft sletningen.", "error")
+            else:
+                sql = "DELETE FROM evaluations WHERE round=? AND trainer_id=? AND player_id IN (SELECT id FROM players WHERE team_id=?"
+                args = [rnd, trainer, tid]
+                if pid:
+                    sql += " AND id=?"
+                    args.append(pid)
+                cur = db.execute(sql + ")", args)
+                audit(db, g.user["username"], "evalueringer_slettet", f"{g.team['name']}: runde {rnd}, rækker={cur.rowcount}")
+                flash(f"{cur.rowcount} scores slettet.", "ok")
+        db.commit()
+        return redirect(url_for("admin.evaluations"))
+    counts = db.execute("SELECT e.round, e.trainer_id, u.display_name, COUNT(DISTINCT e.player_id) players, COUNT(*) n FROM evaluations e "
+                        "JOIN players p ON p.id=e.player_id JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? "
+                        "GROUP BY e.round, e.trainer_id ORDER BY e.round, u.display_name", (tid,)).fetchall()
+    trainers = db.execute("SELECT DISTINCT u.id, u.display_name FROM evaluations e JOIN players p ON p.id=e.player_id "
+                          "JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? ORDER BY u.display_name", (tid,)).fetchall()
+    players = db.execute("SELECT id, name FROM players WHERE team_id=? ORDER BY name COLLATE NOCASE", (tid,)).fetchall()
+    return render_template("admin_evaluations.html", counts=counts, trainers=trainers, players=players, infos=round_info(db),
+                           can_add=n < model.MAX_ROUNDS, can_remove=n > 2)
+
+
+# ----------------------------------------------------------------------------- backlog (prioriterbar)
+BACKLOG_STATUS = ["Ny", "I gang", "Færdig"]
+BACKLOG_PRIO = {0: "P0 – kritisk", 1: "P1 – vigtig", 2: "P2 – senere", 3: "Idé"}
+
+
+def _seed_backlog(db):
+    from .db import get_setting
+    if get_setting(db, 0, "backlog_seeded"):
+        return
+    from .backlog_seed import SEED
+    for i, (prio, title, desc) in enumerate(SEED):
+        db.execute("INSERT INTO backlog_items(title,description,priority,status,position,created_at) VALUES(?,?,?,?,?,datetime('now'))",
+                   (title, desc, prio, "Ny", i))
+    set_setting(db, 0, "backlog_seeded", "1")
+    db.commit()
+
+
+@bp.route("/backlog", methods=["GET", "POST"])
+def backlog():
+    db = get_db()
+    _seed_backlog(db)
+    if request.method == "POST":
+        action = request.form.get("action")
+        iid = request.form.get("id", type=int)
+        if action == "add":
+            title = (request.form.get("title") or "").strip()[:140]
+            if title:
+                prio = request.form.get("priority", type=int)
+                pos = db.execute("SELECT COALESCE(MAX(position),0)+1 FROM backlog_items").fetchone()[0]
+                db.execute("INSERT INTO backlog_items(title,description,priority,status,position,created_at) VALUES(?,?,?,?,?,datetime('now'))",
+                           (title, (request.form.get("description") or "").strip()[:2000], prio if prio in BACKLOG_PRIO else 2, "Ny", pos))
+            else:
+                flash("Titel mangler.", "error")
+        elif iid and db.execute("SELECT 1 FROM backlog_items WHERE id=?", (iid,)).fetchone():
+            if action == "save":
+                prio = request.form.get("priority", type=int)
+                status = request.form.get("status")
+                db.execute("UPDATE backlog_items SET title=?, description=?, priority=?, status=? WHERE id=?",
+                           ((request.form.get("title") or "").strip()[:140] or "(uden titel)", (request.form.get("description") or "").strip()[:2000],
+                            prio if prio in BACKLOG_PRIO else 2, status if status in BACKLOG_STATUS else "Ny", iid))
+            elif action in ("up", "down"):
+                me = db.execute("SELECT * FROM backlog_items WHERE id=?", (iid,)).fetchone()
+                rows = db.execute("SELECT id FROM backlog_items WHERE priority=? ORDER BY position, id", (me["priority"],)).fetchall()
+                ids = [r["id"] for r in rows]
+                i = ids.index(iid)
+                j = i - 1 if action == "up" else i + 1
+                if 0 <= j < len(ids):
+                    ids[i], ids[j] = ids[j], ids[i]
+                    for pos, x in enumerate(ids):
+                        db.execute("UPDATE backlog_items SET position=? WHERE id=?", (pos, x))
+            elif action == "delete":
+                db.execute("DELETE FROM backlog_items WHERE id=?", (iid,))
+        db.commit()
+        return redirect(url_for("admin.backlog") + (f"#i{iid}" if iid and action != "delete" else ""))
+    items = db.execute("SELECT * FROM backlog_items ORDER BY (status='Færdig'), priority, position, id").fetchall()
+    return render_template("admin_backlog.html", items=items, prios=BACKLOG_PRIO, statuses=BACKLOG_STATUS)

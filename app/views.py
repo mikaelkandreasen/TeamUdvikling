@@ -12,7 +12,7 @@ def _dashboard_data(db):
     uid = g.user["id"]
     players = active_players(db)
     rounds = model.load_rounds(db, team_id())
-    mine = {r: {} for r in model.ROUNDS}
+    mine = {r: {} for r in g.rounds}
     for row in db.execute("SELECT round, player_id, COUNT(*) n FROM evaluations WHERE trainer_id=? GROUP BY round, player_id", (uid,)):
         mine[row["round"]][row["player_id"]] = row["n"]
     prog = []

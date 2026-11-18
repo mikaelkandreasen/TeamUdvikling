@@ -28,6 +28,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-012 · Kryptering af TOTP-hemmeligheder i hvile** · M – fx envelope med nøgle uden for databasen.
 - **B-013 · Opbevaringstid pr. spiller** · M – `deactivated_at` og automatisk sletning efter aftalt frist.
 
+> Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
+
 ## Idéer (uprioriteret)
 - Import fra den gamle Excel-model (engangs-admin-værktøj; bevidst udeladt i v0.1.0, fordi første version skal starte uden spillerdata).
 - Sammenligning af en spiller mod egen tidligere runde i rapporten (tekstlig "hvad har ændret sig").

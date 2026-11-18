@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Evalueringer{% endblock %}
+{% block content %}
+<h1>Evalueringer – {{ team['name'] }}</h1>
+<div class="card"><h2>Runder</h2>
+  <p>Holdet har <b>{{ infos|length }}</b> evalueringsrunder: {% for i in infos %}{{ i['label'] }}{{ ', ' if not loop.last }}{% endfor %}.</p>
+  <div class="actions">
+    <form method="post">{{ csrf() }}<input type="hidden" name="action" value="add_round"><button class="btn" {{ 'disabled' if not can_add }}>Tilføj runde</button></form>
+  </div>
+  {% if can_remove %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="remove_round">
+    <p class="muted small">Fjerner den sidste runde ({{ infos[-1]['label'] }}) og sletter alle dens evalueringer for dette hold.</p>
+    <label><input type="checkbox" name="confirm" value="ja"> Ja, fjern sidste runde og slet dens evalueringer</label>
+    <div class="actions"><button class="btn danger">Fjern sidste runde</button></div></form>{% endif %}
+  <p class="muted small">Navn og dato på runderne ændres under Runder.</p>
+</div>
+<div class="card"><h2>Registrerede evalueringer</h2>
+  {% if counts %}<div class="scroll"><table class="responsive"><thead><tr><th>Runde</th><th>Træner</th><th class="num">Spillere</th><th class="num">Scores</th></tr></thead><tbody>
+  {% for c in counts %}<tr><td data-label="Runde">{{ infos[c['round'] - 1]['label'] }}</td><td data-label="Træner">{{ c['display_name'] }}</td><td class="num" data-label="Spillere">{{ c['players'] }}</td><td class="num" data-label="Scores">{{ c['n'] }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p>Ingen evalueringer endnu.</p>{% endif %}
+</div>
+{% if counts %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="delete_evals"><h2>Slet evaluering</h2>
+  <div class="row"><div><label for="r">Runde</label><select id="r" name="round">{% for i in infos %}<option value="{{ i['no'] }}">{{ i['label'] }}</option>{% endfor %}</select></div>
+  <div><label for="t">Træner</label><select id="t" name="trainer">{% for t in trainers %}<option value="{{ t['id'] }}">{{ t['display_name'] }}</option>{% endfor %}</select></div></div>
+  <label for="p">Spiller</label><select id="p" name="player"><option value="">Alle spillere</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
+  <label><input type="checkbox" name="confirm" value="ja"> Ja, slet de valgte scores permanent</label>
+  <div class="actions"><button class="btn danger">Slet</button></div></form>{% endif %}
+{% endblock %}

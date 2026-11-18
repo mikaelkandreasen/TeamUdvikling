@@ -7,7 +7,7 @@
   <div class="row"><div><label for="u">Brugernavn</label><input id="u" type="text" name="username" autocapitalize="none" required></div>
   <div><label for="n">Navn</label><input id="n" type="text" name="display_name"></div></div>
   <label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner (kun tildelte hold)</option><option value="admin">Administrator (alle hold)</option></select>
-  <label>Hold</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
+  <label>Hold (vælg ét eller flere – en træner kan høre til flere hold)</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
   <div class="actions"><button class="btn">Opret bruger</button></div></form>
 {% for u in users %}
 <div class="card"><h2>{{ u['display_name'] }} <span class="muted">({{ u['username'] }})</span></h2>
@@ -17,6 +17,7 @@
     {% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem.get(u['id'], []) }}> {{ t['name'] }}</label>{% endfor %}
     <div class="actions"><button class="btn sec">Gem hold</button></div></form>{% endif %}
   <div class="actions">
+    {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.view_as', uid=u['id']) }}">{{ csrf() }}<button class="btn">Se som træner</button></form>{% endif %}
     {% for act, label in [('reset-2fa','Nulstil 2FA'),('reset-password','Nulstil adgangskode'),('unlock','Lås op')] %}
     <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action=act) }}">{{ csrf() }}<button class="btn sec">{{ label }}</button></form>{% endfor %}
     {% if u['id'] != user['id'] %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='delete') }}">{{ csrf() }}<button class="btn danger">Slet</button></form>{% endif %}

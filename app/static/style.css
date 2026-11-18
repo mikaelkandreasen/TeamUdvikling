@@ -12,6 +12,8 @@ h1{font-size:1.35rem;margin:.2rem 0 .8rem}h2{font-size:1.1rem;margin:1.2rem 0 .5
 .top .who{font-size:.8rem;opacity:.85}
 .top form{margin:0}.top button{background:transparent;border:1px solid #ffffff66;color:#fff;border-radius:6px;padding:.3rem .6rem;min-height:36px}
 .top .logo{height:32px;width:auto;max-width:90px;object-fit:contain;vertical-align:middle;background:#fff;border-radius:6px;padding:2px}
+.viewas{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:#fff3cd;color:#5c4400;border-bottom:2px solid #e0a800;padding:.5rem 1rem;font-size:.9rem;position:sticky;top:0;z-index:20}
+.viewas form{margin:0}
 .club-head{display:flex;align-items:center;gap:.8rem;border-bottom:2px solid var(--navy2);padding-bottom:.5rem;margin-bottom:.6rem}
 .club-logo{max-height:64px;max-width:120px;object-fit:contain}
 .side{display:none}

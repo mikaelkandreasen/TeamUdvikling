@@ -43,7 +43,7 @@ def int_in(value, lo, hi):
 
 def round_info(db):
     out = []
-    for r in model.ROUNDS:
+    for r in g.rounds:
         label = get_setting(db, team_id(), f"round_label_{r}") or f"Evaluering {r}"
         out.append(dict(no=r, label=label, date=get_setting(db, team_id(), f"round_date_{r}")))
     return out
@@ -51,9 +51,9 @@ def round_info(db):
 
 def default_round(rounds, preferred=None):
     """Den nyeste runde med data – ellers 1."""
-    if preferred in model.ROUNDS:
+    if preferred in g.rounds:
         return preferred
-    for r in reversed(model.ROUNDS):
+    for r in reversed(g.rounds):
         if rounds.get(r):
             return r
     return 1

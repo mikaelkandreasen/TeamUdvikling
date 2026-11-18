@@ -9,7 +9,7 @@ bp = Blueprint("evaluation", __name__)
 
 
 def _rnd(rnd):
-    if rnd not in model.ROUNDS:
+    if rnd not in g.rounds:
         abort(404)
     return rnd
 
@@ -18,7 +18,7 @@ def _rnd(rnd):
 def eval_home():
     db = get_db()
     players = active_players(db)
-    mine = {r: {} for r in model.ROUNDS}
+    mine = {r: {} for r in g.rounds}
     for row in db.execute("SELECT round, player_id, COUNT(*) n FROM evaluations WHERE trainer_id=? GROUP BY round, player_id", (g.user["id"],)):
         mine[row["round"]][row["player_id"]] = row["n"]
     prog = []
@@ -93,13 +93,13 @@ def development():
     players = active_players(db)
     rows = []
     for p in players:
-        vals = [rounds[r].get(p["id"], {}).get("samlet") for r in model.ROUNDS]
+        vals = [rounds[r].get(p["id"], {}).get("samlet") for r in g.rounds]
         present = [v for v in vals if v is not None]
         d_last = present[-1] - present[-2] if len(present) >= 2 else None
         d_total = present[-1] - present[0] if len(present) >= 2 else None
         rows.append(dict(p=p, vals=vals, d_last=d_last, d_total=d_total))
     _roles, _skills, samlet = model.area_development(rounds, [p["id"] for p in players])
-    chart = charts.line_chart([i["label"] for i in round_info(db)], [("Holdets samlede gennemsnit", [samlet[r] for r in model.ROUNDS], charts.COLORS[0])],
+    chart = charts.line_chart([i["label"] for i in round_info(db)], [("Holdets samlede gennemsnit", [samlet[r] for r in g.rounds], charts.COLORS[0])],
                               label="Holdets samlede udvikling")
     return render_template("development.html", rows=rows, chart=chart, rounds_info=round_info(db))
 
@@ -127,9 +127,9 @@ def areas():
     players = active_players(db)
     roles, skills, samlet = model.area_development(rounds, [p["id"] for p in players])
     labels = [i["label"] for i in round_info(db)]
-    role_chart = charts.line_chart(labels, [(model.ROLES[i], [roles[r][i] for r in model.ROUNDS], charts.COLORS[i]) for i in range(4)],
+    role_chart = charts.line_chart(labels, [(model.ROLES[i], [roles[r][i] for r in g.rounds], charts.COLORS[i]) for i in range(4)],
                                    label="Udvikling pr. rolle")
-    skill_chart = charts.line_chart(labels, [(model.SKILLS[i], [skills[r][i] for r in model.ROUNDS],
+    skill_chart = charts.line_chart(labels, [(model.SKILLS[i], [skills[r][i] for r in g.rounds],
                                               (charts.COLORS + ["#c0392b", "#16a085"])[i]) for i in range(6)], label="Udvikling pr. nøglefærdighed")
     latest_r = default_round(rounds)
     grid = [[model.mean([rounds[latest_r][p["id"]]["crit"][r * 6 + s] for p in players if p["id"] in rounds[latest_r]])
@@ -142,7 +142,7 @@ def profile_data(db, p, rounds, rnd=None):
     """Samler alt til spillerprofil/rapport. Returnerer dict (også brugt af reports)."""
     pid = p["id"]
     lr, _ = model.latest(rounds, pid)
-    rnd = rnd if rnd in model.ROUNDS else (lr or 1)
+    rnd = rnd if rnd in g.rounds else (lr or 1)
     res = rounds[rnd].get(pid)
     prev = next((rounds[r].get(pid) for r in range(rnd - 1, 0, -1) if rounds[r].get(pid)), None)
     prev_r = next((r for r in range(rnd - 1, 0, -1) if rounds[r].get(pid)), None)
@@ -153,12 +153,12 @@ def profile_data(db, p, rounds, rnd=None):
     if res:
         series.append((infos[rnd - 1]["label"], res["roles"], charts.COLORS[0]))
     radar = charts.radar(model.ROLES, series, label=f"Roller – {p['name']}") if series else None
-    crit_rows = [dict(c=c, vals=[rounds[r].get(pid, {}).get("crit", [None] * 24)[c["idx"]] for r in model.ROUNDS]) for c in model.CRITERIA]
+    crit_rows = [dict(c=c, vals=[rounds[r].get(pid, {}).get("crit", [None] * 24)[c["idx"]] for r in g.rounds]) for c in model.CRITERIA]
     ranked = sorted([(c, res["crit"][c["idx"]]) for c in model.CRITERIA if res and res["crit"][c["idx"]] is not None], key=lambda x: x[1])
     return dict(rnd=rnd, res=res, prev=prev, radar=radar, crit_rows=crit_rows, infos=infos,
                 weakest=ranked[:3], strongest=list(reversed(ranked[-3:])),
-                role_rows=[dict(role=model.ROLES[i], vals=[rounds[r].get(pid, {}).get("roles", [None] * 4)[i] for r in model.ROUNDS]) for i in range(4)],
-                samlet=[rounds[r].get(pid, {}).get("samlet") for r in model.ROUNDS])
+                role_rows=[dict(role=model.ROLES[i], vals=[rounds[r].get(pid, {}).get("roles", [None] * 4)[i] for r in g.rounds]) for i in range(4)],
+                samlet=[rounds[r].get(pid, {}).get("samlet") for r in g.rounds])
 
 
 @bp.route("/profile/<int:pid>")

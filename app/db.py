@@ -46,6 +46,9 @@ CREATE TABLE IF NOT EXISTS devdata(
   m1 INTEGER, m2 INTEGER, m3 INTEGER, m4 INTEGER,
   tiltag TEXT, eget_maal TEXT, followup TEXT, status TEXT);
 CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY, ts TEXT NOT NULL, user TEXT, action TEXT NOT NULL, detail TEXT);
+CREATE TABLE IF NOT EXISTS backlog_items(
+  id INTEGER PRIMARY KEY, title TEXT NOT NULL, description TEXT, priority INTEGER NOT NULL DEFAULT 2,
+  status TEXT NOT NULL DEFAULT 'Ny', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -58,7 +61,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 1  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 2   # v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def init_db(path):
