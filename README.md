@@ -14,15 +14,14 @@ docker compose up -d --build
 Åbn `http://<server>:1020` → **Første opsætning** (opretter administrator) → scan QR-kode med en autentificeringsapp → gem gendannelseskoderne.
 Derefter: **Administration → Hold** (opret hold) → **Brugere** (opret trænere og tilknyt dem til hold) → **Spillere** (opret spillere).
 
-## Deploy med Dockhand (direkte fra GitHub)
-Appen kører på **port 1020** (`U11_PORT`).
-1. Push repoet til GitHub (privat anbefales; giv Dockhand adgang med en deploy key eller et token).
-2. Dockhand → **Stacks → Ny stack → fra Git repository**: peg på repoet, branch `main`, compose-sti `docker-compose.yml`.
-   Dockhand bygger imaget lokalt fra `Dockerfile` – ingen registry nødvendig.
-3. Miljøvariabler i stacken: `SECRET_KEY` (valgfri, ellers genereres og gemmes i volumen), `COOKIE_SECURE=1` hvis du bruger HTTPS, evt. `SETUP_TOKEN`. `U11_PORT` er 1020 som standard.
-4. Deploy → åbn `http://<server>:1020`.
-5. Opdatering: `scripts/release.sh X.Y.Z` → `git push && git push --tags` → **Redeploy / pull** i Dockhand.
-Alternativ: sæt `U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version>` for at bruge det image, som GitHub Actions udgiver.
+## Deploy med Dockhand (tilføj stack og kør)
+1. Dockhand → **Stacks → Ny stack → Git repository**.
+2. Repository: `https://github.com/mikaelkandreasen/TeamUdvikling`, branch `main`. Compose-filen hedder `compose.yaml` (Dockhands standardsti), så den behøver ikke angives.
+3. Tryk **Deploy**. Der skal ikke sættes nogen miljøvariabler: port **1020**, database og hemmelig nøgle oprettes automatisk i volumen `u11-data`.
+4. Åbn `http://<server>:1020`. Første opsætning kræver en engangskode, som står i containerens log (Dockhand → containeren `u11-udvikling` → Logs) og i filen `/data/setup_token`. Opret administrator og scan 2FA-koden.
+Opdatering: tryk **Redeploy** (eller slå auto-sync til), når der er nyt på `main`.
+Alternativt kan du sætte `U11_IMAGE=ghcr.io/<bruger>/u11-udvikling:<version>` for at bruge det image, GitHub Actions udgiver.
+Persistente data ligger i volumen `u11-data`: `u11.db`, `backups/` (maks. én pr. døgn, 14 gemmes), `secret_key` og `branding/`.
 
 ## Internet og sikkerhed
 Kør kun bag HTTPS-reverse proxy med `COOKIE_SECURE=1` og `TRUSTED_PROXIES=1`; helst bag VPN/Cloudflare Access, da der er børnedata. Se **docs/SECURITY.md** (checkliste) og **docs/GDPR.md**. Første opsætning kræver en engangskode, som står i container-loggen (`docker logs u11-udvikling`) og i `/data/setup_token`.

@@ -82,5 +82,5 @@ def test_trainer_cannot_edit_club(app, team):
 def test_compose_uses_port_1020():
     import pathlib
     root = pathlib.Path(__file__).resolve().parent.parent
-    assert "${U11_PORT:-1020}:8000" in (root / "docker-compose.yml").read_text()
+    assert "${U11_PORT:-1020}:8000" in (root / "compose.yaml").read_text()
     assert "U11_PORT=1020" in (root / ".env.example").read_text()
