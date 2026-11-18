@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-18
+
 ### Ændret
 - `docker-compose.yml` hedder nu `compose.yaml` (Dockhands standardsti): en Git-stack kan oprettes uden yderligere indstillinger.
 
