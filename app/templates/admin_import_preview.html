@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Forhåndsvisning{% endblock %}
+{% block content %}
+<h1>Forhåndsvisning</h1>
+<div class="card">
+  <p><b>{{ p.counts.ny }}</b> nye spillere · <b>{{ p.counts.opdater }}</b> opdateres · <b>{{ p.counts.fejl }}</b> rækker med fejl (springes over)</p>
+  {% if p.new_teams %}<p>Nye hold oprettes: <b>{{ p.new_teams|join(', ') }}</b></p>{% endif %}
+  {% if p.counts.ny + p.counts.opdater %}
+  <form method="post" action="{{ url_for('admin.import_commit') }}">{{ csrf() }}<input type="hidden" name="token" value="{{ token }}">
+    <label><input type="checkbox" name="confirm" value="ja" required> Ja, importér de gyldige rækker</label>
+    <div class="actions"><button class="btn">Importér</button> <a class="btn sec" href="{{ url_for('admin.import_data') }}">Annullér</a></div></form>
+  {% else %}<p>Ingen gyldige rækker. <a href="{{ url_for('admin.import_data') }}">Prøv igen</a></p>{% endif %}
+</div>
+<div class="scroll"><table class="responsive">
+  <thead><tr><th>Linje</th><th>Status</th><th>Hold</th><th>Navn</th><th>Født</th><th>Bemærkning</th></tr></thead>
+  <tbody>{% for r in shown %}<tr>
+    <td data-label="Linje">{{ r.line }}</td>
+    <td data-label="Status">{{ {'ny':'Ny','opdater':'Opdateres','fejl':'Fejl'}[r.status] }}</td>
+    <td data-label="Hold">{{ r.team }}{% if r.new_team %} (nyt){% endif %}</td>
+    <td class="name">{{ r.name }}</td>
+    <td data-label="Født">{{ r.birth_date or '–' }}</td>
+    <td data-label="Bemærkning">{{ r.error or (r.warnings|join('; ')) or '–' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if p.rows|length > shown|length %}<p class="muted">Viser de første {{ shown|length }} af {{ p.rows|length }} rækker.</p>{% endif %}
+{% endblock %}

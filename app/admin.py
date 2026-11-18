@@ -2,10 +2,10 @@
 import io
 import secrets
 
-from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
 from werkzeug.security import generate_password_hash
 
-from . import club, model
+from . import club, importer, model
 from .auth import admin_required
 from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
 from .helpers import round_info, team_id
@@ -295,3 +295,49 @@ def retention():
         return redirect(url_for("admin.retention"))
     rows = db.execute("SELECT t.name tn, COUNT(*) n FROM players p JOIN teams t ON t.id=p.team_id WHERE p.active=0 GROUP BY t.id ORDER BY t.name").fetchall()
     return render_template("admin_retention.html", rows=rows)
+
+
+# ----------------------------------------------------------------------------- import af spillere/hold
+@bp.route("/import", methods=["GET", "POST"])
+def import_data():
+    db = get_db()
+    if request.method == "POST":
+        up = request.files.get("file")
+        if not up or not up.filename:
+            flash("Vælg en fil.", "error")
+            return redirect(url_for("admin.import_data"))
+        try:
+            parsed = importer.classify(db, importer.parse(up.read(MAX_IMPORT + 1), up.filename, g.team["name"] if g.get("team") else ""))
+        except importer.ImportError_ as e:
+            flash(str(e), "error")
+            return redirect(url_for("admin.import_data"))
+        token = importer.stash(current_app.config["U11_DATA_DIR"], g.user["id"], parsed)
+        return render_template("admin_import_preview.html", p=parsed, token=token, shown=parsed["rows"][:100])
+    return render_template("admin_import.html")
+
+
+MAX_IMPORT = 1024 * 1024
+
+
+@bp.route("/import/commit", methods=["POST"])
+def import_commit():
+    db = get_db()
+    parsed = importer.unstash(current_app.config["U11_DATA_DIR"], g.user["id"], request.form.get("token", ""))
+    if not parsed or request.form.get("confirm") != "ja":
+        flash("Importen er udløbet eller ikke bekræftet. Upload filen igen.", "error")
+        return redirect(url_for("admin.import_data"))
+    new_n, upd_n, team_n = importer.apply(db, parsed)
+    audit(db, g.user["username"], "import", f"nye={new_n} opdateret={upd_n} nye_hold={team_n}")
+    db.commit()
+    flash(f"Import gennemført: {new_n} nye spillere, {upd_n} opdateret, {team_n} nye hold.", "ok")
+    return redirect(url_for("admin.teams"))
+
+
+@bp.route("/import/template.<fmt>")
+def import_template(fmt):
+    if fmt == "csv":
+        return Response(importer.template_csv(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=spillere-skabelon.csv"})
+    if fmt == "xlsx":
+        return Response(importer.template_xlsx(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": "attachment; filename=spillere-skabelon.xlsx"})
+    abort(404)
