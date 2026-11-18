@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
 ### Tilføjet
 - **Backlog i Administration** med prioritet (P0–Idé), status, flyt op/ned og redigering; startliste følger med.
 - **Evalueringsrunder pr. hold** (2–8, standard 4): tilføj runde, fjern sidste runde (sletter dens evalueringer) og slet scores pr. runde/træner/spiller (Administration → Evalueringer).
