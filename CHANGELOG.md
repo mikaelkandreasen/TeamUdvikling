@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Import af spillere og hold** (Administration → Import) fra Excel (.xlsx) eller CSV: skabelon, validering, forhåndsvisning før noget gemmes, nye hold oprettes, eksisterende spillere (hold + navn + fødselsdato) opdateres. Formler køres aldrig, filer gemmes ikke, revisionsloggen får kun antal.
+
 ## [0.2.3] - 2026-11-18
 
 ### Rettet

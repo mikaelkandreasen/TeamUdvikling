@@ -20,6 +20,9 @@
 ## 3. Retsgrundlag
 Anbefalet: **samtykke fra forældremyndighedsindehaver** (art. 6(1)(a), art. 8) indhentet pr. barn, særskilt og kunne trækkes tilbage. Alternativ (legitim interesse, art. 6(1)(f)) er mere skrøbeligt, fordi det drejer sig om børns oplysninger, trivsel og vurderinger. Klubben skal vælge og dokumentere. Trivsel/motorik kan i visse tilfælde nærme sig helbredsoplysninger (art. 9) – hold dem **faktuelle og neutrale**, undgå diagnoser og følsomme beskrivelser i fritekstfelter.
 
+### Import
+Admin kan importere spillere fra Excel/CSV. Uploadede filer gemmes ikke; kun et midlertidigt, rensat resultat (maks. 30 min, slettes ved bekræftelse) ligger i `/data/import`. Brugeren skal selv slette kildefilen lokalt. Revisionsloggen indeholder kun antal.
+
 ## 4. Principper
 - **Dataminimering:** ingen CPR-nr., ingen adresser, ingen billeder af børn, ingen forældredata. Fritekstfelter (noter, tiltag) må ikke bruges til følsomme oplysninger.
 - **Formålsbegrænsning:** ikke til udtagelse alene og ikke til videregivelse.
