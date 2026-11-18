@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-18
+
 ### Rettet
 - Dockhand kan ikke bygge fra Git (skrivebeskyttet filsystem). `compose.yaml` henter nu det færdige image fra GHCR; `compose.build.yaml` bruges til lokal bygning. CI udgiver `latest` ved push til `main`, og sikkerhedsjobbet blokerer ikke længere udgivelsen.
 
