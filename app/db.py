@@ -49,6 +49,11 @@ CREATE TABLE IF NOT EXISTS audit_log(id INTEGER PRIMARY KEY, ts TEXT NOT NULL, u
 CREATE TABLE IF NOT EXISTS backlog_items(
   id INTEGER PRIMARY KEY, title TEXT NOT NULL, description TEXT, priority INTEGER NOT NULL DEFAULT 2,
   status TEXT NOT NULL DEFAULT 'Ny', position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS remember_tokens(
+  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE, prev_hash TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+  last_used INTEGER NOT NULL, rotated_at INTEGER NOT NULL, ua TEXT);
+CREATE INDEX IF NOT EXISTS ix_remember_prev ON remember_tokens(prev_hash);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -61,7 +66,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 2   # v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 3   # v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def init_db(path):

@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Husk denne enhed i 30 dage** (flueben ved 2FA-login): logger ind uden adgangskode/2FA på den enhed. Fast udløb, roterende token med tyveridetektion, tilbagekaldes ved log ud/adgangskodeskift/2FA-nulstilling/«Glem alle enheder» (Min konto). Administration kræver stadig frisk login med kode. `REMEMBER_DAYS` (0 = fra).
+
 ## [0.4.0] - 2026-11-18
 
 ### Tilføjet

@@ -11,7 +11,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import totp
+from . import remember, totp
 from .db import audit, backup_if_due, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
@@ -31,11 +31,20 @@ def current_user():
     return g.get("user")
 
 
+ADMIN_FRESH = 8 * 3600     # administration kræver fuldt login (kode/2FA) inden for de seneste 8 timer
+
+
 def admin_required(view):
     @wraps(view)
     def wrapped(*a, **kw):
         if not g.user or g.user["role"] != "admin":
             abort(403)
+        if time.time() - session.get("auth_at", 0) > ADMIN_FRESH:       # husket enhed: trin-op
+            remember.revoke_current(get_db())
+            get_db().commit()
+            session.clear()
+            flash("Administration kræver, at du logger ind igen med adgangskode og kode.", "info")
+            return redirect(url_for("auth.login", next=request.path if request.method == "GET" else None))
         return view(*a, **kw)
     return wrapped
 
@@ -77,28 +86,36 @@ def _too_many():
     return ("For mange mislykkede forsøg fra din forbindelse. Vent et par minutter og prøv igen.", 429, {"Retry-After": str(IP_WINDOW)})
 
 
+def _valid_session_user(db):
+    row = db.execute("SELECT * FROM users WHERE id=?", (session["uid"],)).fetchone() if session.get("uid") else None
+    ok = (row and time.time() - session.get("seen", 0) < IDLE_SECONDS
+          and hmac.compare_digest(session.get("pwv", ""), _pwv(row["pw_hash"]))
+          and not (session.get("stage") == "ok" and not row["totp_enabled"]))   # 2FA nulstillet → ud
+    return row if ok else None
+
+
 def load_user():
     g.user = None
-    uid = session.get("uid")
-    if uid:
-        row = get_db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-        valid = (row and time.time() - session.get("seen", 0) < IDLE_SECONDS
-                 and hmac.compare_digest(session.get("pwv", ""), _pwv(row["pw_hash"]))
-                 and not (session.get("stage") == "ok" and not row["totp_enabled"]))   # 2FA nulstillet → ud
-        if valid:
-            g.user = row
-            session["seen"] = int(time.time())
-            vid = session.get("view_as")
-            if vid and row["role"] == "admin":          # administrator ser siden som en træner (skrivebeskyttet)
-                t = get_db().execute("SELECT * FROM users WHERE id=? AND role='trainer'", (vid,)).fetchone()
-                if t:
-                    g.admin_user, g.user, g.viewing = row, t, True
-                else:
-                    session.pop("view_as", None)
-            else:
-                session.pop("view_as", None)
-        else:
+    db = get_db()
+    row = _valid_session_user(db)
+    if row is None:
+        if session.get("uid"):
             session.clear()
+        if remember.try_restore(db):                      # husket enhed → ny fuld session uden kode
+            row = _valid_session_user(db)
+    if row is None:
+        return
+    g.user = row
+    session["seen"] = int(time.time())
+    vid = session.get("view_as")
+    if vid and row["role"] == "admin":                    # administrator ser siden som en træner (skrivebeskyttet)
+        t = db.execute("SELECT * FROM users WHERE id=? AND role='trainer'", (vid,)).fetchone()
+        if t:
+            g.admin_user, g.user, g.viewing = row, t, True
+        else:
+            session.pop("view_as", None)
+    else:
+        session.pop("view_as", None)
 
 
 def gate():
@@ -162,9 +179,12 @@ def _ok(db, user):
     db.commit()
 
 
-def _finish_login(db, user):
+def _finish_login(db, user, remember_device=False):
     session["stage"] = "ok"
     session["seen"] = int(time.time())
+    session["auth_at"] = int(time.time())
+    if remember_device:
+        remember.issue(db, user)
     audit(db, user["username"], "login")
     db.commit()
     try:
@@ -225,7 +245,7 @@ def login_2fa():
             if step:
                 db.execute("UPDATE users SET last_totp_step=? WHERE id=?", (step, user["id"]))
                 _ok(db, user)
-                _finish_login(db, user)
+                _finish_login(db, user, request.form.get("remember") == "1")
                 nxt = session.pop("next", "")
                 return redirect(nxt or url_for("main.home"))
             rc = db.execute("SELECT id FROM recovery_codes WHERE user_id=? AND used=0 AND code_hash=?",
@@ -234,7 +254,7 @@ def login_2fa():
                 db.execute("UPDATE recovery_codes SET used=1 WHERE id=?", (rc["id"],))
                 audit(db, user["username"], "gendannelseskode_brugt")
                 _ok(db, user)
-                _finish_login(db, user)
+                _finish_login(db, user, request.form.get("remember") == "1")
                 flash("Gendannelseskode brugt. Overvej at oprette nye koder under Min konto.", "info")
                 return redirect(url_for("main.home"))
             _fail(db, user)
@@ -243,7 +263,7 @@ def login_2fa():
             if db.execute("SELECT locked_until FROM users WHERE id=?", (user["id"],)).fetchone()[0] > time.time():
                 session.clear()
                 return redirect(url_for("auth.login"))
-    return render_template("login_2fa.html")
+    return render_template("login_2fa.html", remember_days=remember.days(), is_admin=user["role"] == "admin")
 
 
 def _qr_svg(uri):
@@ -346,6 +366,8 @@ def logout():
     if g.user:
         audit(get_db(), g.user["username"], "logout")
         get_db().commit()
+    remember.revoke_current(get_db())
+    get_db().commit()
     session.clear()
     return redirect(url_for("auth.login"))
 
@@ -369,9 +391,15 @@ def account():
                     newhash = generate_password_hash(request.form["new"])
                     db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                     audit(db, user["username"], "adgangskode_skiftet")
+                    remember.revoke_user(db, user["id"])        # alle husk-enheder skal logge ind igen
                     db.commit()
                     _bind(newhash)                      # denne session består; alle andre dør
                     flash("Adgangskoden er skiftet.", "ok")
+        elif action == "forget_devices":
+            remember.revoke_user(db, user["id"])
+            audit(db, user["username"], "husk_enheder_glemt")
+            db.commit()
+            flash("Alle husk-enheder er glemt. De skal logge ind med kode næste gang.", "ok")
         elif action == "recovery":
             if not check_password_hash(user["pw_hash"], request.form.get("old", "")):
                 flash("Adgangskode er forkert.", "error")
@@ -382,7 +410,7 @@ def account():
                 return render_template("recovery_codes.html", codes=codes)
         return redirect(url_for("auth.account"))
     left = db.execute("SELECT COUNT(*) FROM recovery_codes WHERE user_id=? AND used=0", (user["id"],)).fetchone()[0]
-    return render_template("account.html", codes_left=left)
+    return render_template("account.html", codes_left=left, devices=remember.count(db, user["id"]))
 
 
 @bp.route("/account/password", methods=["GET", "POST"])
@@ -403,6 +431,7 @@ def force_password():
                 newhash = generate_password_hash(request.form["new"])
                 db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                 audit(db, user["username"], "adgangskode_skiftet")
+                remember.revoke_user(db, user["id"])
                 db.commit()
                 _bind(newhash)
                 return redirect(url_for("main.home"))

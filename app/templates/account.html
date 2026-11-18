@@ -9,6 +9,9 @@
     <label>Ny adgangskode (mindst 12 tegn)</label><input type="password" name="new" autocomplete="new-password" required>
     <label>Gentag ny adgangskode</label><input type="password" name="new2" autocomplete="new-password" required>
     <div class="actions"><button class="btn">Skift</button></div></form></div>
+<div class="card"><h2>Husk-enheder</h2>
+  <p>{{ devices }} enhed{{ 'er' if devices != 1 }} husket (logger ind uden kode i op til 30 dage).</p>
+  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="forget_devices"><button class="btn sec" {{ 'disabled' if not devices }}>Glem alle enheder</button></form></div>
 <div class="card"><h2>Gendannelseskoder</h2>
   <p class="muted">Du har {{ codes_left }} ubrugte gendannelseskoder.</p>
   <form method="post">{{ csrf() }}<input type="hidden" name="action" value="recovery">

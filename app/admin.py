@@ -5,7 +5,7 @@ import secrets
 from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
 from werkzeug.security import generate_password_hash
 
-from . import club, importer, model
+from . import club, importer, model, remember
 from .auth import admin_required
 from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
 from .helpers import round_info, team_id
@@ -130,10 +130,12 @@ def user_action(uid, action):
     elif action == "reset-2fa":
         db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0 WHERE id=?", (uid,))
         db.execute("DELETE FROM recovery_codes WHERE user_id=?", (uid,))
+        remember.revoke_user(db, uid)
         flash("2FA nulstillet – brugeren skal oprette den igen ved næste login.", "ok")
     elif action == "reset-password":
         temp = secrets.token_urlsafe(12)
         db.execute("UPDATE users SET pw_hash=?, must_change_pw=1 WHERE id=?", (generate_password_hash(temp), uid))
+        remember.revoke_user(db, uid)
         flash("Adgangskode nulstillet. Den midlertidige kode vises kun nu.", "ok")
     elif action == "unlock":
         db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (uid,))

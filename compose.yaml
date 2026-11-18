@@ -19,6 +19,8 @@ services:
       SETUP_TOKEN: ${SETUP_TOKEN:-}
       # Antal reverse proxies foran appen (typisk 1). Giver ægte klient-IP til login-spærre. 0 = ingen proxy.
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-0}
+      # Dage en enhed kan huskes uden kode/2FA (0 = slået fra).
+      REMEMBER_DAYS: ${REMEMBER_DAYS:-30}
     volumes:
       - u11-data:/data          # database + automatiske backups (/data/backups)
     ports:

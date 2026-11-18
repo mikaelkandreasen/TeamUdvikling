@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import auth, charts, club, db, model, teams
+from . import auth, charts, club, db, model, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -53,6 +53,7 @@ def create_app(config=None):
         SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1",
         SESSION_COOKIE_NAME="__Host-u11" if os.environ.get("COOKIE_SECURE", "0") == "1" else "session",
         TRUSTED_PROXIES=int(os.environ.get("TRUSTED_PROXIES", "0") or 0),
+        REMEMBER_DAYS=int(os.environ.get("REMEMBER_DAYS", "30") or 0),
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=1024 * 1024,
         VERSION=read_version(),
@@ -101,6 +102,7 @@ def create_app(config=None):
         resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()")
         resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         resp.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        remember.apply_cookie(resp)
         if app.config["SESSION_COOKIE_SECURE"]:
             resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
         resp.headers.setdefault("Content-Security-Policy",

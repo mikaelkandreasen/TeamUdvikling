@@ -17,6 +17,10 @@ Hvad der er gjort: white-box pentest af hele koden med automatiske angrebstests 
 ## Kontroller der bestod (testet)
 Alle ruter kræver login og 2FA (`pw_ok`-session kan ikke springe 2FA over); alle POST kræver CSRF; trænere kan ikke nå admin eller andre holds spillere (IDOR-sweep over alle ruter); lagret XSS escapes på alle sider; SQL-injektion i login; brugeropremsning (ens svar for ukendt/kendt bruger); replay af TOTP-kode; upload af SVG/forklædte filer afvises; 413 ved for store forespørgsler; ingen stacktraces.
 
+## Husk denne enhed (30 dage)
+Valgfrit flueben efter fuldt login. Afvejning: bekvemmelighed mod, at en stjålet/ulåst enhed giver adgang til børnedata uden 2FA.
+Modforanstaltninger: fast 30-dages udløb (ikke glidende); 256-bit token i HttpOnly/SameSite-cookie, kun nøglet hash i databasen; rotation ved hver brug og tyveridetektion (genbrug af gammelt token tilbagekalder alle enheder); tilbagekaldelse ved log ud, skift af adgangskode, 2FA-nulstilling og "Glem alle enheder"; **administration kræver altid frisk login med kode** (trin-op, 8 timer); højst 10 enheder pr. bruger. Slå funktionen fra med `REMEMBER_DAYS=0`. Anbefaling: aktivér skærmlås på de enheder, der huskes.
+
 ## Kendte restrisici (accepteret / backlog)
 - TOTP-hemmeligheder ligger i klartekst i databasen (og i backups). Beskyt volumen og backups; kryptering i hvile står i backloggen (B-012).
 - CSP tillader `style-src 'unsafe-inline'` (inline `style=`-attributter). Scripts er strengt `self`.
