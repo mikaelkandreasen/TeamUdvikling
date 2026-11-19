@@ -1,4 +1,4 @@
-"""U11 Udvikling – Flask-app til spillerudvikling (DBU-roller x nøglefærdigheder)."""
+"""Team Udvikling – Flask-app til spillerudvikling (DBU-roller x nøglefærdigheder)."""
 import hmac
 import os
 import secrets

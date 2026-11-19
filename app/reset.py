@@ -30,7 +30,8 @@ def send_reset(db, user, purpose, admin_name):
     if token is None:
         return False, "Der er sendt for mange nulstillinger til brugeren den seneste time. Prøv igen senere."
     what, how = TEXT[purpose]
-    club = club_get(db)["name"] or "U11 Udvikling"
+    info = club_get(db)
+    club = info["name"] or info["app_name"]
     body = (f"Hej {user['display_name']},\n\n"
             f"En administrator har godkendt, at du må {what} i {club}.\n\n"
             f"{how}\n\n{mailer.public_url()}/nulstil/{token}\n\n"

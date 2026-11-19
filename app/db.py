@@ -200,7 +200,8 @@ def backup_if_due(db_path, backup_dir, hours=24):
 
 
 # ------------------------------------------------------------------ klubprofil (gælder alle hold)
-CLUB_FIELDS = ("name", "address", "email", "phone", "website", "footer", "color")
+DEFAULT_APP_NAME = "Team Udvikling"
+CLUB_FIELDS = ("name", "app_name", "address", "email", "phone", "website", "footer", "color")
 
 
 def club_get(db):
@@ -209,6 +210,7 @@ def club_get(db):
         k = row["key"][5:]
         if k in out:
             out[k] = row["value"] or ""
+    out["app_name"] = out["app_name"].strip() or DEFAULT_APP_NAME
     return out
 
 

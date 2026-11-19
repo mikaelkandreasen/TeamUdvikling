@@ -12,6 +12,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 - **Spillerbilleder** (kræver markeret forældresamtykke): beskæres kvadratisk, genkodes til JPEG, metadata/GPS fjernes. Vises som mini på Position & bane, Holdsætning, spillerlisten, profil og rapport. Slettes sammen med spilleren; indgår i backup og JSON-eksport.
 
 ### Ændret
+- **Systemet hedder nu «Team Udvikling»** (før «U11 Udvikling») overalt: header, fanetitel, fodlinje, 2FA-appen og e-mails. Navnet kan ændres under Administration → Klubprofil → «Systemets navn».
 - Skema v6 (`players.position3/4`, `player_photos`, `lineups`, `lineup_slots`; idempotent). Ny afhængighed: Pillow.
 
 ## [0.6.1] - 2026-11-19

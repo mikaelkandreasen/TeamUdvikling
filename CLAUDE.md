@@ -3,7 +3,7 @@
 Læs denne fil først, derefter `BACKLOG.md` (hvad der skal laves) og `docs/ARCHITECTURE.md` (hvordan det hænger sammen).
 
 ## Hvad er projektet?
-**U11 Udvikling** er en selvhostet webapp (Flask + SQLite) til trænere på børnehold. Den erstatter en Excel-model og samler:
+**Team Udvikling** (repo: u11-udvikling; navnet kan ændres under Klubprofil) er en selvhostet webapp (Flask + SQLite) til trænere på børnehold. Den erstatter en Excel-model og samler:
 - **Evaluering** af spillere på DBU's 4 roller (boldholder, medspiller, presspiller, støttespiller) × 6 nøglefærdigheder
   (teknik, bevægelse, scanning, timing, positionering, maskering) = 24 kriterier, scoret 1–5, i 4 runder, af flere trænere.
 - **Teamoversigt** (rolle-gennemsnit, samlet, enighed mellem trænere), **udvikling**, **position/bane**, **områder**, **spillerprofil** (radar).

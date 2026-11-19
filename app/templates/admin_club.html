@@ -3,6 +3,8 @@
 <h1>Klubprofil</h1>
 <p class="muted">Vises i header, på loginsiden og på spillerrapporterne. Gælder alle hold.</p>
 <form method="post" enctype="multipart/form-data" class="card">{{ csrf() }}<input type="hidden" name="action" value="save">
+  <label for="an">Systemets navn</label><input id="an" type="text" name="app_name" value="{{ c['app_name'] }}" maxlength="60" placeholder="Team Udvikling">
+  <p class="muted small">Vises i header, fanenavn, fodlinje, 2FA-appen og e-mails. Tom = Team Udvikling.</p>
   <label for="n">Klubnavn</label><input id="n" type="text" name="name" value="{{ c['name'] }}" maxlength="80" placeholder="fx Virring Fodbold">
   <label for="a">Adresse</label><input id="a" type="text" name="address" value="{{ c['address'] }}" maxlength="160">
   <div class="row"><div><label for="e">E-mail</label><input id="e" type="text" name="email" value="{{ c['email'] }}" maxlength="120"></div>

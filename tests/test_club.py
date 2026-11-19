@@ -84,3 +84,16 @@ def test_compose_uses_port_1020():
     root = pathlib.Path(__file__).resolve().parent.parent
     assert "${U11_PORT:-1020}:8000" in (root / "compose.yaml").read_text()
     assert "U11_PORT=1020" in (root / ".env.example").read_text()
+
+
+def test_app_name_defaults_and_is_configurable(app, team):
+    html = team.get("/").get_data(as_text=True)
+    assert "Team Udvikling" in html and "U11 Udvikling" not in html
+    save(team, app_name="Holdets Model")
+    html = team.get("/").get_data(as_text=True)
+    assert "Holdets Model" in html and "Team Udvikling" not in html
+    assert "<title>" in html and "Holdets Model</title>" in html
+    save(team, app_name="  ")                                           # tomt → standardnavn
+    assert "Team Udvikling" in team.get("/").get_data(as_text=True)
+    save(team, app_name="<b>x</b>")
+    assert "<b>x</b>" not in team.get("/").get_data(as_text=True)

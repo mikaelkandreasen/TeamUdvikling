@@ -1,4 +1,4 @@
-# U11 Udvikling
+# Team Udvikling (U11 Udvikling)
 
 Selvhostet webapp til spillerudvikling på børnehold: DBU's 4 spillerroller × 6 nøglefærdigheder, motivation og træningsønsker, relativ alder,
 fremmøde, trivsel, motorik, handleplan og en rapportside pr. spiller, op til 4 positioner pr. spiller, holdsætning (3v3/5v5/8v8/11v11 med flere opstillinger og idealhold) og spillerbilleder (med samtykke). Flere hold og flere trænere, login med 2FA, mobil-venlig.
@@ -41,7 +41,7 @@ Administrator kan give hver bruger en e-mailadresse (Administration → Brugere)
 | `SMTP_PORT` | `587` | 587 (starttls) eller 465 (ssl). |
 | `SMTP_SECURITY` | `starttls` | `starttls`, `ssl` eller `none` (kun internt relay). |
 | `SMTP_USER` / `SMTP_PASSWORD` | | Brug en app-adgangskode, ikke din personlige. |
-| `SMTP_FROM` | `U11 Udvikling <u11@saem.dk>` | Afsender. Påkrævet. |
+| `SMTP_FROM` | `Team Udvikling <u11@saem.dk>` | Afsender. Påkrævet. |
 
 Uden disse variabler virker appen som før; knappen til e-mail vises ikke.
 

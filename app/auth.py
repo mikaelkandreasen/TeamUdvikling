@@ -12,7 +12,7 @@ from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import lockout, remember, reset_tokens, totp
-from .db import audit, backup_if_due, get_db, purge_old
+from .db import audit, backup_if_due, club_get, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
 MAX_FAILS = 5
@@ -342,7 +342,7 @@ def twofa_setup():
             _finish_login(db, user) if first else None
             return render_template("recovery_codes.html", codes=codes)
         flash("Koden passer ikke. Tjek at telefonens ur er korrekt, og prøv igen.", "error")
-    uri = totp.otpauth_uri(secret, user["username"])
+    uri = totp.otpauth_uri(secret, user["username"], club_get(db)["app_name"])
     return render_template("twofa_setup.html", secret=secret, uri=uri, qr=_qr_svg(uri))
 
 

@@ -44,6 +44,6 @@ def verify(secret, code, last_step=0, t=None, window=1):
     return None
 
 
-def otpauth_uri(secret, username, issuer="U11 Udvikling"):
+def otpauth_uri(secret, username, issuer="Team Udvikling"):
     return (f"otpauth://totp/{quote(issuer)}:{quote(username)}?secret={secret}"
             f"&issuer={quote(issuer)}&algorithm=SHA1&digits=6&period=30")
