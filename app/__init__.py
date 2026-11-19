@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import auth, charts, club, db, model, remember, teams
+from . import auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -89,6 +89,11 @@ def create_app(config=None):
     app.teardown_appcontext(db.close_db)
 
     @app.before_request
+    def _limits():                                # billedupload må være større end resten (sættes før formularen læses)
+        if request.endpoint == "players.photo_upload":
+            request.max_content_length = photos.MAX_UPLOAD + 256 * 1024
+
+    @app.before_request
     def _before():
         session.permanent = True
         auth.load_user()
@@ -133,19 +138,24 @@ def create_app(config=None):
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
         return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
-                    charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS)
+                    charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
+                    POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 
     from . import filters
     filters.register(app)
 
-    from . import admin, devdata, evaluation, motivation, players, reports, reset
+    from . import admin, devdata, evaluation, lineup, motivation, players, reports, reset
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, admin.bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")
     def healthz():
         return jsonify(status="ok")
+
+    @app.errorhandler(413)
+    def _413(_e):
+        return ("Filen er for stor. Billeder må højst være 12 MB.", 413)
 
     @app.errorhandler(403)
     def _403(_e):

@@ -32,7 +32,7 @@
 {% if authed %}
 <nav class="side" aria-label="Hovedmenu">
   {% for e, label in [('main.home','Hjem'),('players.index','Spillere'),('evaluation.eval_home','Evaluering'),('evaluation.team','Teamoversigt'),
-      ('evaluation.development','Udvikling'),('evaluation.position_view','Position &amp; bane'),('evaluation.areas','Områder'),
+      ('evaluation.development','Udvikling'),('evaluation.position_view','Position &amp; bane'),('lineup.index','Holdsætning'),('evaluation.areas','Områder'),
       ('motivation.matrix','Motivation'),('devdata.matrix','Udviklingsdata'),('reports.index','Rapporter'),('main.criteria','Skala &amp; kriterier'),
       ('auth.account','Min konto')] %}
     <a href="{{ url_for(e) }}" class="{{ 'on' if ep == e }}">{{ label|safe }}</a>

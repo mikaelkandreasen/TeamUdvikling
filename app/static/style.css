@@ -75,6 +75,12 @@ details.role summary{min-height:var(--tap);display:flex;align-items:center;font-
 .stickybar .btn{flex:1}
 .badge{display:inline-block;min-width:44px;text-align:center;padding:.15rem .5rem;border-radius:999px;font-weight:700;color:#222}
 /* tiles / spillerkort */
+.avatar{display:inline-block;border-radius:50%;object-fit:cover;vertical-align:middle;background:#dbe3ec;color:var(--navy2);font-weight:700;text-align:center;flex:none}
+.avatar.sm{width:32px;height:32px;line-height:32px;margin-right:.5rem;font-size:.9rem}.avatar.md{width:44px;height:44px;line-height:44px;margin-right:.6rem}
+.avatar.lg{width:120px;height:120px;line-height:120px;font-size:2.4rem}
+.slot{display:flex;flex-direction:column;gap:.25rem;margin:0 0 .7rem}.slot label{font-weight:700}.slot .tag{font-weight:400;color:var(--mut);font-size:.85rem}
+.bench{display:flex;flex-wrap:wrap;gap:.4rem}.bench span{display:inline-flex;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:.2rem .7rem .2rem .3rem}
+.star{color:#e0a400}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
 .tile{display:flex;flex-direction:column;justify-content:center;min-height:88px;padding:.8rem;border-radius:14px;background:var(--navy2);color:#fff;text-decoration:none;font-weight:700}
 .tile small{font-weight:400;opacity:.85}.tile.alt{background:#fff;color:var(--txt);border:1px solid var(--line)}

@@ -12,7 +12,19 @@ N_CRIT = len(ROLES) * N_SKILLS  # 24
 MAX_ROUNDS = 8
 DEFAULT_ROUNDS = 4
 ROUNDS = tuple(range(1, MAX_ROUNDS + 1))       # alle mulige runder; hvert hold bruger de første n (g.rounds)
-POSITIONS = ["Målmand", "Forsvar", "Midtbane", "Kant", "Angreb", "Allround"]
+# Positioner (dropdown). De seks gamle værdier er stadig gyldige, så eksisterende data virker uændret.
+# «Kant» = kan spille begge sider; «Højre/Venstre kant» og back-positioner er set fra holdets egen retning (fremad).
+POSITION_GROUPS = [
+    ("Målmand", ["Målmand"]),
+    ("Forsvar", ["Forsvar", "Højre back", "Venstre back", "Midtstopper"]),
+    ("Midtbane", ["Midtbane", "Defensiv midtbane", "Offensiv midtbane"]),
+    ("Kant", ["Kant", "Højre kant", "Venstre kant"]),
+    ("Angreb", ["Angreb"]),
+    ("Andet", ["Allround"]),
+]
+POSITIONS = [p for _g, items in POSITION_GROUPS for p in items]
+MAX_POSITIONS = 4                                # op til 4 positionsvalg pr. spiller (rækkefølge = præference)
+POSITION_FIELDS = ["position", "position2", "position3", "position4"]
 FEET = ["Højre", "Venstre", "Begge"]
 STATUSES = ["Ikke startet", "I gang", "Nået", "Udskudt"]
 SCALE = "1 = Slet ikke | 2 = Lidt | 3 = Nogenlunde | 4 = Meget | 5 = Rigtig meget"

@@ -6,7 +6,7 @@
 <section class="report">
   {% include "_club_header.html" %}
   <h1>Spillerrapport – {{ p['name'] }}</h1>
-  <p class="muted">{{ team['name'] }} · {{ p['position'] or 'ingen position' }}{% if p['position2'] %} / {{ p['position2'] }}{% endif %} · {{ b['prof']['infos'][b['prof']['rnd'] - 1]['label'] }}</p>
+  <p class="muted">{{ team['name'] }} · {{ positions_of(p)|join(' / ') or 'ingen position' }} · {{ b['prof']['infos'][b['prof']['rnd'] - 1]['label'] }}</p>
   <h2>Færdigheder</h2>
   {% with rnd=b['prof']['rnd'], radar=b['prof']['radar'], role_rows=b['prof']['role_rows'], samlet=b['prof']['samlet'],
           strongest=b['prof']['strongest'], weakest=b['prof']['weakest'], infos=b['prof']['infos'] %}{% include "_profile_body.html" %}{% endwith %}

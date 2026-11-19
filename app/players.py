@@ -1,15 +1,16 @@
 """Spillerliste (tom ved start) – oprettelse, redigering, sletning (admin) og dataudtræk pr. spiller."""
+import base64
 import json
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from . import model
+from . import model, photos
 from .auth import admin_required
 from .db import audit, get_db
-from .helpers import get_player, team_id, valid_choice
+from .helpers import get_player, photo_ids, team_id, valid_choice
 
 bp = Blueprint("players", __name__, url_prefix="/players")
-FIELDS = ["name", "birth_date", "shirt_no", "position", "position2", "foot", "start_date", "focus1", "focus2", "notes"]
+FIELDS = ["name", "birth_date", "shirt_no", *model.POSITION_FIELDS, "foot", "start_date", "focus1", "focus2", "notes"]
 
 
 def _read_form():
@@ -21,8 +22,13 @@ def _read_form():
         if f[k] and not model.parse_date(f[k]):
             errors.append("Ugyldig dato (brug ÅÅÅÅ-MM-DD).")
             f[k] = ""
-    f["position"] = valid_choice(f["position"], model.POSITIONS) or ""
-    f["position2"] = valid_choice(f["position2"], model.POSITIONS) or ""
+    chosen = []                                   # op til 4 positionsvalg: ugyldige og dubletter fjernes, valgene rykkes sammen
+    for k in model.POSITION_FIELDS:
+        v = valid_choice(f[k], model.POSITIONS)
+        if v and v not in chosen:
+            chosen.append(v)
+    for i, k in enumerate(model.POSITION_FIELDS):
+        f[k] = chosen[i] if i < len(chosen) else ""
     f["foot"] = valid_choice(f["foot"], model.FEET) or ""
     f["active"] = 1 if request.form.get("active") else 0
     return f, errors
@@ -35,7 +41,7 @@ def index():
     sql = "SELECT * FROM players WHERE team_id=?" + ("" if show_all else " AND active=1") + " ORDER BY name COLLATE NOCASE"
     rows = db.execute(sql, (team_id(),)).fetchall()
     ages = {r["id"]: (model.quarter(model.parse_date(r["birth_date"])) if model.parse_date(r["birth_date"]) else None) for r in rows}
-    return render_template("players_list.html", players=rows, ages=ages, show_all=show_all)
+    return render_template("players_list.html", players=rows, ages=ages, show_all=show_all, photos=photo_ids(db))
 
 
 @bp.route("/new", methods=["GET", "POST"])
@@ -47,8 +53,8 @@ def new():
                 flash(e, "error")
             return render_template("player_form.html", p=f, new=True)
         db = get_db()
-        cur = db.execute("INSERT INTO players(name,birth_date,shirt_no,position,position2,foot,start_date,focus1,focus2,notes,active,team_id)"
-                         " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", [f[k] or None for k in FIELDS] + [f["active"], team_id()])
+        cur = db.execute(f"INSERT INTO players({','.join(FIELDS)},active,team_id) VALUES({','.join('?' * (len(FIELDS) + 2))})",
+                         [f[k] or None for k in FIELDS] + [f["active"], team_id()])
         audit(db, g.user["username"], "spiller_oprettet", str(cur.lastrowid))
         db.commit()
         flash("Spilleren er oprettet.", "ok")
@@ -66,14 +72,64 @@ def edit(pid):
             for e in errors:
                 flash(e, "error")
             f["id"] = pid
-            return render_template("player_form.html", p=f, new=False)
-        db.execute("UPDATE players SET name=?,birth_date=?,shirt_no=?,position=?,position2=?,foot=?,start_date=?,"
-                   "focus1=?,focus2=?,notes=?,active=? WHERE id=? AND team_id=?", [f[k] or None for k in FIELDS] + [f["active"], pid, team_id()])
+            return render_template("player_form.html", p=f, new=False, photo=_photo_info(db, pid))
+        db.execute(f"UPDATE players SET {','.join(k + '=?' for k in FIELDS)},active=? WHERE id=? AND team_id=?",
+                   [f[k] or None for k in FIELDS] + [f["active"], pid, team_id()])
         audit(db, g.user["username"], "spiller_rettet", str(pid))
         db.commit()
         flash("Gemt.", "ok")
         return redirect(url_for("players.index"))
-    return render_template("player_form.html", p=dict(p), new=False)
+    return render_template("player_form.html", p=dict(p), new=False, photo=_photo_info(db, pid))
+
+
+def _photo_info(db, pid):
+    return db.execute("SELECT consent_at, updated_at FROM player_photos WHERE player_id=?", (pid,)).fetchone()
+
+
+@bp.route("/<int:pid>/photo.jpg")
+def photo_view(pid):
+    """Billedet (hold-afgrænset: andre holds spillere giver 404). ?s=full giver det store billede, ellers miniaturen."""
+    db = get_db()
+    col = "full" if request.args.get("s") == "full" else "thumb"
+    row = db.execute(f"SELECT pp.{col} AS img FROM player_photos pp JOIN players p ON p.id=pp.player_id WHERE pp.player_id=? AND p.team_id=?",
+                     (pid, team_id())).fetchone()
+    if not row:
+        abort(404)
+    return Response(row["img"], mimetype="image/jpeg")
+
+
+@bp.route("/<int:pid>/photo", methods=["POST"])
+def photo_upload(pid):
+    db = get_db()
+    get_player(db, pid)
+    back = redirect(url_for("players.edit", pid=pid))
+    if request.form.get("consent") != "ja":
+        flash("Bekræft, at forældrene har givet samtykke til billedet.", "error")
+        return back
+    f = request.files.get("photo")
+    try:
+        full, thumb = photos.process(f.read(photos.MAX_UPLOAD + 1) if f else b"")
+    except photos.PhotoError as e:
+        flash(str(e), "error")
+        return back
+    db.execute("INSERT INTO player_photos(player_id,full,thumb,consent_at,updated_at) VALUES(?,?,?,datetime('now'),datetime('now')) "
+               "ON CONFLICT(player_id) DO UPDATE SET full=excluded.full, thumb=excluded.thumb, consent_at=excluded.consent_at, updated_at=excluded.updated_at",
+               (pid, full, thumb))
+    audit(db, g.user["username"], "foto_gemt", f"id={pid}")
+    db.commit()
+    flash("Billedet er gemt.", "ok")
+    return back
+
+
+@bp.route("/<int:pid>/photo/delete", methods=["POST"])
+def photo_delete(pid):
+    db = get_db()
+    get_player(db, pid)
+    db.execute("DELETE FROM player_photos WHERE player_id=?", (pid,))
+    audit(db, g.user["username"], "foto_slettet", f"id={pid}")
+    db.commit()
+    flash("Billedet er slettet.", "ok")
+    return redirect(url_for("players.edit", pid=pid))
 
 
 @bp.route("/<int:pid>/delete", methods=["POST"])
@@ -103,6 +159,11 @@ def export_json(pid):
     out["motivation"] = [dict(r) for r in db.execute("SELECT qidx AS spørgsmål, score FROM motivation_answers WHERE player_id=?", (pid,))]
     d = db.execute("SELECT * FROM devdata WHERE player_id=?", (pid,)).fetchone()
     out["udviklingsdata"] = dict(d) if d else {}
+    ph = db.execute("SELECT full, consent_at FROM player_photos WHERE player_id=?", (pid,)).fetchone()
+    out["foto"] = {"samtykke": ph["consent_at"], "jpeg_base64": base64.b64encode(ph["full"]).decode()} if ph else None
+    out["holdopstillinger"] = [dict(r) for r in db.execute(
+        "SELECT l.name AS opstilling, l.game_type AS kamptype, s.slot AS plads FROM lineup_slots s JOIN lineups l ON l.id=s.lineup_id "
+        "WHERE s.player_id=? AND l.team_id=?", (pid, team_id()))]
     audit(db, g.user["username"], "spiller_eksport", f"id={pid}")
     db.commit()
     return Response(json.dumps(out, ensure_ascii=False, indent=2), mimetype="application/json",

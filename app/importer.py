@@ -19,18 +19,19 @@ from . import model
 MAX_ROWS = 2000
 MAX_UNZIPPED = 20 * 1024 * 1024
 TTL = 30 * 60
-COLUMNS = ["Hold", "Sæson", "Navn", "Fødselsdato", "Trøjenr", "Position", "Sekundær position", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"]
+COLUMNS = ["Hold", "Sæson", "Navn", "Fødselsdato", "Trøjenr", "Position", "Sekundær position", "Position 3", "Position 4", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"]
 ALIASES = {
     "team": "hold", "holdnavn": "hold", "saeson": "sæson", "season": "sæson",
     "name": "navn", "spiller": "navn", "spillernavn": "navn",
     "fodselsdato": "fødselsdato", "foedselsdato": "fødselsdato", "født": "fødselsdato", "foedt": "fødselsdato", "birth_date": "fødselsdato", "birthdate": "fødselsdato",
     "trojenr": "trøjenr", "trøje": "trøjenr", "trøjenummer": "trøjenr", "nr": "trøjenr", "shirt": "trøjenr", "shirt_no": "trøjenr",
     "sekundær": "sekundær position", "sekundaer": "sekundær position", "position2": "sekundær position", "sekundær position": "sekundær position",
+    "position3": "position 3", "position4": "position 4", "position 3": "position 3", "position 4": "position 4",
     "foot": "fod", "start": "startdato", "start_date": "startdato", "fokus1": "fokus 1", "fokus2": "fokus 2",
     "notes": "noter", "note": "noter", "active": "aktiv",
 }
 KEYS = {"hold": "team", "sæson": "season", "navn": "name", "fødselsdato": "birth_date", "trøjenr": "shirt_no", "position": "position",
-        "sekundær position": "position2", "fod": "foot", "startdato": "start_date", "fokus 1": "focus1", "fokus 2": "focus2", "noter": "notes", "aktiv": "active"}
+        "sekundær position": "position2", "position 3": "position3", "position 4": "position4", "fod": "foot", "startdato": "start_date", "fokus 1": "focus1", "fokus 2": "focus2", "noter": "notes", "aktiv": "active"}
 LIMITS = {"team": 80, "season": 20, "name": 80, "shirt_no": 10, "focus1": 200, "focus2": 200, "notes": 1000}
 
 
@@ -135,7 +136,7 @@ def parse(data, filename, default_team):
             v[k], w = _date(get(k))
             if w:
                 warn.append(f"{k.replace('_', ' ')}: {w}")
-        for k, choices in (("position", model.POSITIONS), ("position2", model.POSITIONS), ("foot", model.FEET)):
+        for k, choices in (*((k, model.POSITIONS) for k in model.POSITION_FIELDS), ("foot", model.FEET)):
             raw = _text(get(k), k)
             match = next((c for c in choices if c.lower() == raw.lower()), "") if raw else ""
             if raw and not match:
@@ -194,15 +195,14 @@ def apply(db, parsed):
         tid = teams[k]
         hit = db.execute("SELECT id FROM players WHERE team_id=? AND lower(name)=? AND coalesce(birth_date,'')=?",
                          (tid, r["name"].lower(), r["birth_date"])).fetchone()
-        cols = ["shirt_no", "position", "position2", "foot", "start_date", "focus1", "focus2", "notes"]
+        cols = ["shirt_no", *model.POSITION_FIELDS, "foot", "start_date", "focus1", "focus2", "notes"]
         if hit:                                                 # opdatér kun felter, der er udfyldt i filen
             sets = [c for c in cols if r[c]]
             db.execute(f"UPDATE players SET {','.join(c + '=?' for c in sets + ['active'])} WHERE id=?",
                        [r[c] for c in sets] + [r["active"], hit["id"]])
             upd_n += 1
         else:
-            db.execute("INSERT INTO players(team_id,name,birth_date,shirt_no,position,position2,foot,start_date,focus1,focus2,notes,active)"
-                       " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            db.execute(f"INSERT INTO players(team_id,name,birth_date,{','.join(cols)},active) VALUES({','.join('?' * (len(cols) + 4))})",
                        [tid, r["name"], r["birth_date"] or None] + [r[c] or None for c in cols] + [r["active"]])
             new_n += 1
     return new_n, upd_n, team_n
@@ -248,7 +248,7 @@ def template_csv():
     out = io.StringIO()
     w = csv.writer(out, delimiter=";")
     w.writerow(COLUMNS)
-    w.writerow(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
+    w.writerow(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
     return ("﻿" + out.getvalue()).encode("utf8")
 
 
@@ -258,10 +258,10 @@ def template_xlsx():
     ws = wb.active
     ws.title = "Spillere"
     ws.append(COLUMNS)
-    ws.append(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
+    ws.append(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
     info = wb.create_sheet("Vejledning")
     for line in ("Kolonnen Navn er påkrævet. Hold er valgfri (uden Hold bruges det aktive hold; nye hold oprettes).",
-                 "Datoer: ÅÅÅÅ-MM-DD eller DD-MM-ÅÅÅÅ.", "Position: " + ", ".join(model.POSITIONS), "Fod: " + ", ".join(model.FEET),
+                 "Datoer: ÅÅÅÅ-MM-DD eller DD-MM-ÅÅÅÅ.", "Position, Sekundær position, Position 3, Position 4 (op til 4 valg): " + ", ".join(model.POSITIONS), "Fod: " + ", ".join(model.FEET),
                  "Aktiv: ja/nej (standard ja). Findes spilleren allerede (samme hold, navn og fødselsdato), opdateres udfyldte felter.",
                  "Slet eksempelrækken før upload."):
         info.append([line])

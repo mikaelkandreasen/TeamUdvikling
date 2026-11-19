@@ -3,9 +3,10 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 
 from . import charts, model
 from .db import get_db
-from .helpers import active_players, default_round, get_player, int_in, neighbours, round_info, team_id, valid_choice
+from .helpers import active_players, default_round, get_player, int_in, neighbours, photo_ids, round_info, team_id, valid_choice
 
 bp = Blueprint("evaluation", __name__)
+POSITION_TYPES = {"primaer": ("position", "Valg 1"), "sekundaer": ("position2", "Valg 2"), "tredje": ("position3", "Valg 3"), "fjerde": ("position4", "Valg 4")}
 
 
 def _rnd(rnd):
@@ -109,15 +110,19 @@ def position_view():
     db = get_db()
     rounds = model.load_rounds(db, team_id())
     rnd = default_round(rounds, request.args.get("runde", type=int))
-    kind = "position2" if request.args.get("type") == "sekundaer" else "position"
+    type_key = request.args.get("type") if request.args.get("type") in POSITION_TYPES else "primaer"
+    kind = POSITION_TYPES[type_key][0]
     pos = valid_choice(request.args.get("pos", ""), model.POSITIONS)
-    players = [p for p in active_players(db) if not pos or p[kind] == pos]
+    photos = photo_ids(db)
+    players = [p for p in active_players(db) if (not pos or p[kind] == pos) and (kind == "position" or p[kind])]
     items = []
     for p in players:
         res = rounds[rnd].get(p["id"])
         items.append(dict(p=p, samlet=res["samlet"] if res else None, roles=res["roles"] if res else [None] * 4))
-    pitch = charts.pitch([dict(name=i["p"]["name"], position=i["p"][kind] or "Allround", value=i["samlet"]) for i in items])
-    return render_template("position.html", items=items, pitch=pitch, rnd=rnd, kind=kind, pos=pos, rounds_info=round_info(db))
+    pitch = charts.pitch([dict(name=i["p"]["name"], position=i["p"][kind] or "Allround", value=i["samlet"], pid=i["p"]["id"],
+                               photo=url_for("players.photo_view", pid=i["p"]["id"]) if i["p"]["id"] in photos else None) for i in items])
+    return render_template("position.html", items=items, pitch=pitch, rnd=rnd, kind=kind, type_key=type_key, pos=pos, rounds_info=round_info(db),
+                           type_choices=[(k, v[1]) for k, v in POSITION_TYPES.items()], photos=photos)
 
 
 @bp.route("/areas")
@@ -168,4 +173,4 @@ def profile(pid):
     rounds = model.load_rounds(db, team_id())
     data = profile_data(db, p, rounds, request.args.get("runde", type=int))
     d = model.parse_date(p["birth_date"])
-    return render_template("profile.html", p=p, age_note=model.age_note(model.quarter(d)) if d else "", **data)
+    return render_template("profile.html", p=p, age_note=model.age_note(model.quarter(d)) if d else "", photos=photo_ids(get_db()), **data)

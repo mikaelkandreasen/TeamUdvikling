@@ -1,5 +1,6 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ 'Ny spiller' if new else 'Ret spiller' }}{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf, avatar with context %}{% block title %}{{ 'Ny spiller' if new else 'Ret spiller' }}{% endblock %}
 {% block content %}
+{% macro posselect(n, key) %}<div><label for="{{ key }}">Position – valg {{ n }}{{ ' (primær)' if n == 1 }}</label><select id="{{ key }}" name="{{ key }}"><option value=""></option>{% for grp, items in POSITION_GROUPS %}<optgroup label="{{ grp }}">{% for x in items %}<option {{ 'selected' if p.get(key) == x }}>{{ x }}</option>{% endfor %}</optgroup>{% endfor %}</select></div>{% endmacro %}
 <h1>{{ 'Ny spiller' if new else 'Ret spiller' }}</h1>
 <form method="post" class="card">{{ csrf() }}
   <label for="name">Fulde navn *</label><input id="name" type="text" name="name" value="{{ p.get('name') or '' }}" required>
@@ -7,11 +8,10 @@
     <div><label for="bd">Fødselsdato</label><input id="bd" type="date" name="birth_date" value="{{ p.get('birth_date') or '' }}"></div>
     <div><label for="sn">Trøjenummer</label><input id="sn" type="text" name="shirt_no" value="{{ p.get('shirt_no') or '' }}" inputmode="numeric"></div>
   </div>
-  <div class="row">
-    <div><label for="pos">Position</label><select id="pos" name="position"><option value=""></option>{% for x in POSITIONS %}<option {{ 'selected' if p.get('position') == x }}>{{ x }}</option>{% endfor %}</select></div>
-    <div><label for="pos2">Sekundær position</label><select id="pos2" name="position2"><option value=""></option>{% for x in POSITIONS %}<option {{ 'selected' if p.get('position2') == x }}>{{ x }}</option>{% endfor %}</select></div>
-    <div><label for="foot">Fod</label><select id="foot" name="foot"><option value=""></option>{% for x in model.FEET %}<option {{ 'selected' if p.get('foot') == x }}>{{ x }}</option>{% endfor %}</select></div>
-  </div>
+  <div class="row">{{ posselect(1, 'position') }}{{ posselect(2, 'position2') }}</div>
+  <div class="row">{{ posselect(3, 'position3') }}{{ posselect(4, 'position4') }}</div>
+  <p class="muted small">Op til 4 positioner i prioriteret rækkefølge. «Kant» passer begge sider; vælg «Højre kant» eller «Venstre kant» for en bestemt side.</p>
+  <label for="foot">Fod</label><select id="foot" name="foot"><option value=""></option>{% for x in model.FEET %}<option {{ 'selected' if p.get('foot') == x }}>{{ x }}</option>{% endfor %}</select>
   <label for="sd">Startdato i klub</label><input id="sd" type="date" name="start_date" value="{{ p.get('start_date') or '' }}">
   <label for="f1">Primært fokus</label><input id="f1" type="text" name="focus1" value="{{ p.get('focus1') or '' }}">
   <label for="f2">Sekundært fokus</label><input id="f2" type="text" name="focus2" value="{{ p.get('focus2') or '' }}">
@@ -19,6 +19,17 @@
   <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if p.get('active') }}> Aktiv spiller</label>
   <div class="actions"><button class="btn">Gem</button><a class="btn sec" href="{{ url_for('players.index') }}">Annullér</a></div>
 </form>
+{% if not new %}
+<div class="card"><h2>Billede</h2>
+  {% if photo %}<p>{{ avatar(p, [p['id']], 'lg') }}</p><p class="muted small">Gemt {{ photo['updated_at'] }} · samtykke registreret {{ photo['consent_at'] }}.</p>
+  <form method="post" action="{{ url_for('players.photo_delete', pid=p['id']) }}">{{ csrf() }}<button class="btn danger">Slet billede</button></form><hr>{% endif %}
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('players.photo_upload', pid=p['id']) }}">{{ csrf() }}
+    <label for="ph">{{ 'Skift billede' if photo else 'Tilføj billede' }} (JPEG, PNG eller WebP, maks. 12 MB)</label>
+    <input id="ph" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required>
+    <label class="check"><input type="checkbox" name="consent" value="ja"> Forældrene har givet samtykke til, at billedet bruges i denne app</label>
+    <p class="muted small">Billedet beskæres til kvadrat, og GPS og øvrige oplysninger i billedfilen fjernes. Det vises kun for trænere på holdet og slettes sammen med spilleren.</p>
+    <div class="actions"><button class="btn">Gem billede</button></div></form></div>
+{% endif %}
 {% if not new and user['role'] == 'admin' %}
 <div class="card"><h2>Administrator</h2>
   <p class="muted small">Indsigt og sletning (GDPR). Sletning fjerner spilleren og alle spillerens evalueringer, svar og udviklingsdata permanent.</p>

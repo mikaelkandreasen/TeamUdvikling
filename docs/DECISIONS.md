@@ -28,3 +28,8 @@ Ingen officiel API. Muligheder: (1) iCal-feed for holdets aktiviteter, (2) uoffi
 
 ## D-010 · E-mailnulstilling kun efter admin-godkendelse (2026-11-19)
 Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læser en midlertidig kode op. Valg: ingen offentlig «glemt adgangskode»; admin bekræfter med egen 2FA-kode og udløser en mail med engangslink. 2FA-linket kræver også brugerens adgangskode. Linket bygges af `PUBLIC_URL`, ikke Host-headeren. Konsekvens: færre angrebsflader; kræver SMTP-opsætning. De gamle «Nulstil»-knapper (midlertidig kode) beholdes som nødvej, når mail ikke er sat op.
+
+## D-011 · Billeder som BLOB i databasen og fast positionsordforråd (2026-11-19)
+**Kontekst:** Billeder af børn er personoplysninger; der skal være ét sted at backup'e, slette og hold-afgrænse.
+**Valg:** Billeder gemmes genkodet (480 px + 96 px JPEG, uden metadata) som BLOB i SQLite, kun med registreret samtykke, leveres via hold-afgrænset endpoint. Positionerne er ét fast ordforråd (`model.POSITIONS`) som både dropdowns og opstillingspladser (`formations.py`) bruger, så forslag kan matche præcist (Højre/Venstre kant).
+**Konsekvens:** Databasen og backups vokser (~30 KB pr. billede); sletning af spiller fjerner billedet; ingen filer uden for databasen.

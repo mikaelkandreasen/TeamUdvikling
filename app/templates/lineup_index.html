@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Holdsætning{% endblock %}
+{% block content %}
+<h1>Holdsætning – {{ team['name'] }}</h1>
+<p class="muted small">Trænergruppens opstillinger. Vælg kamptype, opret en opstilling, sæt spillerne på pladserne, og marker ét idealhold. Husk, at alle spillere skal have spilletid, og at positioner roteres i udviklingsfodbold.</p>
+<div class="filters">{% for k in types %}<a href="{{ url_for('lineup.index', type=k) }}" class="{{ 'on' if k == gt }}">{{ k }}</a>{% endfor %}</div>
+{% for r in rows %}
+<a class="pcard" href="{{ url_for('lineup.edit', lid=r['id']) }}"><div class="nm">{% if r['is_ideal'] %}<span class="star" title="Idealhold">★</span> {% endif %}{{ r['name'] }}
+  <div class="sub">{{ r['formation'] }} · {{ r['filled'] }}/{{ size }} pladser besat · {{ r['updated_at'][:10] }}</div></div><span>›</span></a>
+{% else %}<div class="card muted">Ingen {{ gt }}-opstillinger endnu.</div>{% endfor %}
+<form method="post" action="{{ url_for('lineup.new') }}" class="card">{{ csrf() }}
+  <h2>Ny {{ gt }}-opstilling</h2>
+  <input type="hidden" name="game_type" value="{{ gt }}">
+  <label for="nm">Navn</label><input id="nm" type="text" name="name" maxlength="60" placeholder="fx Idealhold efterår">
+  <label for="fm">Opstilling</label>
+  <select id="fm" name="formation">{% for f in options %}<option {{ 'selected' if f == default }}>{{ f }}</option>{% endfor %}</select>
+  <div class="actions"><button class="btn">Opret og vælg spillere</button></div>
+</form>
+{% endblock %}

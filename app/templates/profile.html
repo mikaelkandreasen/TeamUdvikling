@@ -1,7 +1,7 @@
-{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}{{ p['name'] }}{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import heatcell, avatar with context %}{% block title %}{{ p['name'] }}{% endblock %}
 {% block content %}
-<h1>{{ p['name'] }}</h1>
-<p class="muted">{{ p['position'] or 'ingen position' }}{% if p['position2'] %} / {{ p['position2'] }}{% endif %}{% if p['foot'] %} · {{ p['foot'] }} fod{% endif %}</p>
+<h1>{{ avatar(p, photos, 'md') }}{{ p['name'] }}</h1>
+<p class="muted">{{ positions_of(p)|join(' / ') or 'ingen position' }}{% if p['foot'] %} · {{ p['foot'] }} fod{% endif %}</p>
 <div class="filters">{% for i in infos %}<a href="{{ url_for('evaluation.profile', pid=p['id'], runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}</div>
 {% include "_profile_body.html" %}
 {% if age_note %}<div class="card"><b>Relativ alder:</b> {{ age_note }}</div>{% endif %}

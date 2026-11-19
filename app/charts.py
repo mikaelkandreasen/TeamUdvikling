@@ -103,32 +103,66 @@ def bars(items, vmax=5, label="Søjlediagram"):
     return _svg(w, h, "".join(out), label)
 
 
-# Banevisning: position -> (x%, y%) for vandret placering fordeles automatisk
-_PITCH_Y = {"Målmand": 90, "Forsvar": 72, "Allround": 56, "Midtbane": 47, "Kant": 30, "Angreb": 13}
+# Banevisning: position -> (y i % fra modstanderens mål, bane). Bane: L/C/R = venstre/midt/højre bane, B = begge sider (fordeles).
+_POS_XY = {"Målmand": (90, "C"), "Forsvar": (72, "C"), "Højre back": (72, "R"), "Venstre back": (72, "L"), "Midtstopper": (76, "C"),
+           "Defensiv midtbane": (60, "C"), "Midtbane": (47, "C"), "Offensiv midtbane": (36, "C"),
+           "Kant": (30, "B"), "Højre kant": (30, "R"), "Venstre kant": (30, "L"), "Angreb": (13, "C"), "Allround": (56, "C")}
+_LANE = {"L": (30, 140), "C": (150, 250), "R": (260, 370)}
+
+
+def _field(w, h, boxes=True):
+    out = [f'<rect x="4" y="4" width="{w - 8}" height="{h - 8}" rx="8" fill="#3a9a55" stroke="#fff" stroke-width="3"/>',
+           f'<line x1="4" y1="{h / 2}" x2="{w - 4}" y2="{h / 2}" stroke="#fff" stroke-width="2"/>',
+           f'<circle cx="{w / 2}" cy="{h / 2}" r="46" fill="none" stroke="#fff" stroke-width="2"/>']
+    if boxes:
+        out += [f'<rect x="110" y="4" width="180" height="70" fill="none" stroke="#fff" stroke-width="2"/>',
+                f'<rect x="110" y="{h - 74}" width="180" height="70" fill="none" stroke="#fff" stroke-width="2"/>']
+    return out
+
+
+def _spread(n, lo, hi):
+    return [(lo + hi) / 2] if n == 1 else [lo + (hi - lo) * i / (n - 1) for i in range(n)]
 
 
 def pitch(players, label="Bane"):
-    """players: [{name, position, value}] – placeres efter position og farves efter score."""
+    """players: [{name, position, value, photo?, pid?}] – placeres efter position (venstre/midt/højre) og farves efter score.
+    Med `photo` (URL) vises et mini-billede i en cirkel med scorefarvet ring."""
     w, h = 400, 560
-    out = [f'<rect x="4" y="4" width="{w - 8}" height="{h - 8}" rx="8" fill="#3a9a55" stroke="#fff" stroke-width="3"/>',
-           f'<line x1="4" y1="{h / 2}" x2="{w - 4}" y2="{h / 2}" stroke="#fff" stroke-width="2"/>',
-           f'<circle cx="{w / 2}" cy="{h / 2}" r="46" fill="none" stroke="#fff" stroke-width="2"/>',
-           f'<rect x="110" y="4" width="180" height="70" fill="none" stroke="#fff" stroke-width="2"/>',
-           f'<rect x="110" y="{h - 74}" width="180" height="70" fill="none" stroke="#fff" stroke-width="2"/>']
-    groups = {}
+    out = _field(w, h)
+    cells = {}
     for p in players:
-        groups.setdefault(p["position"] if p["position"] in _PITCH_Y else "Allround", []).append(p)
-    for pos, plist in groups.items():
-        if pos == "Kant":
-            lines = [plist[0::2], plist[1::2]]
-            xs = [lambda i, n: 60 + 40 * i, lambda i, n: w - 60 - 40 * i]
-            for side, items in enumerate(lines):
-                for i, p in enumerate(items):
-                    _dot(out, xs[side](i, len(items)), h * _PITCH_Y[pos] / 100, p)
-            continue
-        n = len(plist)
-        for i, p in enumerate(plist):
-            _dot(out, w * (i + 1) / (n + 1), h * _PITCH_Y[pos] / 100, p)
+        y, lane = _POS_XY.get(p["position"], _POS_XY["Allround"])
+        cells.setdefault((y, lane), []).append(p)
+    for (y, lane), plist in cells.items():
+        if lane == "B":                                             # «Kant»: begge sider – skiftevis venstre og højre
+            for side, items in (("L", plist[0::2]), ("R", plist[1::2])):
+                _row(out, items, y, h, *_LANE[side])
+        else:
+            _row(out, plist, y, h, *_LANE[lane], wide=len(plist) > 3)
+    return _svg(w, h, "".join(out), label)
+
+
+def _row(out, items, y, h, lo, hi, wide=False):
+    if not items:
+        return
+    if wide:
+        lo, hi = 40, 360
+    xs = _spread(len(items), lo, hi)
+    for i, (x, p) in enumerate(zip(xs, items)):
+        _dot(out, x, h * y / 100 + (14 if wide and i % 2 else 0), p)
+
+
+def formation_pitch(game_type, placed, label="Opstilling"):
+    """placed: [{x, y, tag, player: {name, value, photo?, pid?} | None}] i procent (se formations.slots)."""
+    w, h = 400, 560
+    out = _field(w, h, boxes=game_type != "3v3")
+    for s in placed:
+        x, y = w * s["x"] / 100, h * s["y"] / 100
+        if s["player"]:
+            _dot(out, x, y, s["player"])
+        else:
+            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="17" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 3" opacity=".85"/>'
+                       f'<text x="{x:.1f}" y="{y + 31:.1f}" font-size="9" text-anchor="middle" fill="#fff">{escape(s["tag"])}</text>')
     return _svg(w, h, "".join(out), label)
 
 
@@ -136,8 +170,18 @@ def _dot(out, x, y, p):
     v = p.get("value")
     first = (p["name"] or "?").split()
     short = first[0] + (" " + first[-1][0] + "." if len(first) > 1 else "")
-    out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="15" fill="{heat(v)}" stroke="#fff" stroke-width="2">'
-               f'<title>{escape(p["name"])} – {"%.1f" % v if v is not None else "ingen score"}</title></circle>'
-               f'<text x="{x:.1f}" y="{y + 4:.1f}" font-size="10" text-anchor="middle" font-weight="700">'
-               f'{"%.1f" % v if v is not None else "–"}</text>'
+    score = "%.1f" % v if v is not None else "–"
+    title = f'<title>{escape(p["name"])} – {"%.1f" % v if v is not None else "ingen score"}</title>'
+    if p.get("photo"):
+        cid = f'cp{p.get("pid", 0)}_{int(x)}_{int(y)}'
+        out.append(f'<clipPath id="{cid}"><circle cx="{x:.1f}" cy="{y:.1f}" r="16"/></clipPath>'
+                   f'<circle cx="{x:.1f}" cy="{y:.1f}" r="19" fill="{heat(v)}" stroke="#fff" stroke-width="2">{title}</circle>'
+                   f'<image href="{escape(p["photo"])}" x="{x - 16:.1f}" y="{y - 16:.1f}" width="32" height="32" clip-path="url(#{cid})" '
+                   f'preserveAspectRatio="xMidYMid slice"/>'
+                   f'<circle cx="{x + 14:.1f}" cy="{y + 14:.1f}" r="9" fill="{heat(v)}" stroke="#fff" stroke-width="1.5"/>'
+                   f'<text x="{x + 14:.1f}" y="{y + 17.5:.1f}" font-size="9" text-anchor="middle" font-weight="700">{score}</text>'
+                   f'<text x="{x:.1f}" y="{y + 33:.1f}" font-size="10" text-anchor="middle" fill="#fff" font-weight="600">{escape(short)}</text>')
+        return
+    out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="15" fill="{heat(v)}" stroke="#fff" stroke-width="2">{title}</circle>'
+               f'<text x="{x:.1f}" y="{y + 4:.1f}" font-size="10" text-anchor="middle" font-weight="700">{score}</text>'
                f'<text x="{x:.1f}" y="{y + 29:.1f}" font-size="10" text-anchor="middle" fill="#fff" font-weight="600">{escape(short)}</text>')

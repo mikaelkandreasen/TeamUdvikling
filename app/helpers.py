@@ -24,6 +24,16 @@ def get_player(db, pid):
     return row
 
 
+def photo_ids(db):
+    """Id'er på det aktive holds spillere, der har et billede (til mini-visning)."""
+    return {r[0] for r in db.execute("SELECT pp.player_id FROM player_photos pp JOIN players p ON p.id=pp.player_id WHERE p.team_id=?", (team_id(),))}
+
+
+def positions_of(p):
+    """Spillerens positionsvalg i præferencerækkefølge (op til 4)."""
+    return [p[k] for k in model.POSITION_FIELDS if p[k]]
+
+
 def neighbours(players, pid):
     """(forrige_id, næste_id) i den viste rækkefølge."""
     ids = [p["id"] for p in players]

@@ -1,17 +1,17 @@
-{% extends "base.html" %}{% block title %}Spillere{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import avatar with context %}{% block title %}Spillere{% endblock %}
 {% block content %}
 <h1>Spillere – {{ team['name'] }}</h1>
 <div class="actions"><a class="btn" href="{{ url_for('players.new') }}">+ Ny spiller</a>
   <a class="btn sec" href="{{ url_for('players.index', alle=(0 if show_all else 1)) }}">{{ 'Kun aktive' if show_all else 'Vis alle' }}</a></div>
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Navn</th><th>Fødselsdato</th><th class="num">Kvartal</th><th>Position</th><th>Sekundær</th><th>Fod</th><th>Trøje</th><th></th></tr></thead>
+  <thead><tr><th>Navn</th><th>Fødselsdato</th><th class="num">Kvartal</th><th>Positioner</th><th>Fod</th><th>Trøje</th><th></th></tr></thead>
   <tbody>
   {% for p in players %}
   <tr>
-    <td class="name">{{ p['name'] }}{% if not p['active'] %} <span class="muted">(inaktiv)</span>{% endif %}</td>
+    <td class="name">{{ avatar(p, photos) }}{{ p['name'] }}{% if not p['active'] %} <span class="muted">(inaktiv)</span>{% endif %}</td>
     <td data-label="Fødselsdato">{{ p['birth_date']|date_dk }}</td>
     <td class="num" data-label="Kvartal">{{ 'Q%d'|format(ages[p['id']]) if ages[p['id']] else '' }}</td>
-    <td data-label="Position">{{ p['position'] or '' }}</td><td data-label="Sekundær">{{ p['position2'] or '' }}</td>
+    <td data-label="Positioner">{{ positions_of(p)|join(' / ') }}</td>
     <td data-label="Fod">{{ p['foot'] or '' }}</td><td data-label="Trøje">{{ p['shirt_no'] or '' }}</td>
     <td><a href="{{ url_for('players.edit', pid=p['id']) }}">Ret</a> · <a href="{{ url_for('evaluation.profile', pid=p['id']) }}">Profil</a></td>
   </tr>

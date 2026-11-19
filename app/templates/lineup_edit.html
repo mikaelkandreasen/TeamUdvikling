@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf, avatar with context %}{% block title %}{{ L['name'] }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('lineup.index', type=L['game_type']) }}">‹ Alle {{ L['game_type'] }}-opstillinger</a></p>
+<h1>{% if L['is_ideal'] %}<span class="star" title="Idealhold">★</span> {% endif %}{{ L['name'] }}</h1>
+<p class="muted">{{ L['game_type'] }} · {{ L['formation'] }} · {{ filled }}/{{ total }} pladser besat{% if filled %} · {{ matched }} med spillerens eget positionsvalg{% endif %}</p>
+<div class="card">{{ pitch }}</div>
+<form method="post" class="card">{{ csrf() }}
+  <h2>Spillere på pladserne</h2>
+  {% for r in rows %}
+  <div class="slot"><label for="s{{ r['slot']['i'] }}">{{ r['slot']['tag'] }}</label>
+    <select id="s{{ r['slot']['i'] }}" name="slot{{ r['slot']['i'] }}"><option value="">– ingen –</option>
+      {% for o in r['options'] %}<option value="{{ o['id'] }}" {{ 'selected' if r['chosen'] == o['id'] }}>{{ o['text'] }}</option>{% endfor %}</select></div>
+  {% endfor %}
+  <div class="actions"><button class="btn" name="action" value="save">Gem opstilling</button></div>
+  <div class="actions">
+    <button class="btn sec" name="action" value="suggest">Foreslå (positioner)</button>
+    <button class="btn sec" name="action" value="suggest_scores">Foreslå (positioner + score)</button>
+    <button class="btn sec" name="action" value="clear">Ryd</button></div>
+  <p class="muted small">Forslaget bruger spillernes op til 4 positionsvalg (valg 1 vejer tungest). Med score tæller seneste samlede evaluering også. Det er kun et udgangspunkt – trænergruppen bestemmer.</p>
+</form>
+<div class="card"><h2>På bænken ({{ bench|length }})</h2>
+  <div class="bench">{% for p in bench %}<span>{{ avatar(p, photos) }}{{ p['name'] }}</span>{% else %}<span class="muted">Alle aktive spillere er sat på banen.</span>{% endfor %}</div></div>
+<form method="post" action="{{ url_for('lineup.meta', lid=L['id']) }}" class="card">{{ csrf() }}
+  <h2>Navn og opstilling</h2>
+  <label for="nm">Navn</label><input id="nm" type="text" name="name" value="{{ L['name'] }}" maxlength="60">
+  <label for="fm">Opstilling ({{ L['game_type'] }})</label>
+  <select id="fm" name="formation">{% for f in options %}<option {{ 'selected' if f == L['formation'] }}>{{ f }}</option>{% endfor %}</select>
+  <p class="muted small">Skifter du opstilling, ryddes pladserne.</p>
+  <div class="actions"><button class="btn sec">Gem navn/opstilling</button></div>
+</form>
+<div class="card"><h2>Idealhold og sletning</h2>
+  <form method="post" action="{{ url_for('lineup.ideal', lid=L['id']) }}">{{ csrf() }}
+    <button class="btn {{ '' if not L['is_ideal'] else 'sec' }}">{{ 'Fjern idealhold-markering' if L['is_ideal'] else '★ Gør til idealhold for ' + L['game_type'] }}</button></form>
+  <form method="post" action="{{ url_for('lineup.delete', lid=L['id']) }}" style="margin-top:.8rem">{{ csrf() }}
+    <label class="check"><input type="checkbox" name="confirm" value="ja"> Ja, slet denne opstilling</label>
+    <div class="actions"><button class="btn danger">Slet opstilling</button></div></form></div>
+{% endblock %}

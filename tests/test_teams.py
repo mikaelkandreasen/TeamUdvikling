@@ -101,3 +101,32 @@ def test_two_trainers_scores_are_averaged_per_team(app, two_teams):
     html = t1.get("/overview/1").get_data(as_text=True)
     assert "3,5" in html                         # samlet = gennemsnit af trænerne
     assert "Stor forskel" in html                # enighed = 3 → stor forskel
+
+
+def test_lineups_and_photos_are_isolated_between_teams(app, two_teams):
+    import io
+    from PIL import Image
+    admin = two_teams
+    add_player(admin, "Anna Alfa")
+    switch(admin, team_id(app, "U13 drenge"))
+    add_player(admin, "Bo Bravo")
+    bo = player_id(app, "Bo Bravo")
+    buf = io.BytesIO()
+    Image.new("RGB", (300, 300), "blue").save(buf, "JPEG")
+    admin.c.post(f"/players/{bo}/photo", data={"csrf_token": admin.token(f"/players/{bo}/edit"), "consent": "ja",
+                                              "photo": (io.BytesIO(buf.getvalue()), "x.jpg")}, content_type="multipart/form-data")
+    r = admin.post("/lineup/new", {"game_type": "3v3", "formation": "1-2", "name": "Hemmeligt"}, page="/lineup/")
+    lid = int(r.headers["Location"].rsplit("/", 1)[1])
+    t = make_trainer(app, admin, "trainer11", ["U11 piger"])
+    assert t.get(f"/players/{bo}/photo.jpg").status_code == 404
+    assert t.get(f"/players/{bo}/photo.jpg?s=full").status_code == 404
+    assert t.get(f"/lineup/{lid}").status_code == 404
+    for path in (f"/lineup/{lid}", f"/lineup/{lid}/meta", f"/lineup/{lid}/ideal", f"/lineup/{lid}/delete"):
+        assert t.post(path, {"action": "save", "confirm": "ja"}, page="/lineup/").status_code == 404
+    assert "Hemmeligt" not in t.get("/lineup/").get_data(as_text=True)
+    assert "Bo Bravo" not in t.get("/development/position").get_data(as_text=True)
+    from app import db
+    con = db.connect(app.config["DATABASE"])
+    assert con.execute("SELECT COUNT(*) FROM lineups").fetchone()[0] == 1
+    assert con.execute("SELECT COUNT(*) FROM player_photos").fetchone()[0] == 1
+    con.close()

@@ -238,9 +238,9 @@ def export_xlsx():
     wb = Workbook()
     ws = wb.active
     ws.title = "Spillere"
-    _append(ws, ["Id", "Navn", "Fødselsdato", "Trøje", "Position", "Sekundær", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"])
+    _append(ws, ["Id", "Navn", "Fødselsdato", "Trøje", "Position", "Sekundær", "Position 3", "Position 4", "Fod", "Startdato", "Fokus 1", "Fokus 2", "Noter", "Aktiv"])
     for p in db.execute("SELECT * FROM players WHERE team_id=? ORDER BY name COLLATE NOCASE", (tid,)):
-        _append(ws, [p["id"], p["name"], p["birth_date"], p["shirt_no"], p["position"], p["position2"], p["foot"],
+        _append(ws, [p["id"], p["name"], p["birth_date"], p["shirt_no"], p["position"], p["position2"], p["position3"], p["position4"], p["foot"],
                    p["start_date"], p["focus1"], p["focus2"], p["notes"], p["active"]])
     ws = wb.create_sheet("Evalueringer")
     _append(ws, ["Runde", "Spiller", "Træner", "Rolle", "Nøglefærdighed", "Score"])
