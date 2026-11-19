@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users(
   pw_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'trainer', totp_secret TEXT,
   totp_enabled INTEGER NOT NULL DEFAULT 0, last_totp_step INTEGER NOT NULL DEFAULT 0,
   failed_logins INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0,
-  must_change_pw INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+  must_change_pw INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, email TEXT);
 CREATE TABLE IF NOT EXISTS recovery_codes(
   id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   code_hash TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0);
@@ -54,6 +54,11 @@ CREATE TABLE IF NOT EXISTS remember_tokens(
   token_hash TEXT NOT NULL UNIQUE, prev_hash TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
   last_used INTEGER NOT NULL, rotated_at INTEGER NOT NULL, ua TEXT);
 CREATE INDEX IF NOT EXISTS ix_remember_prev ON remember_tokens(prev_hash);
+CREATE TABLE IF NOT EXISTS reset_tokens(
+  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL CHECK(purpose IN ('password','totp')), token_hash TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, used_at INTEGER, requested_by TEXT);
+CREATE INDEX IF NOT EXISTS ix_reset_user ON reset_tokens(user_id, created_at);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -66,13 +71,21 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 3   # v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 4   # v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+
+
+def _migrate(con):
+    """Idempotente skemaændringer på eksisterende databaser. Sletter aldrig data."""
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
+    if "email" not in cols:                                   # v4
+        con.execute("ALTER TABLE users ADD COLUMN email TEXT")
 
 
 def init_db(path):
     con = connect(path)
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(SCHEMA)
+    _migrate(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
@@ -136,6 +149,7 @@ def purge_old(db):
     """Dataminimering: audit-log slettes efter 12 måneder; gamle loginforsøg ryddes."""
     db.execute("DELETE FROM audit_log WHERE ts < datetime('now','localtime',?)", (f"-{AUDIT_RETENTION_DAYS} days",))
     db.execute("DELETE FROM login_attempts WHERE ts < ?", (int(time.time()) - 3600,))
+    db.execute("DELETE FROM reset_tokens WHERE expires_at < ?", (int(time.time()) - 86400,))
     db.commit()
 
 

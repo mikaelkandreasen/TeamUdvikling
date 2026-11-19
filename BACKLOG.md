@@ -31,6 +31,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
 ## Idéer (uprioriteret)
+- Testmail-knap i Administration, så SMTP-opsætningen kan afprøves uden at nulstille en bruger.
+- Mulighed for at kræve admin-2FA-kode også til de direkte «Nulstil»-knapper (midlertidig kode).
 - Import fra den gamle Excel-model (engangs-admin-værktøj; bevidst udeladt i v0.1.0, fordi første version skal starte uden spillerdata).
 - Sammenligning af en spiller mod egen tidligere runde i rapporten (tekstlig "hvad har ændret sig").
 - Forslag til træningsfokus pr. hold ud fra laveste områder og spillernes ønsker.

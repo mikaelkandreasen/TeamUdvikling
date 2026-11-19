@@ -14,7 +14,8 @@
 | Evalueringer | scores pr. nøglefærdighed | Udviklingsarbejde | Trænere | Holdets trænere, admin | Når barnet stopper |
 | Motivation og ønsker | barnets svar | Tilpasse træning | Barnet | Holdets trænere, admin | Når barnet stopper |
 | Udvikling og trivsel | fremmøde, trivsel, motorik, mål, tiltag, noter | Støtte barnet | Trænere/barnet | Holdets trænere, admin | Når barnet stopper |
-| Trænerkonti | navn, brugernavn, adgangskode-hash, 2FA-hemmelighed | Adgangskontrol | Trænere | Admin | Når trænere stopper |
+| Trænerkonti | navn, brugernavn, e-mailadresse (valgfri), adgangskode-hash, 2FA-hemmelighed | Adgangskontrol og nulstilling efter admins godkendelse | Trænere/admin | Admin; e-mailudbyder (SMTP) ved afsendelse af nulstillingsmail | Når trænere stopper |
+| Nulstillingstokens | hash af engangslink | Sikker nulstilling | System | Ingen | 60 min. (ryddes efter 1 døgn) |
 | Logs | audit-log, loginforsøg | Sikkerhed/ansvarlighed | System | Admin | 12 mdr. / 1 time |
 
 ## 3. Retsgrundlag

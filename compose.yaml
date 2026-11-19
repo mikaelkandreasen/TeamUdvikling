@@ -21,6 +21,14 @@ services:
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-0}
       # Dage en enhed kan huskes uden kode/2FA (0 = slået fra).
       REMEMBER_DAYS: ${REMEMBER_DAYS:-30}
+      # E-mail til nulstilling af adgangskode/2FA (valgfrit). PUBLIC_URL = adressen brugerne bruger, fx https://teamudvikling.saem.dk
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     volumes:
       - u11-data:/data          # database + automatiske backups (/data/backups)
     ports:

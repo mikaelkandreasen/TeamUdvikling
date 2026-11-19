@@ -11,7 +11,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import remember, totp
+from . import remember, reset_tokens, totp
 from .db import audit, backup_if_due, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
@@ -23,7 +23,7 @@ _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
 IP_MAX_FAILS = 20          # fejlede forsøg pr. IP pr. IP_WINDOW (beskytter mod password spraying og låse-DoS)
 IP_WINDOW = 600
-PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy"}
+PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy", "reset.link"}
 PRE_2FA = {"auth.login_2fa", "auth.twofa_setup", "auth.logout", "auth.force_password"}
 
 
@@ -177,6 +177,19 @@ def _fail(db, user):
 def _ok(db, user):
     db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (user["id"],))
     db.commit()
+
+
+def verify_admin_code(db, user, code):
+    """Trin-op: kræver en frisk 2FA-kode fra den indloggede bruger (replay-beskyttet). Fejl tæller som mislykket login
+    (kontolåsning + IP-spærre), så en kapret session ikke kan gætte koden."""
+    step = totp.verify(user["totp_secret"], code, user["last_totp_step"])
+    if step:
+        db.execute("UPDATE users SET last_totp_step=? WHERE id=?", (step, user["id"]))
+        db.commit()
+        return True
+    _fail(db, user)
+    record_fail(db)
+    return False
 
 
 def _finish_login(db, user, remember_device=False):
@@ -392,6 +405,7 @@ def account():
                     db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                     audit(db, user["username"], "adgangskode_skiftet")
                     remember.revoke_user(db, user["id"])        # alle husk-enheder skal logge ind igen
+                    reset_tokens.revoke_user(db, user["id"])    # afventende nulstillingslinks dør
                     db.commit()
                     _bind(newhash)                      # denne session består; alle andre dør
                     flash("Adgangskoden er skiftet.", "ok")
@@ -432,6 +446,7 @@ def force_password():
                 db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (newhash, user["id"]))
                 audit(db, user["username"], "adgangskode_skiftet")
                 remember.revoke_user(db, user["id"])
+                reset_tokens.revoke_user(db, user["id"])
                 db.commit()
                 _bind(newhash)
                 return redirect(url_for("main.home"))

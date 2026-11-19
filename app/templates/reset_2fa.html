@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Nulstil 2FA{% endblock %}
+{% block content %}
+<div class="login card">
+  <h1>Nulstil 2FA</h1>
+  <p>En administrator har godkendt, at din 2FA nulstilles. Bekræft med din nuværende adgangskode. Derefter scanner du en ny QR-kode, og de gamle gendannelseskoder holder op med at virke.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="pw">Adgangskode</label><input id="pw" type="password" name="password" autocomplete="current-password" required autofocus>
+    <div class="actions"><button class="btn block">Nulstil og opsæt 2FA</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -31,6 +31,20 @@ Kør kun bag HTTPS-reverse proxy med `COOKIE_SECURE=1` og `TRUSTED_PROXIES=1`; h
 ## Husk enhed
 Ved login kan brugeren sætte flueben i "Husk denne enhed i 30 dage". Administration kræver dog altid frisk login med kode. Funktionen kan slås fra med `REMEMBER_DAYS=0`. Se docs/SECURITY.md.
 
+## E-mail og nulstilling af adgangskode/2FA
+Administrator kan give hver bruger en e-mailadresse (Administration → Brugere). Er e-mail sat op, kan administratoren trykke **Godkend og send e-mail** (kræver administratorens egen 2FA-kode) for at sende et engangslink, der nulstiller brugerens adgangskode eller 2FA. Linket virker i 60 minutter. Sæt disse variabler i stack'en (Dockhand → Environment):
+
+| Variabel | Eksempel | Bemærkning |
+|---|---|---|
+| `PUBLIC_URL` | `https://teamudvikling.saem.dk` | Bruges i linket i mailen. Påkrævet. |
+| `SMTP_HOST` | `smtp.dinudbyder.dk` | Påkrævet. |
+| `SMTP_PORT` | `587` | 587 (starttls) eller 465 (ssl). |
+| `SMTP_SECURITY` | `starttls` | `starttls`, `ssl` eller `none` (kun internt relay). |
+| `SMTP_USER` / `SMTP_PASSWORD` | | Brug en app-adgangskode, ikke din personlige. |
+| `SMTP_FROM` | `U11 Udvikling <u11@saem.dk>` | Afsender. Påkrævet. |
+
+Uden disse variabler virker appen som før; knappen til e-mail vises ikke.
+
 ## Klubprofil
 **Administration → Klubprofil**: klubnavn, adresse/kontakt, hjemmeside, fodtekst på rapporter, primær farve og logo (PNG/JPEG/WebP, maks. 512 kB). Vises i header, på loginsiden og på rapporterne.
 Persistente data ligger i volumen `u11-data` (`/data`): `u11.db`, `backups/` (automatisk, maks. én pr. døgn, 14 gemmes) og `secret_key`.

@@ -1,12 +1,13 @@
 """Administration: hold, brugere (med holdtilknytning), runder, backup, Excel-eksport og revisionslog."""
 import io
 import secrets
+import time
 
-from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import generate_password_hash
 
-from . import club, importer, model, remember
-from .auth import admin_required
+from . import club, importer, mailer, model, remember, reset, reset_tokens
+from .auth import _too_many, admin_required, throttled, verify_admin_code
 from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
 from .helpers import round_info, team_id
 
@@ -84,7 +85,8 @@ def _render_users(db, temp=None, temp_user=None):
     mem = {}
     for r in db.execute("SELECT user_id, team_id FROM user_teams"):
         mem.setdefault(r["user_id"], set()).add(r["team_id"])
-    return render_template("admin_users.html", users=users, mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user)
+    return render_template("admin_users.html", users=users, mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user,
+                           mail_missing=mailer.missing())
 
 
 def _set_user_teams(db, uid, team_ids):
@@ -101,14 +103,17 @@ def users():
         username = request.form.get("username", "").strip()
         name = request.form.get("display_name", "").strip() or username
         role = "admin" if request.form.get("role") == "admin" else "trainer"
+        email, email_err = mailer.normalize_email(request.form.get("email"))
         if not username:
             flash("Brugernavn mangler.", "error")
+        elif email_err:
+            flash(email_err, "error")
         elif db.execute("SELECT 1 FROM users WHERE username=?", (username,)).fetchone():
             flash("Brugernavnet findes allerede.", "error")
         else:
             temp = secrets.token_urlsafe(12)
-            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at) VALUES(?,?,?,?,1,datetime('now'))",
-                             (username, name, generate_password_hash(temp), role))
+            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email) VALUES(?,?,?,?,1,datetime('now'),?)",
+                             (username, name, generate_password_hash(temp), role, email))
             _set_user_teams(db, cur.lastrowid, request.form.getlist("teams"))
             audit(db, g.user["username"], "bruger_oprettet", f"{username} ({role})")
             db.commit()
@@ -127,15 +132,42 @@ def user_action(uid, action):
     if action == "teams":
         _set_user_teams(db, uid, request.form.getlist("teams"))
         flash("Holdtilknytning gemt.", "ok")
+    elif action == "email":
+        email, err = mailer.normalize_email(request.form.get("email"))
+        if err:
+            flash(err, "error")
+            return redirect(url_for("admin.users"))
+        db.execute("UPDATE users SET email=? WHERE id=?", (email, uid))
+        reset_tokens.revoke_user(db, uid)                 # afventende links gik til den gamle adresse
+        flash("E-mailadresse gemt." if email else "E-mailadresse fjernet.", "ok")
+    elif action == "mail-reset":
+        purpose = request.form.get("purpose")
+        if purpose not in ("password", "totp"):
+            abort(400)
+        if throttled(db):
+            return _too_many()
+        if not verify_admin_code(db, g.user, request.form.get("code", "")):
+            if db.execute("SELECT locked_until FROM users WHERE id=?", (g.user["id"],)).fetchone()[0] > time.time():
+                session.clear()                           # for mange forkerte koder → ud
+                return redirect(url_for("auth.login"))
+            flash("Forkert eller allerede brugt 2FA-kode. Vent på en ny kode i appen og prøv igen.", "error")
+            return redirect(url_for("admin.users"))
+        ok, msg = reset.send_reset(db, u, purpose, g.user["username"])
+        audit(db, g.user["username"], "mail_nulstil_sendt" if ok else "mail_nulstil_fejlet", f"{u['username']} ({purpose})")
+        db.commit()
+        flash(msg, "ok" if ok else "error")
+        return redirect(url_for("admin.users"))
     elif action == "reset-2fa":
         db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0 WHERE id=?", (uid,))
         db.execute("DELETE FROM recovery_codes WHERE user_id=?", (uid,))
         remember.revoke_user(db, uid)
+        reset_tokens.revoke_user(db, uid)
         flash("2FA nulstillet – brugeren skal oprette den igen ved næste login.", "ok")
     elif action == "reset-password":
         temp = secrets.token_urlsafe(12)
         db.execute("UPDATE users SET pw_hash=?, must_change_pw=1 WHERE id=?", (generate_password_hash(temp), uid))
         remember.revoke_user(db, uid)
+        reset_tokens.revoke_user(db, uid)
         flash("Adgangskode nulstillet. Den midlertidige kode vises kun nu.", "ok")
     elif action == "unlock":
         db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (uid,))

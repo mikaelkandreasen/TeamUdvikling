@@ -25,3 +25,6 @@ Gemt i `settings` med nøgler `club:*` (ikke pr. hold). Logo som fil i `/data/br
 
 ## D-009 · KampKlar afventer valg (2026-11-17)
 Ingen officiel API. Muligheder: (1) iCal-feed for holdets aktiviteter, (2) uofficiel login-scraper bag feature-flag med krypterede legitimationsoplysninger, (3) manuel/CSV-import. Claude API bruges ikke til datahentning. Børnedata og DBU's vilkår skal vurderes før (2).
+
+## D-010 · E-mailnulstilling kun efter admin-godkendelse (2026-11-19)
+Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læser en midlertidig kode op. Valg: ingen offentlig «glemt adgangskode»; admin bekræfter med egen 2FA-kode og udløser en mail med engangslink. 2FA-linket kræver også brugerens adgangskode. Linket bygges af `PUBLIC_URL`, ikke Host-headeren. Konsekvens: færre angrebsflader; kræver SMTP-opsætning. De gamle «Nulstil»-knapper (midlertidig kode) beholdes som nødvej, når mail ikke er sat op.

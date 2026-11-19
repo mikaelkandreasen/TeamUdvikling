@@ -21,10 +21,18 @@ Alle ruter kræver login og 2FA (`pw_ok`-session kan ikke springe 2FA over); all
 Valgfrit flueben efter fuldt login. Afvejning: bekvemmelighed mod, at en stjålet/ulåst enhed giver adgang til børnedata uden 2FA.
 Modforanstaltninger: fast 30-dages udløb (ikke glidende); 256-bit token i HttpOnly/SameSite-cookie, kun nøglet hash i databasen; rotation ved hver brug og tyveridetektion (genbrug af gammelt token tilbagekalder alle enheder); tilbagekaldelse ved log ud, skift af adgangskode, 2FA-nulstilling og "Glem alle enheder"; **administration kræver altid frisk login med kode** (trin-op, 8 timer); højst 10 enheder pr. bruger. Slå funktionen fra med `REMEMBER_DAYS=0`. Anbefaling: aktivér skærmlås på de enheder, der huskes.
 
+## Nulstilling af adgangskode/2FA via e-mail
+Kun en administrator kan udløse en mail, og kun efter at have indtastet en **frisk 2FA-kode** (replay-beskyttet; fejl tæller som mislykket login og kan låse administratorens konto). Der er ingen offentlig «glemt adgangskode»-formular, så den kan ikke bruges til at opremse konti eller spamme.
+Link: 256-bit engangstoken, kun HMAC-hash i databasen, 60 minutters levetid, maks. 3 mails pr. bruger pr. time; nyt link ugyldiggør det gamle. Linket bygges af `PUBLIC_URL` (aldrig Host-headeren, så linket ikke kan forgiftes). Åbning af linket (GET) forbruger intet, så mailscannere gør ingen skade; kun POST gennemfører. Linket kan ikke bruges, hvis adgangskoden skiftes eller e-mailadressen ændres imens.
+- **Adgangskode:** nyt kodeord efter linket; 2FA kræves stadig ved login. Husk-enheder tilbagekaldes.
+- **2FA:** linket alene er ikke nok – brugerens nuværende adgangskode kræves også (fejl tæller mod kontolåsning og IP-spærre). Derefter oprettes ny 2FA og nye gendannelseskoder; gamle koder og husk-enheder dør.
+- Revisionsloggen får kun handling og formål (ikke token, ikke e-mailadresse). SMTP-adgangskoden ligger kun i miljøvariablen `SMTP_PASSWORD`.
+Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug TLS (`starttls`/`ssl`).
+
 ## Kendte restrisici (accepteret / backlog)
 - TOTP-hemmeligheder ligger i klartekst i databasen (og i backups). Beskyt volumen og backups; kryptering i hvile står i backloggen (B-012).
 - CSP tillader `style-src 'unsafe-inline'` (inline `style=`-attributter). Scripts er strengt `self`.
-- Ingen e-mailbaseret nulstilling: en administrator nulstiller konti manuelt (bevidst – færre angrebsflader).
+- Nulstilling via e-mail findes kun som admin-godkendt handling (ingen offentlig «glemt adgangskode»); se afsnittet nedenfor. En kompromitteret postkasse kan kun nulstille adgangskoden, aldrig omgå 2FA.
 - Sessioner er signerede cookies (ikke server-side); idle-timeout 45 min, maks. 8 timer.
 
 ## Internet-checkliste (skal være opfyldt, før porten åbnes)

@@ -54,6 +54,13 @@ def create_app(config=None):
         SESSION_COOKIE_NAME="__Host-u11" if os.environ.get("COOKIE_SECURE", "0") == "1" else "session",
         TRUSTED_PROXIES=int(os.environ.get("TRUSTED_PROXIES", "0") or 0),
         REMEMBER_DAYS=int(os.environ.get("REMEMBER_DAYS", "30") or 0),
+        SMTP_HOST=os.environ.get("SMTP_HOST", ""),
+        SMTP_PORT=os.environ.get("SMTP_PORT", ""),
+        SMTP_USER=os.environ.get("SMTP_USER", ""),
+        SMTP_PASSWORD=os.environ.get("SMTP_PASSWORD", ""),
+        SMTP_FROM=os.environ.get("SMTP_FROM", ""),
+        SMTP_SECURITY=os.environ.get("SMTP_SECURITY", "starttls"),
+        PUBLIC_URL=os.environ.get("PUBLIC_URL", ""),
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=1024 * 1024,
         VERSION=read_version(),
@@ -126,9 +133,9 @@ def create_app(config=None):
     from . import filters
     filters.register(app)
 
-    from . import admin, devdata, evaluation, motivation, players, reports
+    from . import admin, devdata, evaluation, motivation, players, reports, reset
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, admin.bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, admin.bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")

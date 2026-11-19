@@ -34,10 +34,10 @@ def player_id(app, name):
     return r["id"]
 
 
-def make_trainer(app, admin, username, team_names):
+def make_trainer(app, admin, username, team_names, email=None):
     ids = [str(team_id(app, n)) for n in team_names]
     r = admin.c.post("/admin/users", data={"username": username, "display_name": username.title(), "role": "trainer",
-                                           "teams": ids, "csrf_token": admin.token("/admin/users")})
+                                           "teams": ids, "csrf_token": admin.token("/admin/users"), **({"email": email} if email else {})})
     temp = re.search(r'class="secret">([^<]+)<', r.get_data(as_text=True)).group(1)
     c = Client(app)
     c.login(username, temp)                        # temp pw → 2FA-opsætning (gemmer c.secret)
