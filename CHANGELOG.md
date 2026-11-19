@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-19
+
 ### Tilføjet
 - **Op til 4 positioner pr. spiller** med dropdowns (grupperet: Målmand, Forsvar, Midtbane, Kant, Angreb, Andet). Nye positioner: **Højre kant / Venstre kant**, Højre/Venstre back, Midtstopper, Defensiv/Offensiv midtbane. Position & bane viser Valg 1–4. Import/eksport har kolonnerne Position 3 og 4.
 - **Holdsætning** (menu): opstillinger for 3v3, 5v5, 8v8 og 11v11 med flere spillesystemer pr. kamptype (fx 3-3-1, 2-3-2, 4-3-3, 4-4-2). Dropdown pr. plads, bænk, flere gemte opstillinger, ét **idealhold** pr. kamptype, og «Foreslå hold» ud fra spillernes positioner (valgfrit også ud fra scores). Forslag gemmes først ved «Gem».
