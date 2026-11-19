@@ -5,7 +5,7 @@ import time
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import mailer, remember, reset_tokens
+from . import lockout, mailer, remember, reset_tokens
 from .auth import _bind, _fail, _too_many, check_password_policy, record_fail, throttled
 from .db import audit, club_get, get_db
 
@@ -70,8 +70,8 @@ def link(token):
         if problem:
             flash(problem, "error")
             return render_template(tpl, token=token)
-        db.execute("UPDATE users SET pw_hash=?, must_change_pw=0, failed_logins=0, locked_until=0 WHERE id=?",
-                   (generate_password_hash(new), user["id"]))
+        db.execute("UPDATE users SET pw_hash=?, must_change_pw=0 WHERE id=?", (generate_password_hash(new), user["id"]))
+        lockout.clear(db, user["id"], all_ips=True)
         remember.revoke_user(db, user["id"])
         reset_tokens.finish(db, row)
         audit(db, user["username"], "nulstil_adgangskode_mail")
@@ -80,13 +80,16 @@ def link(token):
         flash("Adgangskoden er ændret. Log ind med din nye adgangskode og din 2FA-kode.", "ok")
         return redirect(url_for("auth.login"))
     # 2FA: e-mail alene må aldrig kunne omgå 2FA – den nuværende adgangskode skal også kendes.
-    if user["locked_until"] > time.time() or not check_password_hash(user["pw_hash"], request.form.get("password", "")):
-        if user["locked_until"] <= time.time():
+    locked = lockout.is_locked(db, user)
+    good = check_password_hash(user["pw_hash"], request.form.get("password", "")[:1024])
+    if locked or not good:
+        if not locked:
             _fail(db, user)
         record_fail(db)
         flash("Forkert adgangskode, eller kontoen er midlertidigt låst.", "error")
         return render_template(tpl, token=token)
-    db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0, failed_logins=0, locked_until=0 WHERE id=?", (user["id"],))
+    db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0 WHERE id=?", (user["id"],))
+    lockout.clear(db, user["id"], all_ips=True)
     db.execute("DELETE FROM recovery_codes WHERE user_id=?", (user["id"],))
     remember.revoke_user(db, user["id"])
     reset_tokens.finish(db, row)

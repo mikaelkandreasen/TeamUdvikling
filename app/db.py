@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS reset_tokens(
   purpose TEXT NOT NULL CHECK(purpose IN ('password','totp')), token_hash TEXT NOT NULL UNIQUE,
   created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, used_at INTEGER, requested_by TEXT);
 CREATE INDEX IF NOT EXISTS ix_reset_user ON reset_tokens(user_id, created_at);
+CREATE TABLE IF NOT EXISTS login_fails(user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, ip TEXT NOT NULL, ts INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_login_fails ON login_fails(user_id, ip, ts);
+CREATE TABLE IF NOT EXISTS revoked_sessions(sid_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -71,7 +74,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 4   # v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 5   # v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -150,6 +153,8 @@ def purge_old(db):
     db.execute("DELETE FROM audit_log WHERE ts < datetime('now','localtime',?)", (f"-{AUDIT_RETENTION_DAYS} days",))
     db.execute("DELETE FROM login_attempts WHERE ts < ?", (int(time.time()) - 3600,))
     db.execute("DELETE FROM reset_tokens WHERE expires_at < ?", (int(time.time()) - 86400,))
+    db.execute("DELETE FROM login_fails WHERE ts < ?", (int(time.time()) - 3600,))
+    db.execute("DELETE FROM revoked_sessions WHERE expires_at < ?", (int(time.time()),))
     db.commit()
 
 

@@ -31,6 +31,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
 ## Idéer (uprioriteret)
+- Ekstern scanning (ZAP/nuclei) af den rigtige adresse bag Cloudflare, når siden er oplagt (supplerer den lokale simulation).
+- Tjek af adgangskoder mod lækkede lister (k-anonymitet) ved oprettelse/skift.
 - Testmail-knap i Administration, så SMTP-opsætningen kan afprøves uden at nulstille en bruger.
 - Mulighed for at kræve admin-2FA-kode også til de direkte «Nulstil»-knapper (midlertidig kode).
 - Import fra den gamle Excel-model (engangs-admin-værktøj; bevidst udeladt i v0.1.0, fordi første version skal starte uden spillerdata).

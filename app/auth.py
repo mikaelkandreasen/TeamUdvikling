@@ -11,13 +11,15 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import remember, reset_tokens, totp
+from . import lockout, remember, reset_tokens, totp
 from .db import audit, backup_if_due, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
 MAX_FAILS = 5
 LOCK_SECONDS = 600
 MIN_PW = 12
+MAX_PW = 1024              # længere input afvises uden at hashe (CPU-DoS)
+MAX_USERNAME = 150
 IDLE_SECONDS = 45 * 60
 _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
@@ -41,6 +43,7 @@ def admin_required(view):
             abort(403)
         if time.time() - session.get("auth_at", 0) > ADMIN_FRESH:       # husket enhed: trin-op
             remember.revoke_current(get_db())
+            revoke_session(get_db())
             get_db().commit()
             session.clear()
             flash("Administration kræver, at du logger ind igen med adgangskode og kode.", "info")
@@ -60,6 +63,7 @@ def _pwv(pw_hash):
 
 def _bind(pw_hash):
     session["pwv"] = _pwv(pw_hash)
+    session.setdefault("sid", secrets.token_urlsafe(24))
 
 
 def _safe_next(nxt):
@@ -68,8 +72,24 @@ def _safe_next(nxt):
     return nxt
 
 
-def client_ip():
-    return request.remote_addr or "?"
+client_ip = lockout.client_ip
+
+
+def _sid_hash(sid):
+    return hmac.new(_key(), sid.encode(), hashlib.sha256).hexdigest()
+
+
+def revoke_session(db):
+    """Log ud gør også en kopieret session-cookie ugyldig (sessioner er ellers signerede, statsløse cookies)."""
+    sid = session.get("sid")
+    if sid:
+        life = int(current_app.config["PERMANENT_SESSION_LIFETIME"].total_seconds()) + 3600
+        db.execute("INSERT OR IGNORE INTO revoked_sessions(sid_hash,expires_at) VALUES(?,?)", (_sid_hash(sid), int(time.time()) + life))
+
+
+def consume_totp_step(db, user_id, step):
+    """Atomisk: et tidstrin kan kun bruges én gang, selv ved to samtidige forespørgsler med samme kode."""
+    return db.execute("UPDATE users SET last_totp_step=? WHERE id=? AND last_totp_step<?", (step, user_id, step)).rowcount == 1
 
 
 def throttled(db):
@@ -88,8 +108,10 @@ def _too_many():
 
 def _valid_session_user(db):
     row = db.execute("SELECT * FROM users WHERE id=?", (session["uid"],)).fetchone() if session.get("uid") else None
-    ok = (row and time.time() - session.get("seen", 0) < IDLE_SECONDS
+    sid = session.get("sid")
+    ok = (row and sid and time.time() - session.get("seen", 0) < IDLE_SECONDS
           and hmac.compare_digest(session.get("pwv", ""), _pwv(row["pw_hash"]))
+          and not db.execute("SELECT 1 FROM revoked_sessions WHERE sid_hash=?", (_sid_hash(sid),)).fetchone()
           and not (session.get("stage") == "ok" and not row["totp_enabled"]))   # 2FA nulstillet → ud
     return row if ok else None
 
@@ -159,6 +181,8 @@ def new_recovery_codes(db, uid, n=8):
 def check_password_policy(pw, username=""):
     if len(pw) < MIN_PW:
         return f"Adgangskoden skal være mindst {MIN_PW} tegn."
+    if len(pw) > MAX_PW:
+        return f"Adgangskoden må højst være {MAX_PW} tegn."
     if username and username.lower() in pw.lower():
         return "Adgangskoden må ikke indeholde brugernavnet."
     if len(set(pw)) < 5:
@@ -167,15 +191,13 @@ def check_password_policy(pw, username=""):
 
 
 def _fail(db, user):
-    fails = user["failed_logins"] + 1
-    locked = int(time.time()) + LOCK_SECONDS if fails >= MAX_FAILS else 0
-    db.execute("UPDATE users SET failed_logins=?, locked_until=? WHERE id=?", (0 if locked else fails, locked, user["id"]))
+    locked = lockout.register_fail(db, user)
     audit(db, user["username"], "login_fejl", "låst" if locked else "")
     db.commit()
 
 
 def _ok(db, user):
-    db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (user["id"],))
+    lockout.clear(db, user["id"])
     db.commit()
 
 
@@ -183,8 +205,7 @@ def verify_admin_code(db, user, code):
     """Trin-op: kræver en frisk 2FA-kode fra den indloggede bruger (replay-beskyttet). Fejl tæller som mislykket login
     (kontolåsning + IP-spærre), så en kapret session ikke kan gætte koden."""
     step = totp.verify(user["totp_secret"], code, user["last_totp_step"])
-    if step:
-        db.execute("UPDATE users SET last_totp_step=? WHERE id=?", (step, user["id"]))
+    if step and consume_totp_step(db, user["id"], step):
         db.commit()
         return True
     _fail(db, user)
@@ -217,19 +238,22 @@ def login():
             return _too_many()
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
-        user = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        oversize = len(username) > MAX_USERNAME or len(password) > MAX_PW
+        user = None if oversize else db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
         generic = "Forkert brugernavn eller adgangskode, eller kontoen er midlertidigt låst."
         if not user:
-            check_password_hash(_DUMMY_HASH, password)
-            record_fail(db)
-            flash(generic, "error")
-        elif user["locked_until"] > time.time():
-            flash(generic, "error")
-        elif not check_password_hash(user["pw_hash"], password):
-            _fail(db, user)
+            check_password_hash(_DUMMY_HASH, password[:MAX_PW])
             record_fail(db)
             flash(generic, "error")
         else:
+            locked = lockout.is_locked(db, user)
+            good = check_password_hash(user["pw_hash"], password)       # altid beregnet: låst/ulåst/ukendt tager lige lang tid
+        if user and (locked or not good):
+            if not locked:
+                _fail(db, user)
+            record_fail(db)
+            flash(generic, "error")
+        elif user:
             _ok(db, user)
             session.clear()
             session["uid"] = user["id"]
@@ -251,12 +275,11 @@ def login_2fa():
         if throttled(db):
             return _too_many()
         code = request.form.get("code", "")
-        if user["locked_until"] > time.time():
+        if lockout.is_locked(db, user):
             flash("Kontoen er midlertidigt låst. Prøv igen senere.", "error")
         else:
             step = totp.verify(user["totp_secret"], code, user["last_totp_step"])
-            if step:
-                db.execute("UPDATE users SET last_totp_step=? WHERE id=?", (step, user["id"]))
+            if step and consume_totp_step(db, user["id"], step):
                 _ok(db, user)
                 _finish_login(db, user, request.form.get("remember") == "1")
                 nxt = session.pop("next", "")
@@ -273,7 +296,9 @@ def login_2fa():
             _fail(db, user)
             record_fail(db)
             flash("Forkert kode.", "error")
-            if db.execute("SELECT locked_until FROM users WHERE id=?", (user["id"],)).fetchone()[0] > time.time():
+            if lockout.is_locked(db, db.execute("SELECT * FROM users WHERE id=?", (user["id"],)).fetchone()):
+                revoke_session(db)
+                db.commit()
                 session.clear()
                 return redirect(url_for("auth.login"))
     return render_template("login_2fa.html", remember_days=remember.days(), is_admin=user["role"] == "admin")
@@ -380,6 +405,7 @@ def logout():
         audit(get_db(), g.user["username"], "logout")
         get_db().commit()
     remember.revoke_current(get_db())
+    revoke_session(get_db())
     get_db().commit()
     session.clear()
     return redirect(url_for("auth.login"))

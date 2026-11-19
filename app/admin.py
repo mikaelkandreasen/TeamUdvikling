@@ -7,7 +7,8 @@ from flask import Blueprint, Response, abort, current_app, flash, g, redirect, r
 from werkzeug.security import generate_password_hash
 
 from . import club, importer, mailer, model, remember, reset, reset_tokens
-from .auth import _too_many, admin_required, throttled, verify_admin_code
+from . import lockout
+from .auth import _too_many, admin_required, revoke_session, throttled, verify_admin_code
 from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
 from .helpers import round_info, team_id
 
@@ -147,7 +148,9 @@ def user_action(uid, action):
         if throttled(db):
             return _too_many()
         if not verify_admin_code(db, g.user, request.form.get("code", "")):
-            if db.execute("SELECT locked_until FROM users WHERE id=?", (g.user["id"],)).fetchone()[0] > time.time():
+            if lockout.is_locked(db, db.execute("SELECT * FROM users WHERE id=?", (g.user["id"],)).fetchone()):
+                revoke_session(db)
+                db.commit()
                 session.clear()                           # for mange forkerte koder → ud
                 return redirect(url_for("auth.login"))
             flash("Forkert eller allerede brugt 2FA-kode. Vent på en ny kode i appen og prøv igen.", "error")
@@ -170,7 +173,7 @@ def user_action(uid, action):
         reset_tokens.revoke_user(db, uid)
         flash("Adgangskode nulstillet. Den midlertidige kode vises kun nu.", "ok")
     elif action == "unlock":
-        db.execute("UPDATE users SET failed_logins=0, locked_until=0 WHERE id=?", (uid,))
+        lockout.clear(db, uid, all_ips=True)
         flash("Konto låst op.", "ok")
     elif action == "delete":
         if uid == g.user["id"]:

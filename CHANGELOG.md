@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Sikkerhed
+- Simuleret angreb på login bag Cloudflare (`tests/test_login_attack.py`, 25 angreb). Rettet: lås-DoS (kontolåsning er nu pr. bruger+IP, global grænse 25 fejl), brugeropremsning via svartid på låste konti, session-cookie der virkede efter log ud, samtidig genbrug af 2FA-kode, indeksering og versionsvisning på login-siden, grænse for inputlængde, advarsel ved `COOKIE_SECURE` uden `TRUSTED_PROXIES`. Se docs/SECURITY.md (inkl. Cloudflare-indstillinger).
+- Skema v5 (`login_fails`, `revoked_sessions`; idempotent). Eksisterende sessioner logges ud én gang ved opdatering (husk-enheder virker stadig).
+
 ## [0.6.0] - 2026-11-19
 
 ### Tilføjet

@@ -92,7 +92,8 @@ def try_restore(db):
         g.clear_remember = True
         return False
     user = db.execute("SELECT * FROM users WHERE id=?", (row["user_id"],)).fetchone()
-    if not user or not user["totp_enabled"] or user["locked_until"] > now:
+    from .lockout import is_locked
+    if not user or not user["totp_enabled"] or is_locked(db, user):
         g.clear_remember = True
         return False
     if not rotated_old:

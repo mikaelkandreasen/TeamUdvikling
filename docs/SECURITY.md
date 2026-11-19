@@ -1,4 +1,4 @@
-# Sikkerhed – pentest og hærdning (v0.2.1)
+# Sikkerhed – pentest og hærdning
 
 Hvad der er gjort: white-box pentest af hele koden med automatiske angrebstests (`tests/test_security.py`, kører i CI ved hver ændring). Der er **ikke** udført en ekstern pentest fra internettet, og Docker-image/CI er ikke kørt i udviklingsmiljøet. Anbefal en ekstern scanning (fx `nuclei`/OWASP ZAP) mod det udrullede system, inden det åbnes mod internettet.
 
@@ -13,6 +13,29 @@ Hvad der er gjort: white-box pentest af hele koden med automatiske angrebstests 
 | 6 | Åben redirect via `next` med `\` | Lav | Streng validering af `next` |
 | 7 | Manglende HSTS, Permissions-Policy, COOP/CORP; cookie uden `__Host-`-præfiks; `/healthz` viste version | Lav | Tilføjet (HSTS og `__Host-` når `COOKIE_SECURE=1`); `/healthz` viser kun status |
 | 8 | Backup/audit-log voksede uden grænse; uafhængige afhængigheder ikke låst | Lav | Audit slettes efter 12 mdr.; afhængigheder fastlåst; Dependabot, `pip-audit` og `bandit` i CI |
+
+## Simuleret angreb på login bag Cloudflare (v0.6.1)
+`tests/test_login_attack.py` (25 angreb) kører appen som i drift (`TRUSTED_PROXIES=1`, sikre `__Host-`-cookies) bag en simuleret Cloudflare, der sætter `X-Forwarded-Proto` og tilføjer klientens rigtige IP sidst i `X-Forwarded-For`. Det er en lokal simulation – ikke et angreb på den rigtige side eller på Cloudflares kant.
+| # | Fund | Alvor | Rettelse |
+|---|------|-------|----------|
+| 9 | **Lås-DoS:** 5 forkerte forsøg fra hvem som helst låste kontoen (fx `admin`) for alle i 10 min – gentaget i evighed | Høj | Låsning pr. (bruger, IP): 5 fejl spærrer kun den IP; 25 fejl fra alle IP'er låser kontoen for alle (`app/lockout.py`) |
+| 10 | **Brugeropremsning via tid:** låste konti svarede uden at hashe adgangskoden (hurtigere end ukendte) | Mellem | Adgangskoden hashes altid, også for låste og ukendte brugere |
+| 11 | **Session-cookie virkede efter log ud** (signeret, statsløs cookie kunne genafspilles) | Mellem | Hver session har et id; log ud (og udløb af admin-friskhed, låsning) sætter det på en afvisningsliste (`revoked_sessions`) |
+| 12 | **Samtidig genbrug af 2FA-kode** (tjek-og-opdatér var ikke atomisk) | Mellem | `UPDATE … WHERE last_totp_step < ?` – kun én forespørgsel kan bruge et tidstrin |
+| 13 | Login-siden kunne indekseres af søgemaskiner og viste versionsnummer til anonyme | Lav | `X-Robots-Tag: noindex`, version kun for indloggede |
+| 14 | Meget lange brugernavne/adgangskoder (CPU/log) | Lav | Maks. 150/1024 tegn; afvises uden at hashe kandidaten |
+| 15 | `COOKIE_SECURE=1` uden `TRUSTED_PROXIES` giver alle brugere én fælles IP-spærre (en angriber blokerer alle) | Mellem | Advarsel i loggen ved opstart |
+Modstod angrebet: falsk `X-Forwarded-For` (appen bruger kun det sidste led, som Cloudflare tilføjer), brute force på 2FA, 9 åbne-redirect-varianter, login-CSRF, forfalskede/ændrede cookies, fejlsider uden lækage, cookie-flag (`Secure`, `HttpOnly`, `SameSite=Lax`, `__Host-`).
+Vurderet og ikke indført: `ALLOWED_HOSTS`/origin-hemmelighed (tunnelen gør originen utilgængelig fra internettet; links i mails bruger `PUBLIC_URL`); tjek mod lækkede adgangskoder (kræver ekstern tjeneste).
+
+### Cloudflare-indstillinger (gør dette)
+1. **Ingen Access-login** på `teamudvikling.saem.dk` (appen har egen adgangskode + 2FA), men behold resten af beskyttelsen.
+2. **Rate limiting-regel:** sti `/login` og `/nulstil`, maks. 10 forespørgsler/minut pr. IP, handling Block. (Appen har egen spærre, men Cloudflare stopper trafikken, før den rammer din NUC.)
+3. **Bot Fight Mode** til. **Always Use HTTPS** til. Minimum TLS 1.2.
+4. **Slå fra:** Rocket Loader, Email Address Obfuscation og Web Analytics-injektion. De indsætter scripts i siden, som appens CSP (`script-src 'self'`) blokerer, og det giver fejl.
+5. **Cache:** lad HTML være uden for cache (standard). Brug ikke «Cache Everything» på domænet.
+6. **Hold porten lukket:** `cloudflared` på NUC .235 er den eneste vej ind. Port 1020 på .212 må ikke videresendes i routeren.
+7. Sæt `COOKIE_SECURE=1` og `TRUSTED_PROXIES=1` i stack'en. Loggen advarer ved opstart, hvis `TRUSTED_PROXIES` mangler.
 
 ## Kontroller der bestod (testet)
 Alle ruter kræver login og 2FA (`pw_ok`-session kan ikke springe 2FA over); alle POST kræver CSRF; trænere kan ikke nå admin eller andre holds spillere (IDOR-sweep over alle ruter); lagret XSS escapes på alle sider; SQL-injektion i login; brugeropremsning (ens svar for ukendt/kendt bruger); replay af TOTP-kode; upload af SVG/forklædte filer afvises; 413 ved for store forespørgsler; ingen stacktraces.

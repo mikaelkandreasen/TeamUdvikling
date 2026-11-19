@@ -53,6 +53,6 @@
   {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" role="status">{{ m }}</div>{% endfor %}{% endwith %}
   {% block content %}{% endblock %}
 </main>
-<footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}U11 Udvikling v{{ version }} · <a href="{{ url_for('main.privacy') }}">Privatliv</a></footer>
+<footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}U11 Udvikling{% if user %} v{{ version }}{% endif %} · <a href="{{ url_for('main.privacy') }}">Privatliv</a></footer>
 </body>
 </html>

@@ -82,6 +82,10 @@ def create_app(config=None):
         app.config["SETUP_TOKEN"] = _setup_token(app.config["U11_DATA_DIR"])
         app.logger.warning("FØRSTE OPSÆTNING: opsætningskoden står i %s/setup_token (og vises ikke igen).", app.config["U11_DATA_DIR"])
 
+    if app.config["SESSION_COOKIE_SECURE"] and not app.config["TRUSTED_PROXIES"]:
+        app.logger.warning("COOKIE_SECURE=1 men TRUSTED_PROXIES=0: appen ser kun proxyens IP, så alle brugere deler én IP-spærre. "
+                           "Sæt TRUSTED_PROXIES=1 bag Cloudflare/reverse proxy.")
+
     app.teardown_appcontext(db.close_db)
 
     @app.before_request
@@ -107,6 +111,7 @@ def create_app(config=None):
         resp.headers.setdefault("X-Frame-Options", "DENY")
         resp.headers.setdefault("Referrer-Policy", "same-origin")
         resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()")
+        resp.headers.setdefault("X-Robots-Tag", "noindex, nofollow, noarchive")        # siden er privat – ingen søgemaskiner
         resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         resp.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
         remember.apply_cookie(resp)

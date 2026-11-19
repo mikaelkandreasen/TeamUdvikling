@@ -26,7 +26,7 @@ def fill(rule, v=1):
 # ---------------------------------------------------------------- adgang uden login
 def test_all_routes_require_login(app):
     c = app.test_client()
-    public = {"auth.login", "auth.login_2fa", "auth.setup", "healthz", "main.club_logo", "main.privacy"}
+    public = {"auth.login", "auth.login_2fa", "auth.setup", "healthz", "main.club_logo", "main.privacy", "reset.link"}
     for r in app.url_map.iter_rules():
         if r.endpoint in public or r.endpoint == "static":
             continue
