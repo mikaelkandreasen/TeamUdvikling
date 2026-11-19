@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-19
+
 ### Tilføjet
 - **Aktive nu:** på forsiden ses, hvor mange (og hvem) der er aktive på dit hold de seneste 5 minutter. Administratorer ser også alle hold i alt. Trænere ser aldrig navne fra andre hold.
 - **Administration → Brug:** aktive brugere pr. 15 minutter over døgnet, ugedag × tidspunkt (varmekort), travleste tidspunkter og sidst aktiv pr. bruger. Filter på periode og hold. Lokal tid (`TZ`, standard Europe/Copenhagen).
