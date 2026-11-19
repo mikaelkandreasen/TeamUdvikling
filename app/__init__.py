@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import auth, charts, club, db, helpers, model, photos, remember, teams
+from . import activity, auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -59,6 +59,7 @@ def create_app(config=None):
         SMTP_USER=os.environ.get("SMTP_USER", ""),
         SMTP_PASSWORD=os.environ.get("SMTP_PASSWORD", ""),
         SMTP_FROM=os.environ.get("SMTP_FROM", ""),
+        TIMEZONE=os.environ.get("TZ", "Europe/Copenhagen"),
         SMTP_SECURITY=os.environ.get("SMTP_SECURITY", "starttls"),
         PUBLIC_URL=os.environ.get("PUBLIC_URL", ""),
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
@@ -120,6 +121,7 @@ def create_app(config=None):
         resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         resp.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
         remember.apply_cookie(resp)
+        activity.track(resp)
         if app.config["SESSION_COOKIE_SECURE"]:
             resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
         resp.headers.setdefault("Content-Security-Policy",

@@ -1,0 +1,7 @@
+{# Aktive brugere de seneste minutter. Navne på andre hold vises aldrig for trænere – kun administratorer ser alle hold. #}
+<div class="card">
+  <h2>Aktive nu</h2>
+  <p><b>{{ online['team']|length }}</b> på {{ team['name'] if team else 'holdet' }}{% if online['team'] %}: {{ online['team']|map(attribute='display_name')|join(', ') }}{% endif %}</p>
+  {% if online['total'] is not none %}<p><b>{{ online['total']|length }}</b> i alt{% if online['total'] %}: {% for r in online['total'] %}{{ r['display_name'] }}{% if r['team'] %} ({{ r['team'] }}){% endif %}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</p>{% endif %}
+  <p class="muted small">Aktive de seneste {{ online['window'] }} minutter.</p>
+</div>

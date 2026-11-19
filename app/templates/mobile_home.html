@@ -6,6 +6,7 @@
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">Overblik<small>hele holdet</small></a>
   <a class="tile alt" href="{{ url_for('devdata.matrix') }}">Fremmøde<small>trivsel &amp; motorik</small></a>
 </div>
+{% include "_online.html" %}
 <h2>Spillere ({{ cards|length }})</h2>
 {% for c in cards %}
 <div class="pcard">

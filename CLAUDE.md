@@ -26,7 +26,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 `app/__init__.py` (create_app, CSRF, sikkerhedsheadere) · `auth.py` (login/2FA/lockout/gate) · `teams.py` (hold-adgang) ·
 `db.py` (skema, backup, indstillinger) · `model.py` (roller, kriterier, ALLE beregninger – rene funktioner) ·
 `evaluation.py`, `motivation.py`, `devdata.py`, `reports.py`, `players.py`, `admin.py`, `views.py` (blueprints) ·
-`formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
+`activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
 
 ## Regler der IKKE må brydes
 1. **Hold-afgrænsning.** Al adgang til spillerdata skal gå via `helpers.get_player()` / `helpers.active_players()` /

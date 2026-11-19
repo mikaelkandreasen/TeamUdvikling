@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Brug{% endblock %}
+{% block content %}
+<h1>Brug</h1>
+<form method="get" class="card"><div class="row">
+  <div><label for="d">Periode</label><select id="d" name="days" data-autosubmit>{% for n in (7, 14, 30, 90, 180) %}<option value="{{ n }}" {{ 'selected' if n == days }}>Seneste {{ n }} dage</option>{% endfor %}</select></div>
+  <div><label for="t">Hold</label><select id="t" name="team" data-autosubmit><option value="">Alle hold</option>{% for t in all_teams %}<option value="{{ t['id'] }}" {{ 'selected' if t['id'] == tid }}>{{ t['name'] }}</option>{% endfor %}</select></div>
+  <noscript><button class="btn sec">Vis</button></noscript></div></form>
+<div class="card"><h2>Aktive nu ({{ now_online|length }})</h2>
+  {% for r in now_online %}<div>{{ r['display_name'] }}{% if r['team'] %} <span class="muted">· {{ r['team'] }}</span>{% endif %}</div>{% else %}<p class="muted">Ingen aktive de seneste {{ window }} minutter.</p>{% endfor %}</div>
+<div class="card"><h2>Aktive brugere pr. kvarter</h2>
+  <p class="muted small">Antal brugere, der var aktive i hvert 15-minutters tidsrum, lagt sammen over perioden (lokal tid).</p>{{ bars }}</div>
+<div class="card"><h2>Ugedag og tidspunkt</h2>{{ heat }}<p class="muted small">Mørkere = mere brug.</p></div>
+<div class="card"><h2>Travleste tidspunkter</h2>
+  {% for v, d, k in u['top'] %}<div><b>{{ DAYS[d] }} {{ label(k) }}–{{ label((k + 1) % 96) }}</b> <span class="muted">· {{ v }} aktive brugerkvarterer</span></div>{% else %}<p class="muted">Ingen brug registreret i perioden endnu.</p>{% endfor %}</div>
+<div class="card"><h2>Brugere</h2>
+  <div class="scroll"><table class="responsive"><thead><tr><th>Bruger</th><th>Sidst aktiv</th><th>Aktive kvarterer</th></tr></thead>
+  <tbody>{% for p in people %}<tr><td class="name">{{ p['display_name'] }}</td><td data-label="Sidst aktiv">{{ p['seen'] or '–' }}</td><td data-label="Aktive kvarterer">{{ p['slots'] }}</td></tr>{% endfor %}</tbody></table></div></div>
+<p class="muted small">Der gemmes kun, at en bruger var aktiv i et kvarter – ingen sider, indhold, scores eller IP-adresser. Data slettes efter 180 dage.</p>
+{% endblock %}

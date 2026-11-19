@@ -9,6 +9,18 @@ bp = Blueprint("evaluation", __name__)
 POSITION_TYPES = {"primaer": ("position", "Valg 1"), "sekundaer": ("position2", "Valg 2"), "tredje": ("position3", "Valg 3"), "fjerde": ("position4", "Valg 4")}
 
 
+def _open_roles(raw):
+    """Hvilke spillertyper (rollepaneler) der er åbne. None = ikke angivet → første er åben. Ugyldigt ignoreres."""
+    if raw is None:
+        return None
+    out = []
+    for part in raw.split(",")[:len(model.ROLES)]:
+        i = int_in(part, 0, len(model.ROLES) - 1)
+        if i is not None and i not in out:
+            out.append(i)
+    return out
+
+
 def _rnd(rnd):
     if rnd not in g.rounds:
         abort(404)
@@ -64,13 +76,16 @@ def eval_form(rnd, pid):
                            (rnd, pid, g.user["id"], c["idx"]))
         db.commit()
         flash(f"Gemt ({saved} af {model.N_CRIT} kriterier).", "ok")
+        keep = _open_roles(request.form.get("open"))
+        extra = {} if keep is None else {"open": ",".join(str(i) for i in keep)}
         if request.form.get("go") == "next" and next_id:
-            return redirect(url_for("evaluation.eval_form", rnd=rnd, pid=next_id))
+            return redirect(url_for("evaluation.eval_form", rnd=rnd, pid=next_id, **extra))
         return redirect(url_for("evaluation.eval_round", rnd=rnd))
     scores = {r["crit"]: r["score"] for r in db.execute(
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
     return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, info=round_info(db)[rnd - 1],
-                           prev_id=prev_id, next_id=next_id, criteria=model.CRITERIA)
+                           prev_id=prev_id, next_id=next_id, criteria=model.CRITERIA,
+                           open_roles=_open_roles(request.args.get("open")))
 
 
 @bp.route("/overview")

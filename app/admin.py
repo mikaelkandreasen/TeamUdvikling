@@ -6,11 +6,11 @@ import time
 from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import generate_password_hash
 
-from . import club, importer, mailer, model, remember, reset, reset_tokens
+from . import activity, club, importer, mailer, model, remember, reset, reset_tokens
 from . import lockout
 from .auth import _too_many, admin_required, revoke_session, throttled, verify_admin_code
 from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
-from .helpers import round_info, team_id
+from .helpers import int_in, round_info, team_id
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -213,6 +213,20 @@ def make_backup():
     audit(get_db(), g.user["username"], "backup_hentet")
     get_db().commit()
     return send_file(dest, as_attachment=True, download_name="u11-backup.db")
+
+
+@bp.route("/usage")
+def usage():
+    db = get_db()
+    days = int_in(request.args.get("days"), 1, 180) or 30
+    tid = int_in(request.args.get("team"), 1, 10 ** 9)
+    if tid and not db.execute("SELECT 1 FROM teams WHERE id=?", (tid,)).fetchone():
+        tid = None
+    u = activity.usage(db, days, tid)
+    return render_template("admin_usage.html", u=u, days=days, tid=tid, all_teams=db.execute("SELECT id, name FROM teams ORDER BY name COLLATE NOCASE").fetchall(),
+                           now_online=activity.online(db, everyone=True), people=activity.users_table(db, days, tid),
+                           bars=activity.bar_chart(u["by_day"]), heat=activity.heatmap(u["grid"]), label=activity.label, DAYS=activity.DAYS,
+                           window=activity.ONLINE_WINDOW // 60)
 
 
 @bp.route("/audit")

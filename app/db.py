@@ -73,6 +73,9 @@ CREATE TABLE IF NOT EXISTS lineup_slots(
 CREATE TABLE IF NOT EXISTS login_fails(user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_fails ON login_fails(user_id, ip, ts);
 CREATE TABLE IF NOT EXISTS revoked_sessions(sid_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS presence(user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, last_seen INTEGER NOT NULL, team_id INTEGER);
+CREATE TABLE IF NOT EXISTS activity(user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, slot INTEGER NOT NULL, team_id INTEGER, PRIMARY KEY(user_id, slot));
+CREATE INDEX IF NOT EXISTS ix_activity_slot ON activity(slot);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -85,7 +88,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 6   # v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 7   # v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -163,6 +166,9 @@ def audit(db, user, action, detail=""):
 AUDIT_RETENTION_DAYS = 365
 
 
+ACTIVITY_RETENTION_DAYS = 180
+
+
 def purge_old(db):
     """Dataminimering: audit-log slettes efter 12 måneder; gamle loginforsøg ryddes."""
     db.execute("DELETE FROM audit_log WHERE ts < datetime('now','localtime',?)", (f"-{AUDIT_RETENTION_DAYS} days",))
@@ -170,6 +176,7 @@ def purge_old(db):
     db.execute("DELETE FROM reset_tokens WHERE expires_at < ?", (int(time.time()) - 86400,))
     db.execute("DELETE FROM login_fails WHERE ts < ?", (int(time.time()) - 3600,))
     db.execute("DELETE FROM revoked_sessions WHERE expires_at < ?", (int(time.time()),))
+    db.execute("DELETE FROM activity WHERE slot < ?", (int(time.time()) // 900 - ACTIVITY_RETENTION_DAYS * 96,))
     db.commit()
 
 

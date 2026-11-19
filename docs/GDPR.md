@@ -25,6 +25,7 @@ Anbefalet: **samtykke fra forældremyndighedsindehaver** (art. 6(1)(a), art. 8) 
 Admin kan importere spillere fra Excel/CSV. Uploadede filer gemmes ikke; kun et midlertidigt, rensat resultat (maks. 30 min, slettes ved bekræftelse) ligger i `/data/import`. Brugeren skal selv slette kildefilen lokalt. Revisionsloggen indeholder kun antal.
 
 ## 4. Principper
+- **Brugsstatistik for trænere:** systemet registrerer kun, at en træner var aktiv i et 15-minutters tidsrum (og på hvilket hold) samt sidste aktivitet; ingen sider, indhold eller IP-adresser. Slettes efter 180 dage. Bruges til at se travle tidspunkter og hvem der er aktive.
 - **Dataminimering:** ingen CPR-nr., ingen adresser, billeder af børn kun med forældresamtykke (afkrydsning ved upload, tidspunkt gemmes; billedet genkodes uden GPS/metadata, slettes med spilleren), ingen forældredata. Fritekstfelter (noter, tiltag) må ikke bruges til følsomme oplysninger.
 - **Formålsbegrænsning:** ikke til udtagelse alene og ikke til videregivelse.
 - **Opbevaring:** *Dataoprydning* (Admin) sletter inaktive spillere permanent; backups overskrives efter 14 dage; audit-log efter 12 mdr.

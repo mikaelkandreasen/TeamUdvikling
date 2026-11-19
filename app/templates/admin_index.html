@@ -10,6 +10,7 @@
   <a class="tile alt" href="{{ url_for('admin.retention') }}">Dataoprydning<small>slet inaktive spillere</small></a>
   <a class="tile alt" href="{{ url_for('admin.club_profile') }}">Klubprofil<small>logo, navn, farve, kontakt</small></a>
   <a class="tile alt" href="{{ url_for('admin.settings') }}">Runder<small>navne og datoer ({{ team['name'] if team else 'intet hold' }})</small></a>
+  <a class="tile alt" href="{{ url_for('admin.usage') }}">Brug<small>hvem er aktive, travle tidspunkter</small></a>
   <a class="tile alt" href="{{ url_for('admin.audit_log') }}">Revisionslog<small>logins og ændringer</small></a>
   <a class="tile alt" href="{{ url_for('admin.export_xlsx') }}">Excel-eksport<small>aktivt hold</small></a>
 </div>

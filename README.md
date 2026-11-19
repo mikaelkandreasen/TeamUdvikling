@@ -1,7 +1,7 @@
 # Team Udvikling (U11 Udvikling)
 
 Selvhostet webapp til spillerudvikling på børnehold: DBU's 4 spillerroller × 6 nøglefærdigheder, motivation og træningsønsker, relativ alder,
-fremmøde, trivsel, motorik, handleplan og en rapportside pr. spiller, op til 4 positioner pr. spiller, holdsætning (3v3/5v5/8v8/11v11 med flere opstillinger og idealhold) og spillerbilleder (med samtykke). Flere hold og flere trænere, login med 2FA, mobil-venlig.
+fremmøde, trivsel, motorik, handleplan og en rapportside pr. spiller, op til 4 positioner pr. spiller, holdsætning (3v3/5v5/8v8/11v11 med flere opstillinger og idealhold) og spillerbilleder (med samtykke). Administrator kan se, hvem der er aktive nu, og hvornår systemet bruges mest (15-minutters opløsning). Flere hold og flere trænere, login med 2FA, mobil-venlig.
 
 > Databasen starter **tom** – der følger ingen spillerdata med.
 
