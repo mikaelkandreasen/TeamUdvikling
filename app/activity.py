@@ -32,16 +32,25 @@ def record(db, user_id, team_id, now=None):
     db.commit()
 
 
-def track(resp):
-    """after_request: registrér aktivitet for fuldt indloggede brugere (ikke 'se som', ikke statiske filer/fejl)."""
+def touch():
+    """before_request (efter login-kontrol): registrér aktivitet for fuldt indloggede brugere (ikke 'se som', ikke statiske filer)."""
     try:
         if (g.get("user") and session.get("stage") == "ok" and not g.get("viewing") and request.endpoint
-                and request.endpoint not in SKIP_ENDPOINTS and resp.status_code < 400):
+                and request.endpoint not in SKIP_ENDPOINTS):
             from .db import get_db
             record(get_db(), g.user["id"], g.team["id"] if g.get("team") else None)
     except Exception:         # noqa: BLE001 – statistik må aldrig vælte en side
         current_app.logger.warning("Aktivitet kunne ikke registreres", exc_info=True)
-    return resp
+
+
+def badge():
+    """Til headeren: {team: [...], total: [...]|None}; None hvis ikke fuldt indlogget. Cachet pr. request."""
+    if not g.get("user") or session.get("stage") != "ok":
+        return None
+    if "online_badge" not in g:
+        from .db import get_db
+        g.online_badge = summary(get_db(), g.user, g.get("team"))
+    return g.online_badge
 
 
 def online(db, team_id=None, everyone=False, now=None):

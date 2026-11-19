@@ -29,7 +29,7 @@ def home():
         return redirect(url_for("main.mobile"))
     db = get_db()
     players, rounds, prog = _dashboard_data(db)
-    return render_template("home.html", players=players, prog=prog, online=activity.summary(db, g.user, g.team))
+    return render_template("home.html", players=players, prog=prog)
 
 
 @bp.route("/m")
@@ -42,7 +42,22 @@ def mobile():
         r, res = model.latest(rounds, p["id"])
         cards.append(dict(p=p, round=r, samlet=res["samlet"] if res else None))
     cur = default_round(rounds)
-    return render_template("mobile_home.html", cards=cards, prog=prog, cur=cur, online=activity.summary(db, g.user, g.team))
+    return render_template("mobile_home.html", cards=cards, prog=prog, cur=cur)
+
+
+@bp.route("/aktivitet")
+def activity_now():
+    """Hvem er aktive nu: eget hold for alle; alle hold (med holdnavn) kun for administratorer."""
+    from datetime import datetime
+    import time
+    info = activity.summary(get_db(), g.user, g.team)
+    zone = activity.tz()
+    now = int(time.time())
+
+    def ago(r):
+        mins = max(0, (now - r["last_seen"]) // 60)
+        return "lige nu" if mins < 1 else f"for {mins} min. siden"
+    return render_template("activity_now.html", info=info, ago=ago, fmt=lambda r: datetime.fromtimestamp(r["last_seen"], zone).strftime("%H:%M"))
 
 
 @bp.route("/menu")

@@ -46,21 +46,37 @@ def test_only_one_row_per_user_and_quarter(app, admin):
     assert all(r["c"] == 1 for r in rows)
 
 
-def test_online_counts_are_scoped_to_team_and_names_hidden_from_trainers(app, two):
+def badge(html):
+    m = re.search(r'class="onl"[^>]*>\(([^)]*)\)</a>', html)
+    return m.group(1) if m else None
+
+
+def test_header_badge_counts_self_and_is_scoped_to_team(app, two):
     admin = two
     t = make_trainer(app, admin, "tina", ["U11 Alfa"], email=None)
     other = make_trainer(app, admin, "ole", ["U12 Beta"])
     sql(app, "UPDATE users SET display_name='Tina Træner' WHERE username='tina'")
     sql(app, "UPDATE users SET display_name='Ole Anden' WHERE username='ole'")
-    t.get("/")
-    other.get("/")
+    other.get("/?desktop=1")
     html = t.get("/?desktop=1").get_data(as_text=True)
-    assert "Aktive nu" in html
-    box = html.split("Aktive nu")[1].split("</div>")[0]
-    assert "Tina Træner" in box and "Ole Anden" not in html                                # intet navn fra andet hold
-    assert "i alt" not in box                                                              # total kun for administratorer
+    assert badge(html) == "2 aktive"                                         # Tina + administratoren (på U11 Alfa); ikke Ole på U12 Beta
+    assert "<h2>Aktive nu</h2>" not in html                                  # ikke længere et kort på forsiden
     ah = admin.get("/?desktop=1").get_data(as_text=True)
-    assert "i alt" in ah and "Ole Anden (U12 Beta)" in ah and "Tina Træner (U11 Alfa)" in ah
+    assert badge(ah) == "2/3 aktive"                                         # administrator: eget hold / i alt (admin, Tina, Ole)
+
+
+def test_activity_page_shows_only_own_team_to_trainers(app, two):
+    admin = two
+    t = make_trainer(app, admin, "tina", ["U11 Alfa"], email=None)
+    other = make_trainer(app, admin, "ole", ["U12 Beta"])
+    sql(app, "UPDATE users SET display_name='Tina Træner' WHERE username='tina'")
+    sql(app, "UPDATE users SET display_name='Ole Anden' WHERE username='ole'")
+    other.get("/?desktop=1")
+    html = t.get("/aktivitet").get_data(as_text=True)
+    assert "Tina Træner" in html and "Ole Anden" not in html and "Alle hold" not in html
+    ah = admin.get("/aktivitet").get_data(as_text=True)
+    assert "Alle hold" in ah and "Ole Anden" in ah and "U12 Beta" in ah
+    assert Client(app).get("/aktivitet").status_code == 302                  # kræver login
 
 
 def test_online_window_and_summary(app, two):

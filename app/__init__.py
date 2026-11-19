@@ -109,6 +109,7 @@ def create_app(config=None):
         if g.get("viewing") and request.method not in ("GET", "HEAD", "OPTIONS") and request.endpoint not in (
                 "auth.view_as_stop", "auth.logout", "main.switch_team"):
             abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
+        activity.touch()
         return None
 
     @app.after_request
@@ -121,7 +122,6 @@ def create_app(config=None):
         resp.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
         resp.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
         remember.apply_cookie(resp)
-        activity.track(resp)
         if app.config["SESSION_COOKIE_SECURE"]:
             resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
         resp.headers.setdefault("Content-Security-Policy",
@@ -139,7 +139,7 @@ def create_app(config=None):
             if "csrf" not in session:
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
-        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
+        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 

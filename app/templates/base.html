@@ -25,7 +25,7 @@
       <noscript><button>Skift</button></noscript>
     </form>
     {% endif %}
-    <span class="who">{{ user['display_name'] }}</span>
+    <span class="who"><span class="hide-sm">{{ user['display_name'] }}</span>{% if online %} <a class="onl" href="{{ url_for('main.activity_now') }}" title="Aktive nu – tryk for detaljer" aria-label="Aktive nu: {{ online['team']|length }} på holdet{% if online['total'] is not none %}, {{ online['total']|length }} i alt{% endif %}">({{ online['team']|length }}{% if online['total'] is not none %}/{{ online['total']|length }}{% endif %} aktive)</a>{% endif %}</span>
     <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>Log ud</button></form>
   {% endif %}
 </header>
