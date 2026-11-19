@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-19
+
 ### Tilføjet
 - **E-mailadresse på brugere** (Administration → Brugere; vises skrivebeskyttet under Min konto).
 - **Nulstilling af adgangskode eller 2FA via e-mail, efter administrators godkendelse med egen 2FA-kode.** Engangslink (60 min., maks. 3 pr. time). 2FA-nulstilling kræver også brugerens adgangskode, så e-mail alene aldrig omgår 2FA. Opsættes med `PUBLIC_URL` og `SMTP_*` (se README); uden dem er funktionen skjult.
