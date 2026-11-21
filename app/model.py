@@ -225,3 +225,31 @@ LEVELS = ("A+", "A", "B", "C", "Ny")
 # Hvorfor har spilleren fået mascotten med hjem?
 MASCOT_REASONS = {"indsats": "Flot indsats", "fremgang": "Stor fremgang", "kammerat": "God kammerat", "hjaelp": "Hjælpsom",
                   "foerste": "Første gang / tur", "fodselsdag": "Fødselsdag", "andet": "Andet"}
+
+
+# ---------------------------------------------------------------- beregnet niveau (25 % A / 50 % B / 25 % C)
+LEVEL_SHARES = (0.25, 0.50, 0.25)
+
+
+def distribute_levels(scores):
+    """{spiller: score} -> {spiller: 'A'|'B'|'C'}. De øverste 25 % er A, de nederste 25 % C, resten B (ud fra score).
+    Ved lighed på grænsen følger spilleren den bedre gruppe; er alle ens, er alle B."""
+    vals = {k: v for k, v in scores.items() if v is not None}
+    if not vals:
+        return {}
+    n = len(vals)
+    order = sorted(vals.values(), reverse=True)
+    if order[0] == order[-1]:
+        return {k: "B" for k in vals}
+    k = int(n * LEVEL_SHARES[0] + 0.5)
+    a_cut = order[k - 1] if k else None
+    c_cut = order[n - k] if k else None
+    out = {}
+    for pid, v in vals.items():
+        if a_cut is not None and v >= a_cut:
+            out[pid] = "A"
+        elif c_cut is not None and v <= c_cut:
+            out[pid] = "C"
+        else:
+            out[pid] = "B"
+    return out

@@ -12,6 +12,8 @@
   {% endfor %}
 </details>
 {% endfor %}
+{% if features['levels'] %}<div class="card"><b>Samlet niveau for spilleren</b>
+  <div class="muted small">Din samlede vurdering af spillerens niveau i forhold til holdet. Bruges til det beregnede niveau (25 % A, 50 % B, 25 % C). Lad stå tomt, hvis du ikke kan vurdere det.</div>{{ scale('level', mylevel) }}</div>{% endif %}
 <div class="stickybar">
   <button class="btn" name="go" value="stay">Gem</button>
   {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}

@@ -498,3 +498,46 @@ def test_testmail_and_pwned_check(app, admin, monkeypatch):
         assert auth.pwned_count("hemmelig-test") == 42
         monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: (_ for _ in ()).throw(OSError("net")))
         assert auth.pwned_count("hemmelig-test") == 0                 # fail-open
+
+
+def test_distribute_levels_25_50_25():
+    from app import model
+    d = model.distribute_levels({i: float(i) for i in range(1, 9)})
+    assert sorted(d.values()) == ["A", "A", "B", "B", "B", "B", "C", "C"] and d[8] == "A" and d[1] == "C"
+    assert set(model.distribute_levels({1: 3, 2: 3, 3: 3}).values()) == {"B"}          # alle ens
+    assert model.distribute_levels({1: 4}) == {1: "B"} and model.distribute_levels({}) == {}
+    assert model.distribute_levels({1: 5, 2: 1, 3: None}) == {1: "A", 2: "C"}
+
+
+def test_trainer_level_rating_calculates_level_and_feeds_split(app, admin):
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    names = [f"Spiller {c}" for c in "ABCDEFGH"]
+    for n in names:
+        add_player(admin, n)
+    for i, n in enumerate(names, start=1):
+        pid = player_id(app, n)
+        admin.post(f"/eval/1/{pid}", {"level": str(1 + (i - 1) * 4 // 7)}, page=f"/eval/1/{pid}")      # 1..5 stigende
+    assert sql(app, "SELECT COUNT(*) c FROM level_ratings")[0]["c"] == 8
+    page = admin.get("/team/levels").get_data(as_text=True)
+    assert "Beregnet niveau" in page and "A: <b>2</b> · B: <b>4</b> · C: <b>2</b>" in page
+    admin.post("/team/levels", {"action": "apply_calc", "mode": "tomme"}, page="/team/levels")
+    lv = {r["name"]: r["level"] for r in sql(app, "SELECT name, level FROM players")}
+    assert lv["Spiller H"] == "A" and lv["Spiller A"] == "C" and lv["Spiller D"] == "B"
+    # en træner kan rydde sin vurdering igen
+    pid = player_id(app, "Spiller A")
+    admin.post(f"/eval/1/{pid}", {"level": ""}, page=f"/eval/1/{pid}")
+    assert sql(app, "SELECT COUNT(*) c FROM level_ratings WHERE player_id=?", pid)[0]["c"] == 0
+    assert "Samlet niveau for spilleren" in admin.get(f"/eval/1/{pid}").get_data(as_text=True)
+
+
+def test_calculated_level_is_used_by_split_when_no_manual_level(app, admin):
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    for n in "ABCDEFGH":
+        add_player(admin, f"Spiller {n}")
+        admin.post(f"/eval/1/{player_id(app, f'Spiller {n}')}", {"level": str(1 + "ABCDEFGH".index(n) // 2)}, page=f"/eval/1/{player_id(app, f'Spiller {n}')}")
+    page = admin.get("/lineup/split").get_data(as_text=True)
+    assert "har ikke noget niveau" not in page                       # beregnet niveau bruges som reserve
+    assert "har ikke noget niveau" in (lambda c: (c.post("/players/new", {"name": "Ny Uden", "birth_date": "2016-01-01", "active": "1"}, page="/players/new"),
+                                                  c.get("/lineup/split").get_data(as_text=True))[1])(admin)

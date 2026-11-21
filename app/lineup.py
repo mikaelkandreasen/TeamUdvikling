@@ -61,7 +61,9 @@ def _split_plan(db):
     per = int_in(request.values.get("per_tier"), 1, 3) or 3
     scores = _latest_scores(db)
     players = active_players(db)
-    plist = [dict(id=p["id"], name=p["name"], level=p["level"], score=scores.get(p["id"]), positions=positions_of(p)) for p in players]
+    from . import levels as levelcalc
+    calc = levelcalc.calc(db, players, model.load_rounds(db, team_id()))
+    plist = [dict(id=p["id"], name=p["name"], level=p["level"] or (calc.get(p["id"]) or {}).get("level"), score=scores.get(p["id"]), positions=positions_of(p)) for p in players]
     teams, left = splitter.split(plist, prof["size"], prof["subs"], per)
     fm = formations.DEFAULT_FORMATION[prof["game_type"]]
     sl = formations.slots(prof["game_type"], fm)

@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Samlet niveau pr. træner:** i evalueringen giver hver træner en samlet niveauvurdering (1–5) af spilleren, ud over de 24 kriterier. Vurderingen gemmes pr. træner og runde og kan rettes eller ryddes.
+- **Beregnet niveau:** spillerne fordeles efter score – øverste 25 % = A, midterste 50 % = B, nederste 25 % = C. Score er gennemsnittet af trænernes niveauvurdering i seneste runde; uden vurdering bruges samlet score fra kriterierne. Ved lige score følger spilleren den bedre gruppe, og er alle ens, er alle B.
+- Hold → Spillerniveau viser det beregnede niveau pr. spiller og har knappen «Brug beregnet niveau» (kun tomme felter, eller overskriv alle). Del i A/B/C-hold bruger det beregnede niveau, hvis spilleren ikke har et fastsat niveau.
+
+### Ændret
+- Skema v11: tabellen `level_ratings`. Indgår i spillerens dataudtræk og slettes sammen med runder/evalueringer.
+
 ## [0.12.1] - 2026-11-21
 
 ### Tilføjet

@@ -75,6 +75,13 @@ def eval_form(rnd, pid):
             else:
                 db.execute("DELETE FROM evaluations WHERE round=? AND player_id=? AND trainer_id=? AND crit=?",
                            (rnd, pid, g.user["id"], c["idx"]))
+        if "level" in request.form:
+            lv = int_in(request.form.get("level"), 1, 5)
+            if lv:
+                db.execute("INSERT INTO level_ratings(round,player_id,trainer_id,score) VALUES(?,?,?,?) "
+                           "ON CONFLICT(round,player_id,trainer_id) DO UPDATE SET score=excluded.score", (rnd, pid, g.user["id"], lv))
+            else:
+                db.execute("DELETE FROM level_ratings WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))
         db.commit()
         flash(f"Gemt ({saved} af {model.N_CRIT} kriterier).", "ok")
         keep = _open_roles(request.form.get("open"))
@@ -84,7 +91,8 @@ def eval_form(rnd, pid):
         return redirect(url_for("evaluation.eval_round", rnd=rnd))
     scores = {r["crit"]: r["score"] for r in db.execute(
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
-    return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, info=round_info(db)[rnd - 1],
+    mylevel = db.execute("SELECT score FROM level_ratings WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"])).fetchone()
+    return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, mylevel=mylevel["score"] if mylevel else None, info=round_info(db)[rnd - 1],
                            prev_id=prev_id, next_id=next_id, criteria=team_criteria(db, team_id()),
                            open_roles=_open_roles(request.args.get("open")))
 

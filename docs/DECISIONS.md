@@ -58,3 +58,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Server-PDF, login-side pr. klub, billedupload i bulk og PWA med offline-cache blev overvejet.
 **Valg:** Ingen server-PDF (browserens «gem som PDF» dækker det; undgår tung afhængighed). Ingen login-side pr. klub (afslører klubber, jf. D-014). PWA kun som manifest, uden service worker, så ingen persondata caches på enheden. iCal-hentning er https-only med kontrol af offentlig IP; en rest-risiko (DNS-rebinding mellem kontrol og hentning) accepteres, fordi adressen kun kan sættes af chef-træner/administrator. Sikkerhedslog (`security_events`) gemmer IP og hændelsestype i 30 dage.
 **Konsekvens:** Genovervej kun hvis der opstår et konkret behov.
+
+## D-017 · Beregnet niveau (2026-11-21)
+**Kontekst:** Niveau (A/B/C) var kun sat manuelt. Trænerne ønskede selv at vurdere spillerens samlede niveau, og at niveauet beregnes efter en fast fordeling.
+**Valg:** Egen tabel `level_ratings` (ikke et 25. kriterie, så eksisterende beregninger og fremdriftstællere er uændrede). Fordeling 25/50/25 i `model.distribute_levels`; reserve er samlet score. Det beregnede niveau overskriver aldrig et fastsat niveau uden at en træner trykker på knappen.
+**Konsekvens:** Fordelingen er relativ til holdet – en lille trup (under 4 spillere) giver få eller ingen A/C. Niveau vises som et oplæg til trænergruppen, ikke som rangering af børn.

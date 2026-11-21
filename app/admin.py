@@ -712,6 +712,7 @@ def evaluations():
                 flash("Bekræft, at runden og dens evalueringer skal slettes.", "error")
             else:
                 db.execute("DELETE FROM evaluations WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
+                db.execute("DELETE FROM level_ratings WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
                 db.execute("DELETE FROM settings WHERE key IN (?,?)", (f"t{tid}:round_label_{n}", f"t{tid}:round_date_{n}"))
                 set_setting(db, tid, "rounds_n", str(n - 1))
                 audit(db, g.user["username"], "runde_fjernet", f"{g.team['name']}: runde {n}")
@@ -731,6 +732,7 @@ def evaluations():
                     sql += " AND id=?"
                     args.append(pid)
                 cur = db.execute(sql + ")", args)
+                db.execute(sql.replace("evaluations", "level_ratings") + ")", args)
                 audit(db, g.user["username"], "evalueringer_slettet", f"{g.team['name']}: runde {rnd}, rækker={cur.rowcount}")
                 flash(f"{cur.rowcount} scores slettet.", "ok")
         db.commit()

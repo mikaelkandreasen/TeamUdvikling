@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import features, formations, ical, model, motivation, scope
+from . import features, formations, ical, levels as levelcalc, model, motivation, scope
 from .db import audit, get_db, get_setting, set_setting
 from .helpers import active_players, int_in, round_info, team_id
 
@@ -147,6 +147,20 @@ def notes_delete(nid):
 def levels():
     db = get_db()
     players = active_players(db)
+    rounds = model.load_rounds(db, team_id())
+    calc = levelcalc.calc(db, players, rounds)
+    if request.method == "POST" and request.form.get("action") == "apply_calc":
+        everyone = request.form.get("mode") == "alle"
+        n = 0
+        for p in players:
+            c = calc.get(p["id"])
+            if c and (everyone or not p["level"]):
+                db.execute("UPDATE players SET level=? WHERE id=? AND team_id=?", (c["level"], p["id"], team_id()))
+                n += 1
+        audit(db, g.user["username"], "niveau_beregnet_anvendt", f"{g.team['name']}: {n} spillere")
+        db.commit()
+        flash(f"Beregnet niveau er brugt for {n} spillere.", "ok")
+        return redirect(url_for("team.levels"))
     if request.method == "POST":
         n = 0
         for p in players:
@@ -162,7 +176,8 @@ def levels():
         return redirect(url_for("team.levels"))
     counts = {lv: sum(1 for p in players if p["level"] == lv) for lv in model.LEVELS}
     counts["uden"] = sum(1 for p in players if not p["level"])
-    return render_template("team_levels.html", players=players, LEVELS=model.LEVELS, counts=counts)
+    ccount = {lv: sum(1 for c in calc.values() if c["level"] == lv) for lv in ("A", "B", "C")}
+    return render_template("team_levels.html", players=players, LEVELS=model.LEVELS, counts=counts, calc=calc, ccount=ccount)
 
 
 # ----------------------------------------------------------------------------- mascot

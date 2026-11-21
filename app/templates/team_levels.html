@@ -2,9 +2,16 @@
 {% block content %}
 <h1>Spillerniveau – {{ team['name'] }}</h1>
 <p class="muted">{% for lv in LEVELS %}{{ lv }}: <b>{{ counts[lv] }}</b> · {% endfor %}uden niveau: <b>{{ counts['uden'] }}</b></p>
+<div class="card"><h2>Beregnet niveau</h2>
+  <p class="muted small">Trænerne vurderer spillerens samlede niveau (1–5) i evalueringen. Spillerne fordeles derefter efter score: de øverste <b>25 %</b> bliver A, de næste <b>50 %</b> B og de nederste <b>25 %</b> C. Uden vurdering bruges samlet score fra de 24 kriterier.</p>
+  <p>A: <b>{{ ccount['A'] }}</b> · B: <b>{{ ccount['B'] }}</b> · C: <b>{{ ccount['C'] }}</b> · uden score: <b>{{ players|length - calc|length }}</b></p>
+  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="apply_calc">
+    <label class="check"><input type="radio" name="mode" value="tomme" checked> Udfyld kun spillere uden niveau</label>
+    <label class="check"><input type="radio" name="mode" value="alle"> Overskriv alle (også A+ og Ny)</label>
+    <div class="actions"><button class="btn sec">Brug beregnet niveau</button></div></form></div>
 <form method="post">{{ csrf() }}
 {% for p in players %}
-<div class="card"><div class="row"><div class="name"><b>{{ p['name'] }}</b></div>
+<div class="card"><div class="row"><div class="name"><b>{{ p['name'] }}</b>{% if calc.get(p['id']) %}<div class="muted small">Beregnet: <b>{{ calc[p['id']]['level'] }}</b> ({{ calc[p['id']]['score']|dk }}{% if calc[p['id']]['n'] %}, {{ calc[p['id']]['n'] }} {{ 'træner' if calc[p['id']]['n'] == 1 else 'trænere' }}{% else %}, samlet score{% endif %})</div>{% endif %}</div>
   <div><select name="level_{{ p['id'] }}" aria-label="Niveau for {{ p['name'] }}"><option value="">–</option>{% for lv in LEVELS %}<option value="{{ lv }}" {{ 'selected' if p['level'] == lv }}>{{ lv }}{{ ' (ny spiller)' if lv == 'Ny' }}</option>{% endfor %}</select></div></div></div>
 {% else %}<div class="card muted">Ingen aktive spillere.</div>{% endfor %}
 <div class="actions"><button class="btn">Gem niveauer</button></div></form>

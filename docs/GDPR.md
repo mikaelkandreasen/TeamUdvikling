@@ -62,3 +62,4 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 - **Sikkerhedslog:** hændelsestype, brugernavn og IP gemmes i 30 dage og slettes automatisk.
 - **Opbevaringstid:** inaktive spillere kan slettes efter aftalt frist (standard 12 mdr.), manuelt eller automatisk; kun i egen klub.
 - **Spillerlink, fremmøde, trivsel, mascot-log og noter** er personoplysninger om børn og følger samme sletning som spilleren.
+- **Niveauvurderinger** (trænernes samlede vurdering pr. spiller og runde) følger samme sletning som evalueringer og indgår i indsigtsudtrækket.

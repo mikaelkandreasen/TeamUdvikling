@@ -164,6 +164,7 @@ def export_json(pid):
     out = dict(spiller=dict(p))
     out["evalueringer"] = [dict(r) for r in db.execute(
         "SELECT round AS runde, trainer_id AS træner, crit AS kriterie, score FROM evaluations WHERE player_id=?", (pid,))]
+    out["niveauvurderinger"] = [dict(r) for r in db.execute("SELECT round AS runde, trainer_id AS træner, score FROM level_ratings WHERE player_id=?", (pid,))]
     out["motivation"] = [dict(r) for r in db.execute("SELECT qidx AS spørgsmål, score FROM motivation_answers WHERE player_id=?", (pid,))]
     d = db.execute("SELECT * FROM devdata WHERE player_id=?", (pid,)).fetchone()
     out["udviklingsdata"] = dict(d) if d else {}
