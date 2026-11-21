@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-11-21
+
 ### Tilføjet
 - **Sendte invitationer på Brugere-siden:** de seneste 15 med e-mail, rolle, status (afventer/brugt/udløbet/tilbagekaldt), afsender og tidspunkt. Klubadministratorer ser kun egen klub.
 
