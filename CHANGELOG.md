@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-21
+
 ### Tilføjet
 - **Backup kontrolleres** (integritet, fremmednøgler, skemaversion) ved hver backup; ødelagte backups slettes i stedet for at fortrænge gode. `scripts/verify-backup.py`, `scripts/restore.sh` kontrollerer filen og gemmer den gamle database. Se `docs/BACKUP.md` (inkl. off-site med rclone/rsync).
 - **CI røgtest** af Docker-imaget før udgivelse (ikke-root, `cap_drop ALL`, skrivebeskyttet rod). `docs/DRIFT.md`: verificering af GHCR/Dockhand, tjekliste til første gennemløb og kommandoer til ZAP/nuclei.
