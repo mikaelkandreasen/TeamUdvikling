@@ -12,8 +12,9 @@
   {% endfor %}
 </details>
 {% endfor %}
-{% if features['levels'] %}<div class="card"><b>Samlet niveau for spilleren</b>{{ levelhelp() }}
-  <div class="muted small">Din samlede vurdering af spillerens niveau efter DBU's niveauer (A, B, C, D – se ?), fra 1 (laveste) til 5 (højeste). Bruges til det beregnede niveau (25 % A, 50 % B, 25 % C). Lad stå tomt, hvis du ikke kan vurdere det.</div>{{ scale('level', mylevel) }}</div>{% endif %}
+{% if features['levels'] %}<div class="card"><label for="lvl"><b>Samlet niveau for spilleren</b></label>{{ levelhelp() }}
+  <div class="muted small">Din samlede vurdering af spillerens niveau efter DBU's niveauer (se ?). Bruges til det automatisk beregnede niveau. Lad stå tomt, hvis du ikke kan vurdere det.</div>
+  <select id="lvl" name="level"><option value="">– ikke vurderet –</option>{% for lv in model.LEVELS %}<option value="{{ lv }}" {{ 'selected' if mylevel == lv }}>{{ model.LEVEL_LABEL.get(lv, lv) }}</option>{% endfor %}</select></div>{% endif %}
 <div class="stickybar">
   <button class="btn" name="go" value="stay">Gem</button>
   {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}

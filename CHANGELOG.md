@@ -7,9 +7,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 ## [0.14.0] - 2026-11-21
 
 ### Ændret
-- **Niveauer følger DBU's niveaudeling til stævner: A, B, C og D** (før A+, A, B, C, Ny). Eksisterende data flyttes automatisk (A+ → A, Ny → D). Skema v12.
+- **Niveauer: A+, A, B, C, D (nybegynder) og Nystartet** efter DBU's niveaudeling (A+ er appens egen gradering af de allerstærkeste). «Ny» hedder nu «Nystartet». Skema v13.
+- **Trænerens samlede niveau er en dropdown** i evalueringen (i stedet for 1–5). Tidligere vurderinger omsættes (5→A, 4→B, 3→C, 2→D, 1→Nystartet).
+- **Beregnet niveau sker automatisk** (ingen knap): vurderingerne fordeles efter score, som standard 25 % A / 50 % B / 25 % C. Andelen til A og C justeres pr. hold under Holdindstillinger (0–45 %). Et fastsat niveau på spilleren bruges frem for det beregnede.
 
 ### Tilføjet
+- **Flere profiler pr. bruger:** en systemadministrator kan give en bruger ekstra profiler (træner, klubadministrator eller systemadministrator, med klub) under brugerens side. Brugeren vælger aktiv profil øverst; al adgang følger den aktive profil. Kun profilens ejer kan vælge den.
 - **?-knap med forklaring** ved Samlet niveau i evalueringen, på Spillerniveau og på Del i hold: en boks over siden med DBU's beskrivelse af A-, B-, C- og D-niveau (samt blandet niveau og begynder) og link til kilden. Virker med mus (hover) og tryk/tastatur på mobil. Beskrivelserne er sammenfattet med egne ord.
 
 ## [0.13.0] - 2026-11-21

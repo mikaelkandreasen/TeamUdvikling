@@ -18,6 +18,15 @@
 <header class="top">
   <a class="brand" href="{{ url_for('main.home') }}">{% if club['has_logo'] %}<img class="logo" src="{{ club['logo_url'] }}" alt="">{% else %}⚽{% endif %} {% if team %}<span class="hide-sm">{{ club['app_name'] }} · </span>{{ team['name'] }}{% else %}{{ club['app_name'] }}{% endif %}</a>
   {% if authed %}
+    {% if my_profiles %}
+    <form method="post" action="{{ url_for('main.switch_profile') }}" class="noprint">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="profile_id" data-autosubmit aria-label="Skift profil" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
+        {% for p in my_profiles %}<option value="{{ p['id'] }}" {{ 'selected' if user['profile_id']|default(0) == p['id'] }}>{{ p['label'] }}</option>{% endfor %}
+      </select>
+      <noscript><button>Skift</button></noscript>
+    </form>
+    {% endif %}
     {% if teams|length > 1 %}
     <form method="post" action="{{ url_for('main.switch_team') }}" class="noprint">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

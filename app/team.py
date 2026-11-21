@@ -85,6 +85,12 @@ def settings():
             return redirect(url_for("team.settings"))
         set_setting(db, tid, "game_type", gt)
         set_setting(db, tid, "subs", str(subs))
+        sa, sc = int_in(request.form.get("level_share_a"), 0, 45), int_in(request.form.get("level_share_c"), 0, 45)
+        if sa is not None and sc is not None:
+            set_setting(db, tid, "level_share_a", str(sa))
+            set_setting(db, tid, "level_share_c", str(sc))
+        else:
+            flash("Andel til A og C skal være mellem 0 og 45 %. De blev ikke ændret.", "error")
         for k in features.KEYS:
             set_setting(db, tid, f"feat_{k}", "1" if request.form.get(f"feat_{k}") else "0")
         url = (request.form.get("ical_url") or "").strip()[:500]
@@ -103,7 +109,7 @@ def settings():
         return redirect(url_for("team.settings"))
     heads = [r["display_name"] for r in db.execute("SELECT u.display_name FROM team_heads h JOIN users u ON u.id=h.user_id WHERE h.team_id=? ORDER BY u.display_name COLLATE NOCASE", (tid,))]
     return render_template("team_settings.html", ical_url=get_setting(db, tid, "ical_url") or "", prof=profile(db, tid), feats=features.load(db, tid), FEATURES=features.FEATURES, types=formations.GAME_TYPES,
-                           heads=heads, n_rounds=len(g.rounds))
+                           heads=heads, n_rounds=len(g.rounds), shares=levelcalc.shares(db, tid))
 
 
 # ----------------------------------------------------------------------------- noter
@@ -149,18 +155,6 @@ def levels():
     players = active_players(db)
     rounds = model.load_rounds(db, team_id())
     calc = levelcalc.calc(db, players, rounds)
-    if request.method == "POST" and request.form.get("action") == "apply_calc":
-        everyone = request.form.get("mode") == "alle"
-        n = 0
-        for p in players:
-            c = calc.get(p["id"])
-            if c and (everyone or not p["level"]):
-                db.execute("UPDATE players SET level=? WHERE id=? AND team_id=?", (c["level"], p["id"], team_id()))
-                n += 1
-        audit(db, g.user["username"], "niveau_beregnet_anvendt", f"{g.team['name']}: {n} spillere")
-        db.commit()
-        flash(f"Beregnet niveau er brugt for {n} spillere.", "ok")
-        return redirect(url_for("team.levels"))
     if request.method == "POST":
         n = 0
         for p in players:
@@ -177,7 +171,7 @@ def levels():
     counts = {lv: sum(1 for p in players if p["level"] == lv) for lv in model.LEVELS}
     counts["uden"] = sum(1 for p in players if not p["level"])
     ccount = {lv: sum(1 for c in calc.values() if c["level"] == lv) for lv in ("A", "B", "C")}
-    return render_template("team_levels.html", players=players, LEVELS=model.LEVELS, counts=counts, calc=calc, ccount=ccount)
+    return render_template("team_levels.html", players=players, LEVELS=model.LEVELS, counts=counts, calc=calc, ccount=ccount, shares=levelcalc.shares(db, team_id()))
 
 
 # ----------------------------------------------------------------------------- mascot

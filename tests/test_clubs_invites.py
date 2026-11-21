@@ -376,3 +376,28 @@ def test_users_page_lists_sent_invitations_scoped(world):
     assert "Sendte invitationer" in page and "alfa@example.dk" in page and "beta@example.dk" in page and "afventer" in page
     own = ca.get("/admin/users").get_data(as_text=True)
     assert "alfa@example.dk" in own and "beta@example.dk" not in own
+
+
+def test_user_can_have_several_profiles_and_switch(world):
+    app, admin, ca, cb, ta, tb = world
+    uid = lambda n: sql(app, "SELECT id FROM users WHERE username=?", n)[0]["id"]
+    beta = club_id(app, "Beta Klub")
+    assert ta.get("/admin/users").status_code in (302, 403, 404)                       # træner: ingen adgang
+    assert ca.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page="/admin/users").status_code == 404   # kun sysadmin
+    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
+    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
+    prof = sql(app, "SELECT * FROM user_profiles")
+    assert len(prof) == 1 and prof[0]["role"] == "clubadmin" and prof[0]["club_id"] == beta        # dublet afvist
+    assert "Profiler" in admin.get(f"/admin/users/{uid('tina')}").get_data(as_text=True)
+    # kun profilens ejer kan vælge den
+    assert ca.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/").status_code == 403
+    ta.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/")
+    page = ta.get("/admin/users").get_data(as_text=True)
+    assert "(ole)" in page and "(tina)" not in page and "(kaja)" not in page                  # klubadministrator i Beta Klub
+    assert "Skift profil" in ta.get("/").get_data(as_text=True)
+    ta.post("/switch-profile", {"profile_id": "0"}, page="/")
+    assert ta.get("/admin/users").status_code in (302, 403, 404)                              # tilbage som træner
+    # fjernet profil mister virkning
+    ta.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/")
+    admin.post(f"/admin/users/{uid('tina')}/profile-remove", {"profile": str(prof[0]["id"])}, page=f"/admin/users/{uid('tina')}")
+    assert ta.get("/admin/users").status_code in (302, 403, 404)

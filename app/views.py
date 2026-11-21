@@ -1,7 +1,7 @@
 """Forside, mobilforside, menu og kriterie-side."""
 import io
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, session, url_for
 
 from . import activity, club, model, teams
 from .db import get_db
@@ -80,6 +80,17 @@ def switch_team():
     if tid is None or not teams.switch(db, g.user, tid):
         abort(403)
     return redirect(url_for("main.home", desktop=1) if "Mobi" not in request.headers.get("User-Agent", "") else url_for("main.mobile"))
+
+
+@bp.route("/switch-profile", methods=["POST"])
+def switch_profile():
+    from . import profiles
+    db = get_db()
+    real = g.get("real_user") or g.user
+    if not profiles.switch(db, real, request.form.get("profile_id", type=int) or 0):
+        abort(403)
+    session.pop("team_id", None)
+    return redirect(url_for("main.home"))
 
 
 @bp.route("/no-team")

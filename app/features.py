@@ -10,7 +10,7 @@ FEATURES = (
     ("devdata", "Udviklingsdata: fremmøde, kampdeltagelse, trivsel, motorik og handleplan", True),
     ("motivation", "Motivation og træningsønsker", True),
     ("lineup", "Holdsætning (opstillinger og deling i A/B/C-hold)", True),
-    ("levels", "Spillerniveau (A, B, C, D efter DBU)", True),
+    ("levels", "Spillerniveau (A+, A, B, C, D, Nystartet)", True),
     ("notes", "Holdnoter", True),
     ("mascot", "Mascot (hvem har den med hjem)", False),
 )

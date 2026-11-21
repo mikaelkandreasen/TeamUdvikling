@@ -149,6 +149,9 @@ def load_user():
             row = _valid_session_user(db)
     if row is None:
         return
+    from . import profiles
+    g.real_user = row
+    row = profiles.apply(db, row)
     g.user = row
     session["seen"] = int(time.time())
     vid = session.get("view_as")

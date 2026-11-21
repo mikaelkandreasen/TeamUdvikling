@@ -150,7 +150,10 @@ def create_app(config=None):
             if "csrf" not in session:
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
-        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
+        from . import profiles as _pf
+        from .db import get_db
+        myprof = _pf.list_for(get_db(), g.real_user) if g.get("real_user") and not g.get("viewing") and session.get("stage") == "ok" else []
+        return dict(my_profiles=myprof if len(myprof) > 1 else [], csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 

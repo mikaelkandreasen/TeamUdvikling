@@ -509,52 +509,65 @@ def test_distribute_levels_25_50_25():
     assert model.distribute_levels({1: 5, 2: 1, 3: None}) == {1: "A", 2: "C"}
 
 
-def test_trainer_level_rating_calculates_level_and_feeds_split(app, admin):
+def test_trainer_level_rating_is_dropdown_and_calculated_automatically(app, admin):
     make_team(admin, "A")
     switch(admin, team_id(app, "A"))
     names = [f"Spiller {c}" for c in "ABCDEFGH"]
     for n in names:
         add_player(admin, n)
-    for i, n in enumerate(names, start=1):
+    given = ["Nystartet", "D", "C", "B", "B", "A", "A+", "A+"]
+    for n, lv in zip(names, given):
         pid = player_id(app, n)
-        admin.post(f"/eval/1/{pid}", {"level": str(1 + (i - 1) * 4 // 7)}, page=f"/eval/1/{pid}")      # 1..5 stigende
-    assert sql(app, "SELECT COUNT(*) c FROM level_ratings")[0]["c"] == 8
+        admin.post(f"/eval/1/{pid}", {"level": lv}, page=f"/eval/1/{pid}")
+    admin.post(f"/eval/1/{player_id(app, 'Spiller A')}", {"level": "Ugyldig"}, page="/eval/1/1")                # ugyldigt niveau gemmes ikke
+    assert sql(app, "SELECT COUNT(*) c FROM level_ratings WHERE level='Ugyldig'")[0]["c"] == 0
+    admin.post(f"/eval/1/{player_id(app, 'Spiller A')}", {"level": "Nystartet"}, page="/eval/1/1")
+    form = admin.get(f"/eval/1/{player_id(app, 'Spiller A')}").get_data(as_text=True)
+    assert '<select id="lvl" name="level">' in form and "D (nybegynder)" in form and "Nystartet" in form and "A+" in form
     page = admin.get("/team/levels").get_data(as_text=True)
-    assert "Beregnet niveau" in page and "A: <b>2</b> · B: <b>4</b> · C: <b>2</b>" in page
-    admin.post("/team/levels", {"action": "apply_calc", "mode": "tomme"}, page="/team/levels")
-    lv = {r["name"]: r["level"] for r in sql(app, "SELECT name, level FROM players")}
-    assert lv["Spiller H"] == "A" and lv["Spiller A"] == "C" and lv["Spiller D"] == "B"
+    assert "A: <b>2</b> · B: <b>4</b> · C: <b>2</b>" in page and "Brug beregnet" not in page            # automatisk – ingen knap
+    # andelen kan justeres under holdindstillinger (her 12 % A og 40 % C; to A+ har samme score og følger hinanden)
+    base = {"game_type": "5v5", "subs": "1", "feat_levels": "1", "level_share_a": "12", "level_share_c": "40"}
+    admin.post("/team/settings", base, page="/team/settings")
+    page = admin.get("/team/levels").get_data(as_text=True)
+    assert "A: <b>2</b> · B: <b>3</b> · C: <b>3</b>" in page and "12 %" in page
+    admin.post("/team/settings", dict(base, level_share_a="99"), page="/team/settings")                          # uden for 0-45 afvises
+    assert "A: <b>2</b> · B: <b>3</b>" in admin.get("/team/levels").get_data(as_text=True)
     # en træner kan rydde sin vurdering igen
     pid = player_id(app, "Spiller A")
     admin.post(f"/eval/1/{pid}", {"level": ""}, page=f"/eval/1/{pid}")
     assert sql(app, "SELECT COUNT(*) c FROM level_ratings WHERE player_id=?", pid)[0]["c"] == 0
-    assert "Samlet niveau for spilleren" in admin.get(f"/eval/1/{pid}").get_data(as_text=True)
 
 
 def test_calculated_level_is_used_by_split_when_no_manual_level(app, admin):
     make_team(admin, "A")
     switch(admin, team_id(app, "A"))
-    for n in "ABCDEFGH":
+    for k, n in enumerate("ABCDEFGH"):
         add_player(admin, f"Spiller {n}")
-        admin.post(f"/eval/1/{player_id(app, f'Spiller {n}')}", {"level": str(1 + "ABCDEFGH".index(n) // 2)}, page=f"/eval/1/{player_id(app, f'Spiller {n}')}")
-    page = admin.get("/lineup/split").get_data(as_text=True)
-    assert "har ikke noget niveau" not in page                       # beregnet niveau bruges som reserve
-    assert "har ikke noget niveau" in (lambda c: (c.post("/players/new", {"name": "Ny Uden", "birth_date": "2016-01-01", "active": "1"}, page="/players/new"),
-                                                  c.get("/lineup/split").get_data(as_text=True))[1])(admin)
+        pid = player_id(app, f"Spiller {n}")
+        admin.post(f"/eval/1/{pid}", {"level": ("Nystartet", "D", "C", "C", "B", "B", "A", "A+")[k]}, page=f"/eval/1/{pid}")
+    assert "har ikke noget niveau" not in admin.get("/lineup/split").get_data(as_text=True)               # beregnet niveau er reserve
+    admin.post("/players/new", {"name": "Ny Uden", "birth_date": "2016-01-01", "active": "1"}, page="/players/new")
+    assert "har ikke noget niveau" in admin.get("/lineup/split").get_data(as_text=True)
 
 
-def test_levels_follow_dbu_with_help_box_and_migration(app, admin):
+def test_levels_a_plus_to_nystartet_help_box_and_migration(app, admin):
     from app import model
-    assert model.LEVELS == ("A", "B", "C", "D") and len(model.LEVEL_INFO) == 4 and "dbufyn.dk" in model.LEVEL_SOURCE
+    assert model.LEVELS == ("A+", "A", "B", "C", "D", "Nystartet") and [x[0] for x in model.LEVEL_INFO] == list(model.LEVELS)
+    assert "dbufyn.dk" in model.LEVEL_SOURCE
     make_team(admin, "A")
     switch(admin, team_id(app, "A"))
     add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta")
-    sql(app, "UPDATE players SET level='A+' WHERE name='Anna Alfa'")
     sql(app, "UPDATE players SET level='Ny' WHERE name='Bella Beta'")
+    sql(app, "UPDATE players SET level='A+' WHERE name='Anna Alfa'")
+    # gammel tabelform (tal 1-5) omsættes til niveauer, og migrationen kan køres igen
     con = appdb.connect(app.config["DATABASE"])
-    appdb._migrate_dbu_levels(con); appdb._migrate_dbu_levels(con); con.commit(); con.close()          # idempotent
-    assert {r["name"]: r["level"] for r in sql(app, "SELECT name, level FROM players")} == {"Anna Alfa": "A", "Bella Beta": "D"}
+    con.execute("DROP TABLE level_ratings")
+    con.execute("CREATE TABLE level_ratings(round INTEGER NOT NULL, player_id INTEGER NOT NULL, trainer_id INTEGER NOT NULL, score INTEGER NOT NULL, PRIMARY KEY(round, player_id, trainer_id))")
+    con.execute("INSERT INTO level_ratings VALUES(1, ?, 1, 5)", (player_id(app, "Anna Alfa"),))
+    appdb._migrate_dbu_levels(con); appdb._migrate_dbu_levels(con); con.commit(); con.close()
+    assert {r["name"]: r["level"] for r in sql(app, "SELECT name, level FROM players")} == {"Anna Alfa": "A+", "Bella Beta": "Nystartet"}
+    assert sql(app, "SELECT level FROM level_ratings")[0]["level"] == "A"
     page = admin.get("/team/levels").get_data(as_text=True)
-    assert 'class="helpbox"' in page and "D-niveau" in page and "dbufyn.dk" in page and "A+" not in page
-    pid = player_id(app, "Anna Alfa")
-    assert 'class="helpbox"' in admin.get(f"/eval/1/{pid}").get_data(as_text=True)
+    assert 'class="helpbox"' in page and "Nystartet" in page and "dbufyn.dk" in page
+    assert 'class="helpbox"' in admin.get(f"/eval/1/{player_id(app, 'Anna Alfa')}").get_data(as_text=True)

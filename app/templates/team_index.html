@@ -7,7 +7,7 @@
   {% if features['lineup'] %}<a class="tile" href="{{ url_for('lineup.split_view') }}">Del i A/B/C-hold<small>automatisk efter niveau</small></a>{% endif %}
   <a class="tile" href="{{ url_for('team.focus') }}">Træningsfokus<small>holdets svageste områder</small></a>
   <a class="tile alt" href="{{ url_for('team.calendar') }}">Kalender<small>kampe og aktiviteter</small></a>
-  {% if features['levels'] %}<a class="tile" href="{{ url_for('team.levels') }}">Spillerniveau<small>A, B, C, D efter DBU</small></a>{% endif %}
+  {% if features['levels'] %}<a class="tile" href="{{ url_for('team.levels') }}">Spillerniveau<small>A+, A, B, C, D, nystartet</small></a>{% endif %}
   {% if features['notes'] %}<a class="tile alt" href="{{ url_for('team.notes') }}">Noter<small>holdets noter</small></a>{% endif %}
   {% if features['mascot'] %}<a class="tile alt" href="{{ url_for('team.mascot') }}">Mascot{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}<small>hvem har den med hjem</small></a>
   <a class="tile alt" href="{{ url_for('team.mascot_report') }}">Mascot-rapport<small>hvem, hvor mange gange og hvorfor</small></a>{% endif %}

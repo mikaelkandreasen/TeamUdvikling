@@ -231,7 +231,9 @@ def _render_users(db):
 def _render_user_detail(db, u, temp=None):
     mem = {r["team_id"] for r in db.execute("SELECT team_id FROM user_teams WHERE user_id=?", (u["id"],))}
     club = db.execute("SELECT name FROM clubs WHERE id=?", (u["club_id"],)).fetchone() if u["club_id"] else None
-    return render_template("admin_user.html", u=dict(u, club_name=club["name"] if club else None), mem=mem, all_teams=_team_rows(db), temp=temp,
+    from . import profiles as _pf
+    extra = [p for p in _pf.list_for(db, u) if not p["main"]]
+    return render_template("admin_user.html", u=dict(u, club_name=club["name"] if club else None), mem=mem, extra_profiles=extra, all_teams=_team_rows(db), temp=temp,
                            mail_missing=mailer.missing(), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user), role_label=scope.ROLE_LABEL,
                            last_login=_fmt_ts(u["last_login"]))
 
@@ -254,7 +256,7 @@ def user_detail(uid):
 def _set_user_teams(db, uid, team_ids, club_id):
     """Kun hold i brugerens egen klub kan tildeles."""
     valid = {r["id"] for r in db.execute("SELECT id FROM teams WHERE club_id IS ?", (club_id,))} if club_id else set()
-    db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
+    db.execute("DELETE FROM user_teams WHERE user_id=? AND team_id IN (SELECT id FROM teams WHERE club_id IS ?)", (uid, club_id))
     for t in {int(x) for x in team_ids if str(x).isdigit()} & valid:
         db.execute("INSERT INTO user_teams(user_id,team_id) VALUES(?,?)", (uid, t))
 
@@ -336,6 +338,35 @@ def user_action(uid, action):
             abort(400)
         _set_user_teams(db, uid, request.form.getlist("teams") if u["role"] == "trainer" else [], u["club_id"])
         flash("Holdtilknytning gemt.", "ok")
+    elif action in ("profile-add", "profile-remove", "profile-teams"):
+        if not scope.is_sysadmin(g.user):
+            abort(404)
+        club = int_in(request.form.get("club"), 1, 10 ** 9)
+        if action == "profile-add":
+            role = request.form.get("role")
+            if role not in ("trainer", "clubadmin", "admin") or (role != "admin" and not (club and db.execute("SELECT 1 FROM clubs WHERE id=?", (club,)).fetchone())):
+                flash("Vælg rolle og klub.", "error")
+                return redirect(url_for("admin.user_detail", uid=uid))
+            club = None if role == "admin" else club
+            if (role, club) == (u["role"], u["club_id"]) or db.execute("SELECT 1 FROM user_profiles WHERE user_id=? AND role=? AND club_id IS ?", (uid, role, club)).fetchone():
+                flash("Brugeren har allerede den profil.", "error")
+                return redirect(url_for("admin.user_detail", uid=uid))
+            db.execute("INSERT INTO user_profiles(user_id,role,club_id) VALUES(?,?,?)", (uid, role, club))
+            audit(db, g.user["username"], "profil_tilfoejet", f"{u['username']}: {role}")
+            flash("Profil tilføjet. Brugeren vælger profil øverst på siden.", "ok")
+        elif action == "profile-remove":
+            pid = int_in(request.form.get("profile"), 1, 10 ** 9)
+            row = db.execute("SELECT * FROM user_profiles WHERE id=? AND user_id=?", (pid, uid)).fetchone() if pid else None
+            if not row:
+                abort(404)
+            db.execute("DELETE FROM user_profiles WHERE id=?", (pid,))
+            audit(db, g.user["username"], "profil_fjernet", f"{u['username']}: {row['role']}")
+            flash("Profil fjernet.", "ok")
+        else:
+            if not club or not db.execute("SELECT 1 FROM user_profiles WHERE user_id=? AND role='trainer' AND club_id=?", (uid, club)).fetchone():
+                abort(404)
+            _set_user_teams(db, uid, request.form.getlist("teams"), club)
+            flash("Holdtilknytning for profilen gemt.", "ok")
     elif action == "readonly":
         if u["role"] != "trainer":
             abort(400)

@@ -89,7 +89,11 @@ CREATE INDEX IF NOT EXISTS ix_invitations_club ON invitations(club_id, created_a
 CREATE TABLE IF NOT EXISTS level_ratings(
   round INTEGER NOT NULL, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   trainer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  score INTEGER NOT NULL CHECK(score BETWEEN 1 AND 5), PRIMARY KEY(round, player_id, trainer_id));
+  level TEXT NOT NULL, PRIMARY KEY(round, player_id, trainer_id));
+CREATE TABLE IF NOT EXISTS user_profiles(
+  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK(role IN ('trainer','clubadmin','admin')), club_id INTEGER REFERENCES clubs(id) ON DELETE CASCADE,
+  UNIQUE(user_id, role, club_id));
 CREATE TABLE IF NOT EXISTS security_events(
   id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, kind TEXT NOT NULL, detail TEXT, ip TEXT);
 CREATE INDEX IF NOT EXISTS ix_security_events ON security_events(ts);
@@ -132,7 +136,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 12   # v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 13   # v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -209,9 +213,17 @@ def _migrate_team_features(con):
 
 
 def _migrate_dbu_levels(con):
-    """v12: niveauer følger DBU's A/B/C/D. Tidligere A+ → A og Ny (nystartet) → D."""
-    con.execute("UPDATE players SET level='A' WHERE level='A+'")
-    con.execute("UPDATE players SET level='D' WHERE level='Ny'")
+    """v12/v13: «Ny» hedder nu «Nystartet» (A+ bevares). Trænernes niveauvurdering gemmes som niveau i stedet for tal 1-5
+    (5→A, 4→B, 3→C, 2→D, 1→Nystartet); tabellen genopbygges, gamle rækker omsættes (idempotent)."""
+    con.execute("UPDATE players SET level='Nystartet' WHERE level IN ('Ny')")
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(level_ratings)")}
+    if "level" not in cols:
+        con.execute("ALTER TABLE level_ratings RENAME TO level_ratings_old")
+        con.execute("CREATE TABLE level_ratings(round INTEGER NOT NULL, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, "
+                    "trainer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, level TEXT NOT NULL, PRIMARY KEY(round, player_id, trainer_id))")
+        con.execute("INSERT INTO level_ratings(round,player_id,trainer_id,level) SELECT round,player_id,trainer_id,"
+                    "CASE score WHEN 5 THEN 'A' WHEN 4 THEN 'B' WHEN 3 THEN 'C' WHEN 2 THEN 'D' ELSE 'Nystartet' END FROM level_ratings_old")
+        con.execute("DROP TABLE level_ratings_old")
 
 
 def init_db(path):

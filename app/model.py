@@ -220,34 +220,37 @@ def ratio(num, den):
     return num / den
 
 
-# Spillerniveau efter DBU's niveaudeling til stævner (A, B, C, D) – beskrivelserne er omskrevet med egne ord; se LEVEL_SOURCE
-LEVELS = ("A", "B", "C", "D")
+# Spillerniveau: DBU's A, B, C, D (nybegynder) og Nystartet, plus A+ til den allerbedste del af A (egen gradering). Beskrivelserne er omskrevet med egne ord; se LEVEL_SOURCE
+LEVELS = ("A+", "A", "B", "C", "D", "Nystartet")
+LEVEL_LABEL = {"D": "D (nybegynder)"}
+LEVEL_ORD = {"Nystartet": 1, "D": 2, "C": 3, "B": 4, "A": 5, "A+": 6}          # bruges til at beregne et gennemsnit af trænernes vurderinger
 LEVEL_SOURCE = "https://www.dbufyn.dk/boern-u5-12/generelt-om-boernefodbold/niveaudeling-til-staevner/#Niveauer"
 LEVEL_INFO = (
+    ("A+", "A+ (de allerstærkeste)", "Ikke et DBU-niveau, men en gradering i appen: spillere i toppen af A-niveauet, som tydeligt er blandt de stærkeste på holdet."),
     ("A", "A-niveau", "Børn der elsker fodbold og spiller meget, både hjemme og i skolen. De løber hurtigt, sparker godt og har styr på bolden i fart. "
           "De forstår som regel spillet, læser situationerne og er i gang, før tingene sker. Et A-hold består af A- og B-spillere – ikke C-spillere. "
           "Niveauet er for helt almindelige børn, ikke for talentakademier."),
     ("B", "B-niveau", "Spillere der ligger mellem A og C. Et B-hold består mest af B-spillere, gerne med et par C-spillere og højst én A-spiller."),
     ("C", "C-niveau", "Børn der er nye i fodbold eller endnu ikke har fanget, hvad spillet går ud på. De har ofte ikke spillet længe og skal bruge længere tid på at styre bolden – "
           "typisk sent fødte, forsigtige eller nystartede børn. Et C-hold består udelukkende af C-spillere; kommer der en A-spiller eller to-tre B-spillere på, er det ikke længere et C-hold."),
-    ("D", "D-niveau (nystartet)", "Børn der er helt nye i både bevægelse og fodbold, ofte taget med af forældrene eller på prøve for at se, om det er noget for dem. "
-          "De sparker tit forbi bolden, er bange for den, når den kommer flyvende, og lader sig let aflede. Et D-hold har ingen A- eller B-spillere og højst et par C-spillere. "
-          "Når holdet fører med 3 mål, tages en spiller af banen, og ved 6 mål endnu en. «Nystartet» bruger samme beskrivelse."),
+    ("D", "D-niveau (nybegynder)", "DBU kalder dem begyndere: de mindst erfarne C-spillere og D-spillere. Børn der stadig er i gang med at lære bolden og spillet at kende."),
+    ("Nystartet", "Nystartet", "Børn der er helt nye i både bevægelse og fodbold, ofte taget med af forældrene eller på prøve for at se, om det er noget for dem. "
+          "De sparker tit forbi bolden, er bange for den, når den kommer flyvende, og lader sig let aflede. Et nystartet-hold har ingen A- eller B-spillere og højst et par C-spillere. "
+          "Når holdet fører med 3 mål, tages en spiller af banen, og ved 6 mål endnu en."),
 )
-LEVEL_NOTES = ("Blandet niveau: alle spiller med og mod hinanden uanset niveau, og klubben bør blande sine spillere på tværs af hold i stedet for et rent A-hold mod et rent C-hold. "
-               "Begynder: de mindst erfarne C-spillere samt D-spillere.",
+LEVEL_NOTES = ("Blandet niveau: alle spiller med og mod hinanden uanset niveau, og klubben bør blande sine spillere på tværs af hold i stedet for et rent A-hold mod et rent C-hold.",
                "Børn udvikler sig forskelligt og skifter niveau over tid. Placér spillerne efter deres faktiske niveau, og flyt ikke A- og B-spillere ned på C-hold.")
 # Hvorfor har spilleren fået mascotten med hjem?
 MASCOT_REASONS = {"indsats": "Flot indsats", "fremgang": "Stor fremgang", "kammerat": "God kammerat", "hjaelp": "Hjælpsom",
                   "foerste": "Første gang / tur", "fodselsdag": "Fødselsdag", "andet": "Andet"}
 
 
-# ---------------------------------------------------------------- beregnet niveau (25 % A / 50 % B / 25 % C)
-LEVEL_SHARES = (0.25, 0.50, 0.25)
+# ---------------------------------------------------------------- beregnet niveau (som standard 25 % A / 50 % B / 25 % C)
+DEFAULT_SHARES = (25, 25)          # procent A og procent C (B er resten) – kan justeres pr. hold under holdindstillinger
 
 
-def distribute_levels(scores):
-    """{spiller: score} -> {spiller: 'A'|'B'|'C'}. De øverste 25 % er A, de nederste 25 % C, resten B (ud fra score).
+def distribute_levels(scores, a_pct=25, c_pct=25):
+    """{spiller: score} -> {spiller: 'A'|'B'|'C'}. De øverste a_pct % er A, de nederste c_pct % C, resten B (ud fra score).
     Ved lighed på grænsen følger spilleren den bedre gruppe; er alle ens, er alle B."""
     vals = {k: v for k, v in scores.items() if v is not None}
     if not vals:
@@ -256,9 +259,10 @@ def distribute_levels(scores):
     order = sorted(vals.values(), reverse=True)
     if order[0] == order[-1]:
         return {k: "B" for k in vals}
-    k = int(n * LEVEL_SHARES[0] + 0.5)
-    a_cut = order[k - 1] if k else None
-    c_cut = order[n - k] if k else None
+    ka = int(n * a_pct / 100 + 0.5)
+    kc = int(n * c_pct / 100 + 0.5)
+    a_cut = order[ka - 1] if ka else None
+    c_cut = order[n - kc] if kc else None
     out = {}
     for pid, v in vals.items():
         if a_cut is not None and v >= a_cut:

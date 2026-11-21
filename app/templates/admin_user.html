@@ -31,6 +31,17 @@
   <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='teams') }}">{{ csrf() }}
     {% for t in all_teams if t['club_id'] == u['club_id'] %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem }}> {{ t['name'] }}</label>{% endfor %}
     <div class="actions"><button class="btn sec">Gem hold</button></div></form>{% endif %}
+  {% if sysadmin %}<div class="card"><h2>Profiler</h2>
+    <p class="muted small">Brugeren kan have flere profiler med samme login og vælger den aktive øverst på siden. Hovedprofilen er {{ role_label[u['role']]|lower }}{% if u['club_name'] %} i {{ u['club_name'] }}{% endif %}.</p>
+    {% for p in extra_profiles %}<div class="card"><b>{{ p['label'] }}</b>
+      <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-remove') }}">{{ csrf() }}<input type="hidden" name="profile" value="{{ p['id'] }}"><button class="btn sec">Fjern profil</button></form>
+      {% if p['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-teams') }}">{{ csrf() }}<input type="hidden" name="club" value="{{ p['club_id'] }}">
+        {% for t in all_teams if t['club_id'] == p['club_id'] %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem }}> {{ t['name'] }}</label>{% endfor %}
+        <div class="actions"><button class="btn sec">Gem hold</button></div></form>{% endif %}</div>{% endfor %}
+    <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-add') }}">{{ csrf() }}
+      <div class="row"><select name="role" aria-label="Rolle"><option value="trainer">Træner</option><option value="clubadmin">Klubadministrator</option><option value="admin">Systemadministrator</option></select>
+      <select name="club" aria-label="Klub">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
+      <button class="btn sec">Tilføj profil</button></div></form></div>{% endif %}
   <div class="actions">
     {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.view_as', uid=u['id']) }}">{{ csrf() }}<button class="btn">Se som træner</button></form>{% endif %}
     <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='unlock') }}">{{ csrf() }}<button class="btn sec">Lås op</button></form>

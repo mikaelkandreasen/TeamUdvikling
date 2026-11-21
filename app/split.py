@@ -1,12 +1,12 @@
 """Deling af truppen i op til 9 hold (3 × A, 3 × B, 3 × C). Rene funktioner – ingen databaseadgang.
 
 Regler (spillerniveau fra trænerens vurdering):
-* A-holdene får A og B (A først, derefter bedste B), B-holdene får B (og evt. overskydende A), C-holdene får resten (C, D, uvurderede).
+* A-holdene får A+, A og B (A+/A først, derefter bedste B), B-holdene får B (og evt. overskydende A+/A), C-holdene får resten (C, D, nystartede, uvurderede).
 * Holdstørrelse = spillere på banen + udskiftere (fra holdprofilen). Hold fyldes i rækkefølge: A1, A2, A3, B1 … – mangler der spillere, fyldes A-holdene altså først.
 * Inden for et hold er de bedste (efter samlet score) på banen, resten udskiftere.
 """
 TIERS = ("A", "B", "C")
-_RANK = {"A": 0, "B": 1}
+_RANK = {"A+": 0, "A": 1, "B": 2}
 
 
 def _key(p):
@@ -17,9 +17,9 @@ def split(players, size, subs, per_tier=3):
     """players: [{id, name, level, score}]. Returnerer (teams, unplaced). teams: [{name, tier, no, players:[...], starters:int, short:int}]."""
     per_tier = max(1, min(3, int(per_tier)))
     cap = max(1, size + max(0, subs))
-    top = sorted((p for p in players if p.get("level") == "A"), key=_key)
+    top = sorted((p for p in players if p.get("level") in ("A+", "A")), key=_key)
     mid = sorted((p for p in players if p.get("level") == "B"), key=_key)
-    low = sorted((p for p in players if p.get("level") not in ("A", "B")), key=lambda p: (-(p.get("score") or 0), (p.get("name") or "").lower(), p["id"]))
+    low = sorted((p for p in players if p.get("level") not in ("A+", "A", "B")), key=lambda p: (-(p.get("score") or 0), (p.get("name") or "").lower(), p["id"]))
     a_pool = top + mid
     a_take, rest = a_pool[:per_tier * cap], a_pool[per_tier * cap:]          # A-holdene fyldes først
     b_take, rest = rest[:per_tier * cap], rest[per_tier * cap:]

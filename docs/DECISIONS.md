@@ -65,6 +65,12 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Konsekvens:** Fordelingen er relativ til holdet – en lille trup (under 4 spillere) giver få eller ingen A/C. Niveau vises som et oplæg til trænergruppen, ikke som rangering af børn.
 
 ## D-018 · Niveauer efter DBU (2026-11-21)
-**Kontekst:** Niveau skal altid måles som DBU beskriver det (A, B, C, D), ikke med egne trin.
-**Valg:** `model.LEVELS = A, B, C, D` og `LEVEL_INFO` med sammenfattede beskrivelser + kildelink; A+ og «Ny» udgår (migration til A og D). Beskrivelserne er omskrevet, ikke kopieret ordret (DBU Fyn ejer teksten); boksen linker til originalen. Beregnet niveau (D-017) giver kun A/B/C – D vælges manuelt.
+**Kontekst:** Niveau måles som DBU beskriver det; ønsket om A+ og Nystartet som ekstra valg i dropdown.
+**Valg:** `model.LEVELS = A+, A, B, C, D, Nystartet` og `LEVEL_INFO` med sammenfattede beskrivelser + kildelink; «Ny» → «Nystartet». Trænernes vurdering gemmes som niveau (`level_ratings.level`) og beregnes løbende (ingen lagret beregning, så den altid er aktuel). Beskrivelserne er omskrevet, ikke kopieret ordret (DBU Fyn ejer teksten); boksen linker til originalen. Beregnet niveau (D-017) giver kun A/B/C – D vælges manuelt.
 **Konsekvens:** Ændrer DBU kriterierne, rettes teksten i `model.LEVEL_INFO`.
+
+## D-019 · Flere profiler pr. bruger (2026-11-21)
+**Kontekst:** Én person kan være træner i én klub og klubadministrator i en anden.
+**Valg:** Hovedprofilen er uændret (`users.role/club_id`). Ekstra profiler i `user_profiles`; den aktive profil ligger i sessionen og lægges som rolle/klub over `g.user` i `load_user`, så alle eksisterende adgangstjek (scope, hold, admin) virker uændret. Kun systemadministratorer kan tildele profiler; valget valideres mod databasen ved hver forespørgsel, så en fjernet profil mister virkning med det samme.
+**Konsekvens:** Holdtilknytning (`user_teams`) er pr. bruger og afgrænses af den aktive profils klub. «Se som træner» nulstilles ved profilskifte.
+
