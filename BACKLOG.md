@@ -4,8 +4,8 @@ Prioriteret liste. Øverst = næste. Format: `ID · titel · størrelse (S/M/L) 
 Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye opdagelser nederst i "Idéer".
 
 ## Næste (P0 – før første rigtige brug)
-- **B-003 · Første rigtige gennemløb med trænere** · M – 1 hold, 2 trænere, 1 evalueringsrunde, motivationsskema på tablet; liste over friktionspunkter → nye backlog-punkter.
-- **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen).
+- **B-003 · Første rigtige gennemløb med trænere** · M – 1 hold, 2 trænere, 1 evalueringsrunde, motivationsskema på tablet; liste over friktionspunkter → nye backlog-punkter. *Status: Tjekliste i docs/DRIFT.md – selve gennemløbet udføres af dig.*
+- **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen). *Status: Backup kontrolleres automatisk; scripts/restore.sh + verify-backup.py; docs/BACKUP.md (off-site med rclone/rsync).*
 
 ## Senere (P1)
 - **B-011 · Skrivebeskyttet rolle** · S – "assistent/forælderhjælper" kan se, men ikke ændre.
@@ -21,13 +21,13 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 - **B-021 · DBU KampKlar-integration** · M/L – Ingen officiel API. Undersøgt: uofficiel scraping af mit.dbu.dk (personligt DBU-login, kan gå i stykker, vilkår uafklarede) eller iCal-link til holdets kampe/aktiviteter. Uklart om andre spilleres tilmeldingsstatus er synlig. Claude API er ikke nødvendigt til hentning. Afventer brugerens valg – se docs/DECISIONS.md.
 
-- **B-022 · Ekstern pentest/scan af udrullet system** · S – OWASP ZAP/nuclei mod HTTPS-adressen, før den åbnes på internettet.
+- **B-022 · Ekstern pentest/scan af udrullet system** · S – OWASP ZAP/nuclei mod HTTPS-adressen, før den åbnes på internettet. *Status: Kommandoer til ZAP/nuclei i docs/DRIFT.md – selve scanningen udføres af dig.*
 - **B-023 · Kryptering af TOTP-hemmeligheder i hvile** · M – fx envelope med nøgle uden for databasen.
 - **B-024 · Opbevaringstid pr. spiller** · M – `deactivated_at` og automatisk sletning efter aftalt frist.
 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
-- **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det.
+- **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 - **B-031 · Login-side pr. klub (`/k/<klub>`)** · S – valgfri adresse pr. klub med klubbens udseende; erstatter behovet for at huske enheden.
 
 ## Idéer (uprioriteret)
@@ -46,6 +46,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **v0.11.0** – B-004 backup/restore (kontrol + vejledning), B-030 CI-røgtest, B-003/B-022 tjeklister (docs/DRIFT.md), B-012 sæsonskifte, B-015 fremmøde pr. træning/kamp, B-014 trivsel over tid (motivation over tid mangler), B-011 assistent med læseadgang, B-016 spillerlink.
 - **B-001** – Docker-build og Dockhand-deploy kører i drift på hjemmeserveren (CI/GHCR-udgivelse er stadig uverificeret – se B-030).
 - **B-002** – HTTPS via Cloudflare Tunnel (`COOKIE_SECURE=1`, `__Host-`-cookies, ProxyFix).
 - **B-010** – Holdadministratorer: klubadministrator og chef-træner (v0.9.0/v0.10.0), med isolationstests.

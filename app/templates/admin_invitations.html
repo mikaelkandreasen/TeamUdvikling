@@ -6,6 +6,7 @@
   <p class="muted small">Personen får en e-mail med et link, hvor vedkommende selv vælger brugernavn og adgangskode og sætter 2FA op. Linket virker i <b>7 dage</b> og kan kun bruges én gang.</p>
   <label for="em">E-mailadresse</label><input id="em" type="email" name="email" required autocomplete="off" autocapitalize="none" maxlength="254">
   {% if sysadmin %}<label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner</option><option value="clubadmin">Klubadministrator</option></select>{% endif %}
+  <label class="check"><input type="checkbox" name="as_readonly" value="1"> Assistent (kun læseadgang – kan se men ikke ændre)</label>
   <label class="check"><input type="checkbox" name="as_head" value="1"> Chef-træner for de valgte hold (kan ændre holdindstillinger og invitere trænere)</label>
   {% if clubs|length > 1 %}<label for="cb">Klub</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
   {% elif sysadmin %}<input type="hidden" name="club" value="{{ clubs[0]['id'] }}">{% endif %}
@@ -16,7 +17,7 @@
   <div class="actions"><button class="btn" {{ 'disabled' if mail_missing }}>Send invitation</button></div></form>
 <h2>Sendte invitationer</h2>
 {% for r in rows %}
-<div class="card"><b>{{ r['email'] }}</b> <span class="badge">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else 'træner') }}</span>
+<div class="card"><b>{{ r['email'] }}</b> <span class="badge">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else ('assistent' if r['as_readonly'] else 'træner')) }}</span>
   <p class="muted small">{{ r['club_name'] or '(uden navn)' }} · sendt af {{ r['created_by'] }} · <b>{{ r['state'] }}</b></p>
   {% if r['state'] in ('afventer', 'udløbet') %}
   <div class="actions">

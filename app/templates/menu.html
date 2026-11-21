@@ -9,7 +9,8 @@
   <a class="tile alt" href="{{ url_for('team.index') }}">Hold</a>
   <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder</a>
   {% if features['motivation'] %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">Motivation</a>{% endif %}
-  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>{% endif %}
+  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>
+  <a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde</a>{% endif %}
   <a class="tile alt" href="{{ url_for('main.criteria') }}">Skala &amp; kriterier</a>
   <a class="tile alt" href="{{ url_for('auth.account') }}">Min konto</a>
   {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">Administration</a>{% endif %}

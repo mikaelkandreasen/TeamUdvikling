@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Fremmøde{% endblock %}
+{% block content %}
+<h1>Fremmøde pr. træning og kamp</h1>
+<p class="muted">Registrér hver træning/kamp for sig. Fremmøde og kampdeltagelse i Udviklingsdata beregnes så automatisk. <a href="{{ url_for('devdata.matrix') }}">Til Udviklingsdata</a></p>
+<form method="post" class="card">{{ csrf() }}<h2>Ny registrering</h2>
+  <div class="row"><div><label for="k">Type</label><select id="k" name="kind"><option value="training">Træning</option><option value="match">Kamp</option></select></div>
+  <div><label for="d">Dato</label><input id="d" type="date" name="day" value="{{ today }}" required></div></div>
+  <label for="n">Note (valgfri)</label><input id="n" type="text" name="note" maxlength="200" placeholder="fx udekamp, aflyst pga. regn">
+  <div class="actions"><button class="btn">Opret og afkryds</button></div></form>
+{% for e in rows %}
+<div class="card"><a href="{{ url_for('devdata.attendance_edit', eid=e['id']) }}"><b>{{ e['day']|date_dk }}</b> · {{ 'Kamp' if e['kind'] == 'match' else 'Træning' }}</a>
+  · {{ e['present'] }} af {{ n_players }}{% if e['note'] %} <span class="muted small">– {{ e['note'] }}</span>{% endif %}</div>
+{% else %}<div class="card muted">Ingen registreringer endnu.</div>{% endfor %}
+{% endblock %}

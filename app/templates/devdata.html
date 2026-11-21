@@ -4,17 +4,20 @@
 <p class="muted">Fødselsdato hentes fra spillerprofilen. Trivsel (1–5) kan spilleren selv svare på. Motorik (1–5) scores af træneren relativt til årgangen (1 = har brug for meget støtte, 3 = på niveau, 5 = meget stærk).</p>
 <form method="post">{{ csrf() }}
 <div class="card"><h2>Holdets totaler</h2>
+  {% if ov['auto'] %}<p>Beregnes fra <a href="{{ url_for('devdata.attendance') }}">fremmøde pr. træning/kamp</a>: <b>{{ ov['totals'][0] or 0 }}</b> træninger og <b>{{ ov['totals'][1] or 0 }}</b> kampe registreret.</p></div>
+  {% else %}<p class="muted small">Tip: registrér <a href="{{ url_for('devdata.attendance') }}">fremmøde pr. træning/kamp</a>, så beregnes tallene automatisk.</p>
   <div class="row"><div><label for="tt">Træninger afholdt (antal)</label><input id="tt" type="number" min="0" max="999" name="trainings_total" value="{{ trainings_total }}" inputmode="numeric"></div>
-  <div><label for="mt">Kampe afholdt (antal)</label><input id="mt" type="number" min="0" max="999" name="matches_total" value="{{ matches_total }}" inputmode="numeric"></div></div></div>
+  <div><label for="mt">Kampe afholdt (antal)</label><input id="mt" type="number" min="0" max="999" name="matches_total" value="{{ matches_total }}" inputmode="numeric"></div></div></div>{% endif %}
+<p class="muted small">Trivsel kan også registreres som <a href="{{ url_for('devdata.wellbeing') }}">målinger over tid</a>; den seneste måling vises her.</p>
 <div class="scroll"><table class="matrix">
   <thead><tr><th>Spiller</th><th class="q">Kvartal</th><th class="q">Træninger deltaget</th><th class="q">Fremmøde</th><th class="q">Kampe med spilletid</th><th class="q">Kamp-deltagelse</th>
     {% for t in trivsel %}<th class="q">{{ t }}</th>{% endfor %}{% for t in motorik %}<th class="q">{{ t }}</th>{% endfor %}<th class="q">Handleplan</th></tr></thead>
   <tbody>
   {% for r in ov['rows'] %}{% set p = r['p'] %}{% set d = r['dev'] %}<tr>
     <td>{{ p['name'] }}</td><td class="num">{{ 'Q%d'|format(r['q']) if r['q'] else '' }}</td>
-    <td class="q"><input type="number" min="0" max="999" name="trainings_{{ p['id'] }}" value="{{ d['trainings'] if d and d['trainings'] is not none else '' }}" inputmode="numeric" aria-label="Træninger deltaget – {{ p['name'] }}"></td>
+    <td class="q">{% if ov['auto'] %}{{ d['trainings'] if d and d['trainings'] is not none else '' }}{% else %}<input type="number" min="0" max="999" name="trainings_{{ p['id'] }}" value="{{ d['trainings'] if d and d['trainings'] is not none else '' }}" inputmode="numeric" aria-label="Træninger deltaget – {{ p['name'] }}">{% endif %}</td>
     <td class="num">{{ r['att']|pct }}</td>
-    <td class="q"><input type="number" min="0" max="999" name="matches_{{ p['id'] }}" value="{{ d['matches'] if d and d['matches'] is not none else '' }}" inputmode="numeric" aria-label="Kampe – {{ p['name'] }}"></td>
+    <td class="q">{% if ov['auto'] %}{{ d['matches'] if d and d['matches'] is not none else '' }}{% else %}<input type="number" min="0" max="999" name="matches_{{ p['id'] }}" value="{{ d['matches'] if d and d['matches'] is not none else '' }}" inputmode="numeric" aria-label="Kampe – {{ p['name'] }}">{% endif %}</td>
     <td class="num">{{ r['matchp']|pct }}</td>
     {% for k in ['t1','t2','t3','m1','m2','m3','m4'] %}<td class="q"><input type="number" min="1" max="5" name="{{ k }}_{{ p['id'] }}" value="{{ d[k] if d and d[k] is not none else '' }}" inputmode="numeric" aria-label="{{ k }} – {{ p['name'] }}"></td>{% endfor %}
     <td><a href="{{ url_for('devdata.plan', pid=p['id']) }}">Åbn</a></td></tr>

@@ -109,6 +109,11 @@ def create_app(config=None):
         if g.get("viewing") and request.method not in ("GET", "HEAD", "OPTIONS") and request.endpoint not in (
                 "auth.view_as_stop", "auth.logout", "main.switch_team"):
             abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
+        if (g.get("user") and g.user["readonly"] and request.method not in ("GET", "HEAD", "OPTIONS")
+                and not (request.endpoint or "").startswith("auth.") and request.endpoint != "main.switch_team"):
+            abort(403, "Du har læseadgang (assistent) og kan ikke ændre noget.")
+        if teams.archived_write_blocked(request.endpoint, request.method):
+            abort(403, "Holdet er arkiveret og skrivebeskyttet. Genåbn det under Administration → Hold, hvis det skal ændres.")
         activity.touch()
         features.guard()
         return None
@@ -149,7 +154,7 @@ def create_app(config=None):
 
     from . import admin, devdata, evaluation, invites, lineup, motivation, players, reports, reset, team
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp, team.bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp, team.bp, motivation.public_bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")

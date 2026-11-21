@@ -20,7 +20,7 @@
     <form method="post" action="{{ url_for('main.switch_team') }}" class="noprint">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <select name="team_id" data-autosubmit aria-label="Skift hold" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
-        {% for t in teams %}<option value="{{ t['id'] }}" {{ 'selected' if team and t['id'] == team['id'] }}>{{ t['name'] }}</option>{% endfor %}
+        {% for t in teams %}<option value="{{ t['id'] }}" {{ 'selected' if team and t['id'] == team['id'] }}>{{ t['name'] }}{{ ' (arkiveret)' if t['archived'] }}</option>{% endfor %}
       </select>
       <noscript><button>Skift</button></noscript>
     </form>

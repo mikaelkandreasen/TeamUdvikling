@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Sæsonskifte{% endblock %}
+{% block content %}
+<h1>Sæsonskifte – {{ team['name'] }}</h1>
+<p class="muted">Opretter et nyt hold til den nye sæson. Det gamle holds data bevares uændret.</p>
+<form method="post" class="card">{{ csrf() }}
+  <label for="n">Nyt holdnavn</label><input id="n" type="text" name="name" value="{{ suggest }}" maxlength="80" required>
+  <label for="s">Sæson (valgfri)</label><input id="s" type="text" name="season" maxlength="20" placeholder="2027">
+  <label class="check"><input type="checkbox" name="players" value="1" checked> Overfør aktive spillere (navn, fødselsdato, positioner, fod, niveau) – uden scores, fokus, noter og billeder</label>
+  <label class="check"><input type="checkbox" name="trainers" value="1" checked> Overfør trænere og chef-trænere</label>
+  <label class="check"><input type="checkbox" name="archive" value="1" checked> Arkivér det gamle hold (skrivebeskyttet)</label>
+  <p class="muted small">Holdindstillinger, slogan, mascot og tilpassede motivationsspørgsmål følger med. Spillerbilleder skal have nyt samtykke og overføres derfor ikke.</p>
+  <div class="actions"><button class="btn">Opret nyt hold</button></div></form>
+{% endblock %}

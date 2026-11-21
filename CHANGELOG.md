@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Backup kontrolleres** (integritet, fremmednøgler, skemaversion) ved hver backup; ødelagte backups slettes i stedet for at fortrænge gode. `scripts/verify-backup.py`, `scripts/restore.sh` kontrollerer filen og gemmer den gamle database. Se `docs/BACKUP.md` (inkl. off-site med rclone/rsync).
+- **CI røgtest** af Docker-imaget før udgivelse (ikke-root, `cap_drop ALL`, skrivebeskyttet rod). `docs/DRIFT.md`: verificering af GHCR/Dockhand, tjekliste til første gennemløb og kommandoer til ZAP/nuclei.
+- **Sæsonskifte** (Hold → Sæsonskifte): nyt hold med aktive spillere (uden scores, fokus, noter og billeder), trænere og indstillinger; det gamle hold arkiveres som skrivebeskyttet (kan genåbnes under Administration → Hold).
+- **Fremmøde pr. træning/kamp:** afkrydsning på mobil; fremmøde og kampdeltagelse i Udviklingsdata beregnes automatisk.
+- **Trivsel over tid:** målinger med dato; seneste måling bruges i Udviklingsdata, og spillerrapporten viser et linjediagram mod holdets gennemsnit.
+- **Assistent (læseadgang):** en træner kan markeres som assistent – kan se, men ikke ændre. Kan oprettes direkte eller via invitation.
+- **Spillerlink:** personligt engangslink (7 dage) til motivationsskemaet uden login; kun dette ene skema, én gang, med QR-kode. Tilføj `/svar` til Cloudflare-reglen.
+
+### Ændret
+- Skema v10 (idempotent migration): `teams.archived`, `users.readonly`, `invitations.as_readonly`, `att_events`, `att_marks`, `wellbeing`, `player_links`.
+
 ### Dokumentation
 - BACKLOG opdateret: færdige punkter flyttet, dublerede ID’er omnummereret (B-021–B-024), nye B-030/B-031.
 

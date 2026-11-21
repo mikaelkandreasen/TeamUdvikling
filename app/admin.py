@@ -158,8 +158,12 @@ def team_action(tid, action):
             db.execute("DELETE FROM teams WHERE id=?", (tid,))  # CASCADE: spillere, evalueringer, svar, udviklingsdata
             audit(db, g.user["username"], "hold_slettet", t["name"])
             flash(f"Holdet '{t['name']}' og alle dets data er slettet.", "ok")
+    elif action in ("archive", "unarchive"):
+        db.execute("UPDATE teams SET archived=? WHERE id=?", (1 if action == "archive" else 0, tid))
+        audit(db, g.user["username"], "hold_arkiveret" if action == "archive" else "hold_genåbnet", t["name"])
+        flash("Holdet er arkiveret (skrivebeskyttet)." if action == "archive" else "Holdet er genåbnet.", "ok")
     elif action == "head":
-        valid = {r["user_id"] for r in db.execute("SELECT ut.user_id FROM user_teams ut JOIN users u ON u.id=ut.user_id WHERE ut.team_id=? AND u.club_id IS ? AND u.role='trainer'", (tid, t["club_id"]))}
+        valid = {r["user_id"] for r in db.execute("SELECT ut.user_id FROM user_teams ut JOIN users u ON u.id=ut.user_id WHERE ut.team_id=? AND u.club_id IS ? AND u.role='trainer' AND u.readonly=0", (tid, t["club_id"]))}
         chosen = {int(x) for x in request.form.getlist("head_user") if x.isdigit()} & valid
         db.execute("DELETE FROM team_heads WHERE team_id=?", (tid,))
         for uid in chosen:
@@ -236,8 +240,9 @@ def users():
             flash("Brugernavnet findes allerede.", "error")
         else:
             temp = secrets.token_urlsafe(12)
-            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email,club_id) VALUES(?,?,?,?,1,datetime('now'),?,?)",
-                             (username, name, generate_password_hash(temp), role, email, club_id))
+            ro = 1 if role == "trainer" and request.form.get("readonly") == "1" else 0
+            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email,club_id,readonly) VALUES(?,?,?,?,1,datetime('now'),?,?,?)",
+                             (username, name, generate_password_hash(temp), role, email, club_id, ro))
             _set_user_teams(db, cur.lastrowid, request.form.getlist("teams") if role == "trainer" else [], club_id)
             audit(db, g.user["username"], "bruger_oprettet", f"{username} ({role})")
             db.commit()
@@ -258,6 +263,15 @@ def user_action(uid, action):
             abort(400)
         _set_user_teams(db, uid, request.form.getlist("teams") if u["role"] == "trainer" else [], u["club_id"])
         flash("Holdtilknytning gemt.", "ok")
+    elif action == "readonly":
+        if u["role"] != "trainer":
+            abort(400)
+        on = 1 if request.form.get("readonly") == "1" else 0
+        db.execute("UPDATE users SET readonly=? WHERE id=?", (on, uid))
+        if on:
+            db.execute("DELETE FROM team_heads WHERE user_id=?", (uid,))
+        audit(db, g.user["username"], "assistent_sat" if on else "assistent_fjernet", u["username"])
+        flash("Gemt: læseadgang (assistent)." if on else "Gemt: almindelig træner.", "ok")
     elif action == "role":
         if not scope.is_sysadmin(g.user):
             abort(404)

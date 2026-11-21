@@ -20,6 +20,7 @@
   <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
   <tr class="avg"><td>Motorik (gennemsnit)</td><td class="num">{{ m['motorik']|dk }}</td><td class="num">{{ a['motorik']|dk }}</td></tr>
   </tbody></table></div>
+{% if d['trend'] %}<h3>Trivsel over tid</h3><div class="card">{{ d["trend"] }}</div>{% endif %}
 <h3>Handleplan</h3>
 <div class="scroll"><table><tbody>
   <tr><td>Fokusområde 1</td><td>{{ p['focus1'] or '' }}</td></tr><tr><td>Fokusområde 2</td><td>{{ p['focus2'] or '' }}</td></tr>

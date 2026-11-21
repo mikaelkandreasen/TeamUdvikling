@@ -39,3 +39,11 @@ document.addEventListener("click", function (e) {
     }, 350);
   });
 })();
+
+// Fremmøde: «Alle» / «Ingen».
+document.addEventListener("click", function (e) {
+  var b = e.target.closest && e.target.closest("[data-checkall]");
+  if (!b || !b.form) { return; }
+  var on = b.getAttribute("data-checkall") === "1";
+  b.form.querySelectorAll('input[type=checkbox][name=present]').forEach(function (c) { c.checked = on; });
+});

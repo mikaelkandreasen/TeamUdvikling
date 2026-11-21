@@ -51,7 +51,7 @@ Persistente data ligger i volumen `u11-data` (`/data`): `u11.db`, `backups/` (au
 
 ## Opdatering, backup og gendannelse
 - Opdatér: ny version → `docker compose pull && docker compose up -d` (eller redeploy i Dockhand). Databasen migreres automatisk ved start.
-- Backup: *Administration → Hent backup*, eller kopiér `/data/backups`. Gem også kopier uden for serveren.
+- Backup og gendannelse: se [docs/BACKUP.md](docs/BACKUP.md) (kontrolleret backup, `scripts/restore.sh`, off-site-kopi).
 - Gendan: stop containeren → `scripts/restore.sh u11-backup.db` → start igen.
 
 ## Sikkerhed og persondata (børn)

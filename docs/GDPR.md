@@ -16,6 +16,8 @@
 | Udvikling og trivsel | fremmøde, trivsel, motorik, mål, tiltag, noter | Støtte barnet | Trænere/barnet | Holdets trænere, admin | Når barnet stopper |
 | Trænerkonti | navn, brugernavn, e-mailadresse (valgfri), adgangskode-hash, 2FA-hemmelighed | Adgangskontrol og nulstilling efter admins godkendelse | Trænere/admin | Admin; e-mailudbyder (SMTP) ved afsendelse af nulstillingsmail | Når trænere stopper |
 | Spillerniveau, noter og mascot | niveau (A+–Ny), holdnoter, hvem der har haft mascotten og hvorfor | Tilrettelægge hold og fællesskab | Trænere | Holdets trænere, admin | Når barnet stopper (mascot-log følger spilleren) |
+| Fremmøde og trivsel over tid | dato for træning/kamp, hvem der var til stede; trivselsmålinger (1–5) | Støtte barnet, planlægge træning | Trænere/barnet | Holdets trænere, admin | Når barnet stopper |
+| Spillerlink | hash af engangslink, svar på motivationsskema | Lade barnet svare hjemme | Barnet/forælder | Holdets trænere | Link: 7 dage; svar: når barnet stopper |
 | Nulstillingstokens | hash af engangslink | Sikker nulstilling | System | Ingen | 60 min. (ryddes efter 1 døgn) |
 | Logs | audit-log, loginforsøg | Sikkerhed/ansvarlighed | System | Admin | 12 mdr. / 1 time |
 

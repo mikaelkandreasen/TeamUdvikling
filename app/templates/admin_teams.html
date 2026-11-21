@@ -7,7 +7,7 @@
   <div><label for="s">Sæson (valgfri)</label><input id="s" type="text" name="season" placeholder="2026/27" maxlength="20"></div></div>
   <div class="actions"><button class="btn">Opret</button></div></form>
 {% for t in teams %}
-<div class="card"><h2>{{ t['name'] }}{% if t['season'] %} <span class="muted">({{ t['season'] }})</span>{% endif %}</h2>
+<div class="card"><h2>{{ t['name'] }}{% if t['archived'] %} <span class="badge">arkiveret</span>{% endif %}{% if t['season'] %} <span class="muted">({{ t['season'] }})</span>{% endif %}</h2>
   <p class="muted">{% if clubs|length > 1 %}{{ t['club_name'] or '(uden navn)' }} · {% endif %}{{ t['players'] }} spillere · {{ t['trainers'] }} tilknyttede trænere (administratorer har altid adgang)</p>
   <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='rename') }}">{{ csrf() }}
     <div class="row"><div><input type="text" name="name" value="{{ t['name'] }}" aria-label="Holdnavn" maxlength="80"></div><div><input type="text" name="season" value="{{ t['season'] or '' }}" aria-label="Sæson" maxlength="20"></div></div>
@@ -16,6 +16,8 @@
     <label>Chef-trænere (kan ændre holdindstillinger og evalueringsrunder og invitere trænere)</label>
     {% for m in members.get(t['id'], []) %}<label class="check"><input type="checkbox" name="head_user" value="{{ m['id'] }}" {{ 'checked' if m['id'] in heads.get(t['id'], []) }}> {{ m['display_name'] }}</label>{% else %}<p class="muted small">Tilknyt først en træner til holdet.</p>{% endfor %}
     <div class="actions"><button class="btn sec">Gem chef-træner</button></div></form>
+  <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action=('unarchive' if t['archived'] else 'archive')) }}">{{ csrf() }}
+    <button class="btn sec">{{ 'Genåbn hold' if t['archived'] else 'Arkivér hold (skrivebeskyttet)' }}</button></form>
   <details><summary>Slet hold</summary>
     <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='delete') }}">{{ csrf() }}
       <p class="muted small">Sletter holdet og alle dets spillere, evalueringer, svar og udviklingsdata permanent. Skriv holdets navn for at bekræfte.</p>

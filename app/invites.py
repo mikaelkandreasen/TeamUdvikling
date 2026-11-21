@@ -31,13 +31,13 @@ def _h(token):
     return hmac.new(current_app.config["SECRET_KEY"].encode(), (token or "").encode(), hashlib.sha256).hexdigest()
 
 
-def issue(db, email, role, club_id, team_ids, created_by, now=None, as_head=False):
+def issue(db, email, role, club_id, team_ids, created_by, now=None, as_head=False, as_readonly=False):
     """Opretter en invitation (tidligere ubrugte til samme adresse i klubben tilbagekaldes). Returnerer rå token."""
     now = int(now if now is not None else time.time())
     db.execute("UPDATE invitations SET revoked=1 WHERE email=? AND club_id=? AND used_at IS NULL AND revoked=0", (email, club_id))
     token = secrets.token_urlsafe(32)
-    db.execute("INSERT INTO invitations(token_hash,email,role,club_id,team_ids,created_by,created_at,expires_at,as_head) VALUES(?,?,?,?,?,?,?,?,?)",
-               (_h(token), email, role, club_id, ",".join(str(t) for t in team_ids), created_by, now, now + TTL, 1 if as_head and role == "trainer" else 0))
+    db.execute("INSERT INTO invitations(token_hash,email,role,club_id,team_ids,created_by,created_at,expires_at,as_head,as_readonly) VALUES(?,?,?,?,?,?,?,?,?,?)",
+               (_h(token), email, role, club_id, ",".join(str(t) for t in team_ids), created_by, now, now + TTL, 1 if as_head and role == "trainer" and not as_readonly else 0, 1 if as_readonly and role == "trainer" else 0))
     return token
 
 
@@ -61,7 +61,7 @@ def status(row, now=None):
 def _mail(db, row, token, inviter):
     info = club_get(db, row["club_id"])
     club = info["name"] or info["app_name"]
-    what = "klubadministrator" if row["role"] == "clubadmin" else ("chef-træner" if row["as_head"] else "træner")
+    what = "klubadministrator" if row["role"] == "clubadmin" else ("chef-træner" if row["as_head"] else ("assistent (læseadgang)" if row["as_readonly"] else "træner"))
     body = (f"Hej,\n\n{inviter} har inviteret dig som {what} i {club} ({info['app_name']}).\n\n"
             "Åbn linket, vælg brugernavn og adgangskode, og sæt to-faktor-login (2FA) op med en autentificeringsapp:\n\n"
             f"{mailer.public_url()}/invitation/{token}\n\n"
@@ -70,7 +70,7 @@ def _mail(db, row, token, inviter):
     mailer.send(row["email"], f"Invitation til {club}", body)
 
 
-def send(db, email, role, club_id, team_ids, inviter, as_head=False):
+def send(db, email, role, club_id, team_ids, inviter, as_head=False, as_readonly=False):
     """Opretter og sender. Returnerer (ok, besked). Kalderen har kontrolleret rettigheder og 2FA-kode."""
     todo = mailer.missing()
     if todo:
@@ -79,7 +79,7 @@ def send(db, email, role, club_id, team_ids, inviter, as_head=False):
                          (club_id, int(time.time()))).fetchone()[0]
     if pending >= MAX_PENDING_PER_CLUB:
         return False, "Der er for mange afventende invitationer. Tilbagekald nogle først."
-    token = issue(db, email, role, club_id, team_ids, inviter, as_head=as_head)
+    token = issue(db, email, role, club_id, team_ids, inviter, as_head=as_head, as_readonly=as_readonly)
     row = db.execute("SELECT * FROM invitations WHERE token_hash=?", (_h(token),)).fetchone()
     try:
         _mail(db, row, token, inviter)
@@ -159,7 +159,8 @@ def index():
         return _page(db)
     email, err = mailer.normalize_email(request.form.get("email"))
     role = request.form.get("role", "trainer")
-    as_head = request.form.get("as_head") == "1" and role == "trainer"
+    as_readonly = request.form.get("as_readonly") == "1" and role == "trainer"
+    as_head = request.form.get("as_head") == "1" and role == "trainer" and not as_readonly
     if role not in ("trainer", "clubadmin") or (role == "clubadmin" and not scope.is_sysadmin(g.user)):
         abort(404 if role == "clubadmin" else 400)
     raw_club = request.form.get("club")
@@ -186,7 +187,7 @@ def index():
     bad = _code_ok(db)
     if bad is not None:
         return bad
-    ok, msg = send(db, email, role, club_id, teams, g.user["username"], as_head)
+    ok, msg = send(db, email, role, club_id, teams, g.user["username"], as_head, as_readonly)
     audit(db, g.user["username"], "invitation_sendt" if ok else "invitation_fejlet", f"{email} ({role}{', chef' if as_head else ''})")
     db.commit()
     flash(msg, "ok" if ok else "error")
@@ -234,7 +235,7 @@ def resend(iid):
         teams = [t for t in teams if t in _heads()]
         if not teams:
             abort(404)
-    ok, msg = send(db, row["email"], row["role"], row["club_id"], teams, g.user["username"], bool(row["as_head"]))
+    ok, msg = send(db, row["email"], row["role"], row["club_id"], teams, g.user["username"], bool(row["as_head"]), bool(row["as_readonly"]))
     audit(db, g.user["username"], "invitation_sendt_igen" if ok else "invitation_fejlet", row["email"])
     db.commit()
     flash(msg, "ok" if ok else "error")
@@ -296,8 +297,8 @@ def accept(token):
         if used.rowcount != 1:                    # en anden anmodning nåede først (engangslink)
             db.rollback()
             return _invalid()
-        cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email,club_id) "
-                         "VALUES(?,?,?,?,0,datetime('now'),?,?)", (username, name, generate_password_hash(pw), row["role"], row["email"], row["club_id"]))
+        cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email,club_id,readonly) "
+                         "VALUES(?,?,?,?,0,datetime('now'),?,?,?)", (username, name, generate_password_hash(pw), row["role"], row["email"], row["club_id"], row["as_readonly"]))
         uid = cur.lastrowid
         if row["role"] == "trainer":
             for t in [int(x) for x in row["team_ids"].split(",") if x]:

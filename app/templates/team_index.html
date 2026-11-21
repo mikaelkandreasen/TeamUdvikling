@@ -9,7 +9,8 @@
   {% if features['notes'] %}<a class="tile alt" href="{{ url_for('team.notes') }}">Noter<small>holdets noter</small></a>{% endif %}
   {% if features['mascot'] %}<a class="tile alt" href="{{ url_for('team.mascot') }}">Mascot{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}<small>hvem har den med hjem</small></a>
   <a class="tile alt" href="{{ url_for('team.mascot_report') }}">Mascot-rapport<small>hvem, hvor mange gange og hvorfor</small></a>{% endif %}
-  {% if can_configure() %}<a class="tile alt" href="{{ url_for('invites_admin.index') }}">Invitér trænere<small>send link på e-mail</small></a>
+  {% if can_configure() %}<a class="tile alt" href="{{ url_for('team.season') }}">Sæsonskifte<small>nyt hold til ny sæson</small></a>
+  <a class="tile alt" href="{{ url_for('invites_admin.index') }}">Invitér trænere<small>send link på e-mail</small></a>
   <a class="tile alt" href="{{ url_for('team.settings') }}">Holdindstillinger<small>kamptype, funktioner, slogan</small></a>
   <a class="tile alt" href="{{ url_for('admin.evaluations') }}">Evalueringsrunder<small>{{ rounds|length }} runder · tilføj/fjern</small></a>
   <a class="tile alt" href="{{ url_for('admin.settings') }}">Rundenavne og datoer<small>{{ team['name'] }}</small></a>{% endif %}

@@ -48,3 +48,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** En offentlig loginside med klubbens logo/navn afslører, hvilke klubber der findes, og vælger ikke klub for brugeren (brugernavne er globalt unikke).
 **Valg:** Før login vises kun produktnavnet og standardfarver. Cookien `u11_lc` (klub-id, ingen hemmelighed) sættes kun ved «husk mig» og styrer udseendet på loginsiden for den enhed.
 **Konsekvens:** Første gang på en ny enhed ses et neutralt login; udseendet kommer efter login.
+
+## D-015 · Assistent som flag, spillerlink og arkiverede hold (2026-11-21)
+**Kontekst:** Skrivebeskyttet adgang, svar uden login og sæsonskifte skulle bygges uden at duplikere rolle-logikken.
+**Valg:** Assistent = træner med `users.readonly=1` (al hold-/klubafgrænsning genbruges; ændringer blokeres globalt). Spillerlink er et selvstændigt engangstoken (`player_links`) med eget offentligt endpoint og kun hash gemt. Arkiverede hold (`teams.archived`) er skrivebeskyttede for hold-sider, men kan læses og genåbnes.
+**Konsekvens:** Nye skrive-endpoints i `players/evaluation/motivation/devdata/lineup/team` er automatisk låst på arkiverede hold; offentlige endpoints skal føjes til `PUBLIC` og beskyttes af tokens og `throttled`.

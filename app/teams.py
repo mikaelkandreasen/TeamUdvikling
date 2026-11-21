@@ -18,6 +18,18 @@ def accessible_teams(db, user):
                       "ORDER BY t.name COLLATE NOCASE", (user["id"], user["club_id"])).fetchall()
 
 
+GUARDED = {"players", "evaluation", "motivation", "devdata", "lineup", "team"}
+
+
+def archived_write_blocked(endpoint, method):
+    """Arkiverede hold er skrivebeskyttede: ingen ændringer af spillere, evalueringer, data eller indstillinger."""
+    if method in ("GET", "HEAD", "OPTIONS") or not g.get("team") or not g.team["archived"]:
+        return False
+    if endpoint in ("team.season",):
+        return False
+    return (endpoint or "").split(".")[0] in GUARDED or endpoint in ("admin.evaluations", "admin.settings")
+
+
 def team_rounds(db, team_id):
     """Evalueringsrunder for et hold (standard 4, 2–8)."""
     try:
@@ -35,7 +47,8 @@ def resolve(db, user):
     if not g.teams:
         session.pop("team_id", None)
         return
-    chosen = next((t for t in g.teams if t["id"] == session.get("team_id")), None) or g.teams[0]
+    chosen = (next((t for t in g.teams if t["id"] == session.get("team_id")), None)
+              or next((t for t in g.teams if not t["archived"]), None) or g.teams[0])
     g.team = chosen
     g.rounds = team_rounds(db, chosen["id"])
     session["team_id"] = chosen["id"]

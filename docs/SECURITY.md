@@ -80,4 +80,6 @@ Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug
 ## Chef-trænere og invitationer (v0.10.0)
 - Chef-trænere (tabellen `team_heads`) kan kun ændre indstillinger/runder og invitere til **egne hold** i egen klub; de kan ikke invitere klubadministratorer, se andres invitationer eller åbne bruger-/klubsider. Afsendelse kræver stadig egen 2FA-kode.
 - Brugernavn-tjekket (`/invitation/<token>/brugernavn`) kræver et gyldigt invitationslink og er IP-begrænset, så det ikke kan bruges til at opregne brugernavne. Ledigt-tjek gentages ved oprettelsen.
+- **Spillerlink** (`/svar/<token>`): offentlig, men kræver et 256-bit token (kun HMAC-hash gemmes), udløber efter 7 dage, kan kun bruges én gang (atomisk), GET forbruger ikke linket, ugyldige forsøg tæller mod IP-begrænsningen, og siden viser kun fornavn og dette ene skema. Tilføj `/svar` til Cloudflare-rate-limit-reglen.
+- **Assistent** (`users.readonly`) blokeres globalt for alle ændringer undtagen egen konto (adgangskode/2FA).
 - «Alle brugere» (oprettet, senest logget ind) er kun for systemadministratorer.

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Spillerlink{% endblock %}
+{% block content %}
+<h1>Spillerlink til motivationsskemaet</h1>
+<p class="muted">Send et personligt link, så spilleren (eller en forælder) kan svare på sin egen telefon uden login. Linket virker i <b>7 dage</b>, kan kun bruges <b>én gang</b> og giver kun adgang til dette ene skema. Send det kun til forælderen/spilleren selv. <a href="{{ url_for('motivation.tablet_list') }}">Tablet-visning</a></p>
+{% if new %}<div class="card" style="border-color:#2e8b57"><h2>Link til {{ new['name'] }}</h2>
+  <p>Kopiér linket nu – det vises kun denne ene gang:</p>
+  <p><input type="text" readonly value="{{ new['url'] }}" aria-label="Link" style="width:100%"></p>
+  {% if new['qr'] %}<div style="max-width:220px">{{ new['qr'] }}</div>{% endif %}</div>{% endif %}
+<form method="post" class="card">{{ csrf() }}<h2>Opret link</h2>
+  <label for="p">Spiller</label><select id="p" name="player" required><option value="">Vælg …</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
+  <p class="muted small">Et nyt link tilbagekalder spillerens tidligere ubrugte link.</p>
+  <div class="actions"><button class="btn">Opret engangslink</button></div></form>
+<h2>Oprettede links</h2>
+{% for r in rows %}<div class="card"><b>{{ r['name'] }}</b> · <b>{{ r['state'] }}</b> <span class="muted small">· oprettet af {{ r['created_by'] }}</span>
+  {% if r['state'] == 'afventer' %}<form method="post" action="{{ url_for('motivation.link_revoke', lid=r['id']) }}">{{ csrf() }}<button class="btn sec">Tilbagekald</button></form>{% endif %}</div>
+{% else %}<div class="card muted">Ingen links endnu.</div>{% endfor %}
+{% endblock %}

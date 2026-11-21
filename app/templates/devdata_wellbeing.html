@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Trivsel over tid{% endblock %}
+{% block content %}
+<h1>Trivsel over tid</h1>
+<p class="muted">Registrér trivsel (1–5) på en dato – gerne hver 4.–6. uge. Seneste måling bruges i Udviklingsdata, og spillerrapporten viser udviklingen, når der er mindst to målinger. <a href="{{ url_for('devdata.matrix') }}">Til Udviklingsdata</a></p>
+<form method="get" class="card"><label for="d">Måling den</label><input id="d" type="date" name="day" value="{{ day }}" data-autosubmit>
+  {% if days %}<p class="muted small">Tidligere målinger: {% for d in days %}<a href="{{ url_for('devdata.wellbeing', day=d) }}">{{ d|date_dk }}</a>{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}</form>
+<form method="post">{{ csrf() }}<input type="hidden" name="day" value="{{ day }}">
+  <ol class="muted small">{% for t in trivsel %}<li>{{ t }}</li>{% endfor %}</ol>
+  {% for p in players %}{% set w = have.get(p['id']) %}
+  <div class="card"><b>{{ p['name'] }}</b><div class="row">{% for k in ['t1', 't2', 't3'] %}
+    <div><label for="{{ k }}_{{ p['id'] }}">{{ loop.index }}</label><input id="{{ k }}_{{ p['id'] }}" type="number" min="1" max="5" name="{{ k }}_{{ p['id'] }}" value="{{ w[k] if w and w[k] is not none else '' }}" inputmode="numeric"></div>{% endfor %}</div></div>
+  {% else %}<div class="card muted">Ingen aktive spillere.</div>{% endfor %}
+  <div class="actions"><button class="btn">Gem måling</button></div></form>
+{% endblock %}

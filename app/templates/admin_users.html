@@ -9,11 +9,14 @@
   <label for="em">E-mail (valgfri – bruges kun til nulstilling efter din godkendelse)</label><input id="em" type="email" name="email" autocomplete="off" autocapitalize="none" maxlength="254">
   {% if sysadmin %}<label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner (kun tildelte hold)</option><option value="clubadmin">Klubadministrator (egen klub)</option><option value="admin">Systemadministrator (alle klubber)</option></select>{% endif %}
   {% if clubs|length > 1 %}<label for="cb">Klub (ikke for systemadministratorer)</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
+  <label class="check"><input type="checkbox" name="readonly" value="1"> Assistent (kun læseadgang – kan se men ikke ændre)</label>
   <label>Hold (kun for trænere – vælg ét eller flere i brugerens klub)</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
   <div class="actions"><button class="btn">Opret bruger</button></div></form>
 {% for u in users %}
 {% if can_manage(u) %}<div class="card"><h2>{{ u['display_name'] }} <span class="muted">({{ u['username'] }})</span></h2>
-  <p class="muted">{{ role_label[u['role']] }}{% if u['club_name'] and clubs|length > 1 %} · {{ u['club_name'] }}{% endif %} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
+  <p class="muted">{{ role_label[u['role']] }}{{ ' (assistent)' if u['readonly'] }}{% if u['club_name'] and clubs|length > 1 %} · {{ u['club_name'] }}{% endif %} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
+  {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='readonly') }}">{{ csrf() }}
+    <label class="check"><input type="checkbox" name="readonly" value="1" {{ 'checked' if u['readonly'] }}> Assistent (kun læseadgang)</label><button class="btn sec">Gem</button></form>{% endif %}
   <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='email') }}">{{ csrf() }}
     <label for="e{{ u['id'] }}">E-mail</label>
     <div class="row"><input id="e{{ u['id'] }}" type="email" name="email" value="{{ u['email'] or '' }}" placeholder="ingen" autocomplete="off" autocapitalize="none" maxlength="254">

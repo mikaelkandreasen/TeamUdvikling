@@ -7,6 +7,6 @@
 <div class="card"><h2>{{ title }}</h2>
   {% for q in items %}<div class="crit"><b>{{ q['text'] }}</b>{{ scale('q%d' % q['qidx'], mine.get(q['qidx']), True) }}</div>{% endfor %}
 </div>{% endif %}{% endfor %}
-<div class="stickybar"><button class="btn">Færdig – send ✔</button><a class="btn sec" href="{{ url_for('motivation.tablet_list') }}">Annullér</a></div>
+<div class="stickybar"><button class="btn">Færdig – send ✔</button>{% if not public %}<a class="btn sec" href="{{ url_for('motivation.tablet_list') }}">Annullér</a>{% endif %}</div>
 </form>
 {% endblock %}

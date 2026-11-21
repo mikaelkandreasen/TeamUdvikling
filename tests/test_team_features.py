@@ -4,7 +4,7 @@ import re
 import pytest
 
 from app import split, db as appdb
-from test_clubs_invites import BASE, code, invite, link, mailapp, sql, world  # noqa: F401  (fixtures)
+from test_clubs_invites import BASE, code, invite, link, mailapp, player, sql, world  # noqa: F401  (fixtures)
 from conftest import PW, Client
 from helpers import add_player, make_team, make_trainer, player_id, switch, team_id
 
@@ -160,3 +160,148 @@ def test_login_branding_only_from_remembered_last_login(world):
     known = app.test_client()
     known.set_cookie("u11_lc", "1")
     assert "--navy2" in known.get("/login").get_data(as_text=True)
+
+
+# ----------------------------------------------------------------------------- sæsonskifte
+def test_season_rollover_copies_players_not_scores_and_archives(app, admin):
+    from helpers import score_all
+    make_team(admin, "U11")
+    switch(admin, team_id(app, "U11"))
+    add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta", active=False)
+    pa = player_id(app, "Anna Alfa")
+    score_all(admin, 1, pa, 4)
+    admin.post("/team/settings", {"game_type": "8v8", "subs": "3", "slogan": "Hurra", "feat_levels": "1"}, page="/team/settings")
+    admin.post("/team/levels", {f"level_{pa}": "A"}, page="/team/levels")
+    admin.post("/team/season", {"name": "U12", "season": "2027", "players": "1", "trainers": "1", "archive": "1"}, page="/team/season")
+    new = team_id(app, "U12")
+    rows = sql(app, "SELECT name, level FROM players WHERE team_id=?", new)
+    assert [(r["name"], r["level"]) for r in rows] == [("Anna Alfa", "A")]                  # kun aktive, niveau med
+    assert sql(app, "SELECT COUNT(*) c FROM evaluations e JOIN players p ON p.id=e.player_id WHERE p.team_id=?", new)[0]["c"] == 0
+    assert sql(app, "SELECT COUNT(*) c FROM evaluations")[0]["c"] > 0                       # gammelt hold urørt
+    assert sql(app, "SELECT archived FROM teams WHERE id=?", team_id(app, "U11"))[0]["archived"] == 1
+    assert sql(app, "SELECT slogan FROM teams WHERE id=?", new)[0]["slogan"] == "Hurra"
+    r = admin.get("/team/")
+    assert "8v8" in r.get_data(as_text=True)
+    # arkiveret hold er skrivebeskyttet
+    switch(admin, team_id(app, "U11"))
+    assert admin.post("/players/new", {"name": "Ny", "birth_date": "2016-01-01", "position": "Angreb"}, page="/players/new").status_code == 403
+    assert admin.get("/players/").status_code == 200
+    # genåbn
+    admin.post(f"/admin/teams/{team_id(app, 'U11')}/unarchive", {}, page="/admin/teams")
+    assert admin.post("/players/new", {"name": "Ny", "birth_date": "2016-01-01", "position": "Angreb", "active": "1"}, page="/players/new").status_code in (200, 302)
+
+
+def test_season_name_must_be_free_and_needs_permission(world):
+    app, admin, ca, cb, ta, tb = world
+    ca.post(f"/admin/teams/{team_id(app, 'U11 Alfa')}/archive", {}, page="/admin/teams")
+    switch(ca, team_id(app, "U11 Alfa"))
+    assert ta.post("/team/season", {"name": "X"}, page="/team/").status_code == 403
+    ca.post("/team/season", {"name": "U11 Alfa"}, page="/team/season")                       # navn findes
+    assert len(sql(app, "SELECT 1 FROM teams WHERE name='U11 Alfa'")) == 1
+
+
+# ----------------------------------------------------------------------------- fremmøde pr. træning/kamp
+def test_attendance_events_drive_devdata_and_are_team_scoped(app, admin):
+    make_team(admin, "A"); make_team(admin, "B")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta")
+    pa, pb = player_id(app, "Anna Alfa"), player_id(app, "Bella Beta")
+    for day in ("2026-10-01", "2026-10-08"):
+        admin.post("/devdata/fremmoede", {"kind": "training", "day": day}, page="/devdata/fremmoede")
+    admin.post("/devdata/fremmoede", {"kind": "match", "day": "2026-10-10"}, page="/devdata/fremmoede")
+    e2 = sql(app, "SELECT id FROM att_events WHERE day='2026-10-08'")[0]["id"]
+    admin.post(f"/devdata/fremmoede/{e2}", {"present": [str(pa)]}, page=f"/devdata/fremmoede/{e2}")      # Bella var ikke til stede
+    page = admin.get("/devdata/").get_data(as_text=True)
+    assert "2</b> træninger og <b>1</b> kampe" in page
+    assert "100%" in page and "50%" in page                          # Anna 2/2, Bella 1/2
+    assert admin.post("/devdata/", {f"trainings_{pa}": "99"}, page="/devdata/").status_code in (200, 302)
+    assert sql(app, "SELECT COUNT(*) c FROM att_marks m JOIN att_events e ON e.id=m.event_id WHERE e.kind='training' AND m.player_id=?", pb)[0]["c"] == 1
+    switch(admin, team_id(app, "B"))
+    assert admin.get(f"/devdata/fremmoede/{e2}").status_code == 404                                       # andet holds registrering
+    assert admin.post(f"/devdata/fremmoede/{e2}/delete", {}, page="/devdata/fremmoede").status_code == 404
+    assert "Ingen registreringer endnu" in admin.get("/devdata/fremmoede").get_data(as_text=True)
+
+
+# ----------------------------------------------------------------------------- trivsel over tid
+def test_wellbeing_over_time_latest_used_and_chart(app, admin):
+    make_team(admin, "A"); make_team(admin, "B")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa")
+    pa = player_id(app, "Anna Alfa")
+    admin.post("/devdata/trivsel", {"day": "2026-09-01", f"t1_{pa}": "2", f"t2_{pa}": "2", f"t3_{pa}": "2"}, page="/devdata/trivsel")
+    assert "Trivsel over tid" not in admin.get(f"/report/{pa}").get_data(as_text=True)        # kun én måling
+    admin.post("/devdata/trivsel", {"day": "2026-10-15", f"t1_{pa}": "4", f"t2_{pa}": "5", f"t3_{pa}": "", "x": "1"}, page="/devdata/trivsel")
+    assert sql(app, "SELECT COUNT(*) c FROM wellbeing")[0]["c"] == 2
+    page = admin.get("/devdata/").get_data(as_text=True)
+    assert 'value="4"' in page and 'value="5"' in page                         # seneste måling vises
+    assert "Trivsel over tid" in admin.get(f"/report/{pa}").get_data(as_text=True)
+    admin.post("/devdata/trivsel", {"day": "2026-10-15", f"t1_{pa}": "", f"t2_{pa}": "", f"t3_{pa}": ""}, page="/devdata/trivsel")
+    assert sql(app, "SELECT COUNT(*) c FROM wellbeing")[0]["c"] == 1             # tomme felter fjerner målingen
+    switch(admin, team_id(app, "B"))
+    assert "Tidligere målinger" not in admin.get("/devdata/trivsel").get_data(as_text=True)    # hold B ser ikke hold A's målinger
+
+
+# ----------------------------------------------------------------------------- assistent (læseadgang)
+def test_readonly_assistant_can_read_but_not_write(world):
+    app, admin, ca, cb, ta, tb = world
+    uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
+    switch(ca, team_id(app, "U11 Alfa"))
+    player(ca, "Anna Alfa")
+    ca.post(f"/admin/users/{uid}/readonly", {"readonly": "1"}, page="/admin/users")
+    assert sql(app, "SELECT readonly FROM users WHERE id=?", uid)[0]["readonly"] == 1
+    assert ta.get("/players/").status_code == 200 and "Anna Alfa" in ta.get("/players/").get_data(as_text=True)
+    assert ta.post("/players/new", {"name": "X", "birth_date": "2016-01-01", "position": "Angreb"}, page="/players/new").status_code == 403
+    assert ta.post("/team/notes/add", {"body": "x"}, page="/team/notes").status_code == 403
+    assert ta.get("/account").status_code == 200                                  # egen konto (adgangskode/2FA) må stadig tilgås
+    assert not sql(app, "SELECT 1 FROM players WHERE name='X'")
+    ca.post(f"/admin/users/{uid}/readonly", {}, page="/admin/users")
+    assert sql(app, "SELECT readonly FROM users WHERE id=?", uid)[0]["readonly"] == 0
+
+
+def test_invite_as_readonly_assistant(world):
+    app, admin, ca, cb, ta, tb = world
+    tid = team_id(app, "U11 Alfa")
+    ca.post("/admin/invitations/", {"email": "ass@example.dk", "role": "trainer", "as_readonly": "1", "as_head": "1", "teams": [str(tid)], "code": code(app, ca, "kaja")}, page="/admin/invitations/")
+    row = sql(app, "SELECT * FROM invitations WHERE email='ass@example.dk'")[0]
+    assert row["as_readonly"] == 1 and row["as_head"] == 0                       # assistent kan ikke samtidig være chef-træner
+    assert "assistent" in app.extensions["outbox"][-1]["body"]
+    n = Client(app)
+    n.c.post(link(app), data={"csrf_token": n.token(link(app)), "username": "assi", "display_name": "A", "password": PW, "password2": PW})
+    assert sql(app, "SELECT readonly FROM users WHERE username='assi'")[0]["readonly"] == 1
+
+
+# ----------------------------------------------------------------------------- spillerlink
+def test_player_link_single_use_expiry_and_scope(app, admin):
+    make_team(admin, "A"); make_team(admin, "B")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta")
+    pa, pb = player_id(app, "Anna Alfa"), player_id(app, "Bella Beta")
+    r = admin.post("/motivation/links", {"player": str(pa)}, page="/motivation/links")
+    url = re.search(r'value="https?://[^"/]+(/svar/[\w-]+)"', r.get_data(as_text=True)).group(1)
+    assert sql(app, "SELECT COUNT(*) c FROM player_links WHERE token_hash LIKE '%svar%'")[0]["c"] == 0   # token gemmes ikke i klartekst
+    anon = Client(app)
+    page = anon.get(url).get_data(as_text=True)
+    assert "Hej Anna" in page and "Bella" not in page and "Teamoversigt" not in page            # kun dette skema, ingen menu/andre data
+    q = sql(app, "SELECT qidx FROM motivation_questions WHERE text<>'' ORDER BY qidx")[0]["qidx"]
+    assert anon.get(url).status_code == 200                                                    # GET forbruger ikke linket
+    r2 = anon.post(url, {f"q{q}": "4"}, page=url)
+    assert r2.status_code == 200 and "Tak for dine svar" in r2.get_data(as_text=True)
+    assert sql(app, "SELECT score FROM motivation_answers WHERE player_id=? AND qidx=?", pa, q)[0]["score"] == 4
+    assert anon.get(url).status_code == 400 and anon.post(url, {f"q{q}": "1"}, page=url).status_code in (400, 429)   # engangslink
+    assert sql(app, "SELECT score FROM motivation_answers WHERE player_id=? AND qidx=?", pa, q)[0]["score"] == 4
+    # udløb og tilbagekaldelse
+    admin.post("/motivation/links", {"player": str(pb)}, page="/motivation/links")
+    sql(app, "UPDATE player_links SET expires_at=1 WHERE player_id=?", pb)
+    assert "udløbet" in admin.get("/motivation/links").get_data(as_text=True)
+    assert Client(app).get("/svar/forkert-token").status_code == 400
+    # hold B kan ikke oprette link til hold A's spiller eller tilbagekalde andres
+    switch(admin, team_id(app, "B"))
+    assert admin.post("/motivation/links", {"player": str(pa)}, page="/motivation/links").status_code == 404
+    lid = sql(app, "SELECT id FROM player_links LIMIT 1")[0]["id"]
+    assert admin.post(f"/motivation/links/{lid}/revoke", {}, page="/motivation/links").status_code == 404
+    # funktion slået fra → linket virker ikke
+    switch(admin, team_id(app, "A"))
+    r = admin.post("/motivation/links", {"player": str(pa)}, page="/motivation/links")
+    url2 = re.search(r'value="https?://[^"/]+(/svar/[\w-]+)"', r.get_data(as_text=True)).group(1)
+    admin.post("/team/settings", {"game_type": "5v5", "subs": "1"}, page="/team/settings")      # alle funktioner fra
+    assert Client(app).get(url2).status_code == 400

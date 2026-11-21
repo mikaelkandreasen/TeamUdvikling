@@ -86,6 +86,21 @@ CREATE TABLE IF NOT EXISTS invitations(
   created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, used_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL);
 CREATE INDEX IF NOT EXISTS ix_invitations_club ON invitations(club_id, created_at);
+CREATE TABLE IF NOT EXISTS player_links(
+  id INTEGER PRIMARY KEY, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+  used_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0, created_by TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_player_links ON player_links(player_id);
+CREATE TABLE IF NOT EXISTS wellbeing(
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, day TEXT NOT NULL,
+  t1 INTEGER, t2 INTEGER, t3 INTEGER, PRIMARY KEY(player_id, day));
+CREATE TABLE IF NOT EXISTS att_events(
+  id INTEGER PRIMARY KEY, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK(kind IN ('training','match')), day TEXT NOT NULL, note TEXT, created_by TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_att_events ON att_events(team_id, day);
+CREATE TABLE IF NOT EXISTS att_marks(
+  event_id INTEGER NOT NULL REFERENCES att_events(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, PRIMARY KEY(event_id, player_id));
 CREATE TABLE IF NOT EXISTS team_heads(
   team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   PRIMARY KEY(team_id, user_id));
@@ -110,7 +125,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 9   # v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 10   # v10: users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -168,13 +183,17 @@ def _migrate_team_features(con):
     if "level" not in pcols:
         con.execute("ALTER TABLE players ADD COLUMN level TEXT")
     tcols = {r["name"] for r in con.execute("PRAGMA table_info(teams)")}
-    for col, ddl in (("slogan", "TEXT"), ("mascot_name", "TEXT")):
+    for col, ddl in (("slogan", "TEXT"), ("mascot_name", "TEXT"), ("archived", "INTEGER NOT NULL DEFAULT 0")):
         if col not in tcols:
             con.execute(f"ALTER TABLE teams ADD COLUMN {col} {ddl}")
     ucols = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
+    if "readonly" not in ucols:
+        con.execute("ALTER TABLE users ADD COLUMN readonly INTEGER NOT NULL DEFAULT 0")
     if "last_login" not in ucols:
         con.execute("ALTER TABLE users ADD COLUMN last_login INTEGER")
     icols = {r["name"] for r in con.execute("PRAGMA table_info(invitations)")}
+    if "as_readonly" not in icols:
+        con.execute("ALTER TABLE invitations ADD COLUMN as_readonly INTEGER NOT NULL DEFAULT 0")
     if "as_head" not in icols:
         con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
 
@@ -273,6 +292,10 @@ def backup(db_path, backup_dir, keep=14):
     """Konsistent kopi af databasen via SQLite's backup-API. Beholder de seneste `keep` filer."""
     os.makedirs(backup_dir, exist_ok=True)
     dest = os.path.join(backup_dir, time.strftime("u11-%Y%m%d-%H%M%S.db"))
+    n = 1
+    while os.path.exists(dest):                        # to backups i samme sekund overskriver ikke hinanden
+        dest = os.path.join(backup_dir, time.strftime("u11-%Y%m%d-%H%M%S") + f"-{n}.db")
+        n += 1
     src = sqlite3.connect(db_path)
     dst = sqlite3.connect(dest)
     with dst:
@@ -280,9 +303,39 @@ def backup(db_path, backup_dir, keep=14):
     src.close()
     dst.close()
     files = sorted(f for f in os.listdir(backup_dir) if f.startswith("u11-") and f.endswith(".db"))
+    ok, msgs = verify_backup(dest)
+    if not ok:                                        # en ødelagt backup må aldrig fortrænge en god
+        os.remove(dest)
+        raise RuntimeError("Backup fejlede kontrol: " + "; ".join(msgs))
+    files = sorted(f for f in os.listdir(backup_dir) if f.startswith("u11-") and f.endswith(".db"))
     for old in files[:-keep]:
         os.remove(os.path.join(backup_dir, old))
     return dest
+
+
+def verify_backup(path):
+    """Kontrollerer en backupfil uden at ændre den: SQLite-integritet, fremmednøgler og skemaversion.
+    Returnerer (ok, [meddelelser]). Bruges efter hver backup og af scripts/verify-backup.py før en gendannelse."""
+    msgs = []
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        return False, [f"Kan ikke åbne filen: {exc}"]
+    try:
+        if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+            msgs.append("Integritetstjek fejlede.")
+        if con.execute("PRAGMA foreign_key_check").fetchall():
+            msgs.append("Fremmednøgler peger på rækker, der ikke findes.")
+        ver = con.execute("PRAGMA user_version").fetchone()[0]
+        if ver > SCHEMA_VERSION:
+            msgs.append(f"Backup er fra en nyere version (skema {ver} > {SCHEMA_VERSION}).")
+        for t in ("users", "teams", "players"):
+            con.execute(f"SELECT COUNT(*) FROM {t}")
+    except sqlite3.Error as exc:
+        msgs.append(f"Ikke en gyldig Team Udvikling-database: {exc}")
+    finally:
+        con.close()
+    return (not msgs), msgs
 
 
 def backup_if_due(db_path, backup_dir, hours=24):

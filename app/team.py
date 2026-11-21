@@ -12,7 +12,7 @@ bp = Blueprint("team", __name__, url_prefix="/team")
 
 def can_configure():
     """Chef-træner for det aktive hold, klubadministrator for holdets klub eller systemadministrator."""
-    if not g.get("team") or not g.get("user") or g.get("viewing"):
+    if not g.get("team") or not g.get("user") or g.get("viewing") or g.user["readonly"]:
         return False
     return scope.can_manage_club(g.user, g.team["club_id"]) or g.team["id"] in scope.head_team_ids(get_db(), g.user)
 
@@ -205,3 +205,48 @@ def mascot_report():
         totals[r["reason"]] = totals.get(r["reason"], 0) + 1
     never = [p["name"] for p in active_players(db) if p["id"] not in per]
     return render_template("team_mascot_report.html", rows=rows, totals=totals, never=never, since=since, total=len(log), reasons=model.MASCOT_REASONS, log=log)
+
+
+# ----------------------------------------------------------------------------- sæsonskifte
+SEASON_PLAYER_COLS = ("name", "birth_date", "shirt_no", *model.POSITION_FIELDS, "level", "foot", "start_date")
+
+
+@bp.route("/season", methods=["GET", "POST"])
+def season():
+    """Opretter et nyt hold til den nye sæson ud fra det aktive: spillere (uden scores, fokus, noter og billeder), trænere og indstillinger."""
+    _need_config()
+    db = get_db()
+    old = g.team
+    if request.method == "GET":
+        return render_template("team_season.html", suggest=f"{old['name']} {datetime.date.today().year + 1}")
+    name = (request.form.get("name") or "").strip()[:80]
+    label = (request.form.get("season") or "").strip()[:20]
+    if not name or db.execute("SELECT 1 FROM teams WHERE name=? AND club_id IS ?", (name, old["club_id"])).fetchone():
+        flash("Vælg et holdnavn, der ikke findes i forvejen.", "error")
+        return redirect(url_for("team.season"))
+    from .db import create_team
+    new = create_team(db, name, label, old["club_id"])
+    cols = ",".join(SEASON_PLAYER_COLS)
+    n = 0
+    if request.form.get("players"):
+        for p in db.execute(f"SELECT {cols} FROM players WHERE team_id=? AND active=1 ORDER BY id", (old["id"],)):
+            db.execute(f"INSERT INTO players(team_id,{cols},active) VALUES(?,{','.join('?' * len(SEASON_PLAYER_COLS))},1)", (new, *[p[c] for c in SEASON_PLAYER_COLS]))
+            n += 1
+    if request.form.get("trainers"):
+        db.execute("INSERT OR IGNORE INTO user_teams(user_id,team_id) SELECT user_id, ? FROM user_teams WHERE team_id=?", (new, old["id"]))
+        db.execute("INSERT OR IGNORE INTO team_heads(team_id,user_id) SELECT ?, user_id FROM team_heads WHERE team_id=?", (new, old["id"]))
+    for k in ("game_type", "subs", *[f"feat_{x}" for x in features.KEYS]):
+        v = get_setting(db, old["id"], k)
+        if v is not None:
+            set_setting(db, new, k, v)
+    db.execute("UPDATE motivation_categories SET title=(SELECT o.title FROM motivation_categories o WHERE o.team_id=? AND o.cat=motivation_categories.cat) WHERE team_id=?", (old["id"], new))
+    db.execute("UPDATE motivation_questions SET text=(SELECT o.text FROM motivation_questions o WHERE o.team_id=? AND o.qidx=motivation_questions.qidx) WHERE team_id=?", (old["id"], new))
+    db.execute("UPDATE teams SET slogan=?, mascot_name=? WHERE id=?", (old["slogan"], old["mascot_name"], new))
+    if request.form.get("archive"):
+        db.execute("UPDATE teams SET archived=1 WHERE id=?", (old["id"],))
+    audit(db, g.user["username"], "saesonskifte", f"{old['name']} -> {name} ({n} spillere)")
+    db.commit()
+    from . import teams as _teams
+    _teams.switch(db, g.user, new)
+    flash(f"Nyt hold «{name}» er oprettet med {n} spillere. Evalueringer og scores starter forfra; det gamle hold er bevaret.", "ok")
+    return redirect(url_for("team.index"))
