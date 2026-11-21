@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Dokumentation
+- BACKLOG opdateret: færdige punkter flyttet, dublerede ID’er omnummereret (B-021–B-024), nye B-030/B-031.
+
 ## [0.10.1] - 2026-11-21
 
 ### Ændret
