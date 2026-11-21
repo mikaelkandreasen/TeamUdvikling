@@ -283,7 +283,7 @@ def test_migration_adds_email_column_without_data_loss(tmp_path):
     row = con.execute("SELECT username, email FROM users").fetchone()
     assert row["username"] == "gammel" and row["email"] is None
     assert con.execute("SELECT COUNT(*) FROM reset_tokens").fetchone()[0] == 0
-    assert con.execute("PRAGMA user_version").fetchone()[0] == appdb.SCHEMA_VERSION == 11
+    assert con.execute("PRAGMA user_version").fetchone()[0] == appdb.SCHEMA_VERSION == 12
     con.close()
 
 
