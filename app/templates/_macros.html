@@ -26,5 +26,6 @@
 {% macro levelhelp() %}<span class="help"><button type="button" class="helpbtn" aria-label="Forklaring af niveauerne">?</button>
   <span class="helpbox" role="tooltip"><b>Niveauer efter DBU</b>
     {% for code, title, text in model.LEVEL_INFO %}<p><b>{{ title }}.</b> {{ text }}</p>{% endfor %}
+    <p><b>Holdsammensætning</b></p>{% for n in model.LEVEL_TEAMS %}<p class="small">{{ n }}</p>{% endfor %}
     {% for n in model.LEVEL_NOTES %}<p class="muted small">{{ n }}</p>{% endfor %}
     <p class="small">Kilde: <a href="{{ model.LEVEL_SOURCE }}" target="_blank" rel="noopener noreferrer">DBU Fyn – niveaudeling til stævner</a> (beskrivelserne her er sammenfattet).</p></span></span>{% endmacro %}

@@ -74,3 +74,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** Hovedprofilen er uændret (`users.role/club_id`). Ekstra profiler i `user_profiles`; den aktive profil ligger i sessionen og lægges som rolle/klub over `g.user` i `load_user`, så alle eksisterende adgangstjek (scope, hold, admin) virker uændret. Kun systemadministratorer kan tildele profiler; valget valideres mod databasen ved hver forespørgsel, så en fjernet profil mister virkning med det samme.
 **Konsekvens:** Holdtilknytning (`user_teams`) er pr. bruger og afgrænses af den aktive profils klub. «Se som træner» nulstilles ved profilskifte.
 
+## D-020 · DBU-niveauvurdering pr. kompetence (2026-11-21)
+**Kontekst:** DBU Fyns regneark «Niveaudeling» beskriver ti kompetencer med udsagn for A, B, C og D. DBU's egen regel er 4+ afkrydsede udsagn pr. kolonne; Mikael ønskede i stedet et valg (A–D) pr. kompetence.
+**Valg:** Ét valg pr. kompetence. Alle ti A → A+; ellers det niveau der er flest af, ved lighed det højeste (DBU: start altid ved A). Hurtighed har ingen D-tekst i arket; D kan vælges med en tydeligt mærket tekst. Udsagnene er omskrevet tæt på arket (DBU ejer teksten), kilde linkes.
+**Konsekvens:** Afviger bevidst fra DBU's «4 udsagn»-regel. Ønskes den, ligger logikken i `model.dbu_result`.
+

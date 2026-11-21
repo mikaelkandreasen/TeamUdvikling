@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Niveauvurdering efter DBU's regneark «Niveaudeling»** (ud over de 24 kriterier): trænerne scorer ti kompetencer – Engagement, Interesse, Viden, Forståelse, Teknik, Boldkontrol, Spark, Hurtighed, Motorik og Fysik – som A, B, C eller D med DBU's beskrivelser (omskrevet tæt på arket) ved hvert valg. Er **alle ti A**, er spilleren **A+**; ellers bliver niveauet det, der er **flest af** (ved lighed det højeste). Gemmes pr. træner og runde; skema v14 (`dbu_checks`).
+- Trænerens egen dropdown for samlet niveau vejer tungere end udledningen; uden dropdown bruges DBU-valgene, og de indgår i den automatiske 25/50/25-beregning (med antal/vægt af valg som tie-break).
+- «?»-boksen viser nu også DBU's retningslinjer for holdsammensætning (A-, B-, C- og D-hold) og fleksibilitet efter stævner.
+
 ## [0.15.0] - 2026-11-21
 
 ## [0.14.0] - 2026-11-21

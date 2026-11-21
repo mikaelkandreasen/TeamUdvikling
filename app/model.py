@@ -238,11 +238,96 @@ LEVEL_INFO = (
           "De sparker tit forbi bolden, er bange for den, når den kommer flyvende, og lader sig let aflede. Et nystartet-hold har ingen A- eller B-spillere og højst et par C-spillere. "
           "Når holdet fører med 3 mål, tages en spiller af banen, og ved 6 mål endnu en."),
 )
+LEVEL_TEAMS = (
+    "A-hold: består primært af A- og B-spillere; C-spillere må gerne være med, de udvikler sig også af det. Har årgangen 3-4 A-spillere, eller en-to spillere der kan afgøre kampe, hører holdet hjemme i A-rækken.",
+    "B-hold: 0-2 A-spillere og primært B-spillere. Tre eller flere A-spillere er ikke i orden i et B-stævne. C-spillere er velkomne.",
+    "C-hold: ingen A-spillere og højst 1-2 B-spillere. Rent begynderhold: sent fødte, nystartede, forsigtige børn, der har brug for tid og plads til at lykkes.",
+    "D- og nybegynderhold: ingen A- og B-spillere og højst 1-2 C-spillere. Ingen for gamle spillere eller dispensationsspillere.",
+    "Fleksibilitet: niveauet er ikke mejslet i granit. Efter et stævne uden nederlag bør holdet rykke en række op; uden en eneste sejr kan man overveje en lavere række; "
+    "ved fx tre nederlag, hvoraf to var tætte, bør man kraftigt overveje at blive i rækken.")
 LEVEL_NOTES = ("Blandet niveau: alle spiller med og mod hinanden uanset niveau, og klubben bør blande sine spillere på tværs af hold i stedet for et rent A-hold mod et rent C-hold.",
                "Børn udvikler sig forskelligt og skifter niveau over tid. Placér spillerne efter deres faktiske niveau, og flyt ikke A- og B-spillere ned på C-hold.")
 # Hvorfor har spilleren fået mascotten med hjem?
 MASCOT_REASONS = {"indsats": "Flot indsats", "fremgang": "Stor fremgang", "kammerat": "God kammerat", "hjaelp": "Hjælpsom",
                   "foerste": "Første gang / tur", "fodselsdag": "Fødselsdag", "andet": "Andet"}
+
+
+# ---------------------------------------------------------------- niveauvurdering efter DBU's udsagn (A/B/C/D-kolonner)
+# Ti kompetencer/præferencer × udsagn pr. niveau (omskrevet med egne ord ud fra DBU Fyns regneark «Niveaudeling»; kilde: LEVEL_SOURCE).
+DBU_COLS = ("A", "B", "C", "D")
+DBU_ITEMS = (
+    ("engagement", "Engagement", {
+        "A": "Møder op hver gang, spiller konstant hjemme og i skolen og har spillet i nogen tid.",
+        "B": "Møder op hver gang, spiller meget hjemme og i skolen og har spillet i nogen tid.",
+        "C": "Møder op stort set hver gang og spiller lidt hjemme og i skolen.",
+        "D": "Spørger hurtigt om ting, der ikke handler om fodbold (fx hvad man spiste i går) – fodbold er ikke første prioritet i deres liv."}),
+    ("interesse", "Interesse", {
+        "A": "Synes fodbold er det bedste i verden.",
+        "B": "Synes fodbold er det bedste i verden.",
+        "C": "Synes fodbold er fint, men ikke det vigtigste – kommer især, fordi kammeraterne kommer.",
+        "D": "Kan være lokket afsted af forældre eller klub, eller vil lige snuse til det for at se, om det er noget for dem."}),
+    ("viden", "Viden", {
+        "A": "Har i store træk knækket koden til, hvad fodbold går ud på.",
+        "B": "Har i store træk knækket koden til, hvad fodbold går ud på.",
+        "C": "Er lige startet eller har endnu ikke knækket koden til spillet.",
+        "D": "Ved, hvad fodbold går ud på, fordi de har set andre spille det."}),
+    ("forstaaelse", "Forståelse", {
+        "A": "Kigger efter spillet, forsøger at forudsige, hvor bolden kommer hen, og er i løb, før tingene sker.",
+        "B": "Kigger indimellem væk fra bolden og løber ofte, før tingene sker.",
+        "C": "Kigger mest på bolden og løber ofte først, når tingene sker.",
+        "D": "Kigger mest på bolden og løber ofte først, når tingene sker eller er sket – kigger efter flyvemaskiner eller leder efter firkløvere."}),
+    ("teknik", "Teknik", {
+        "A": "Kontrollerer nemt bolden uden pres.",
+        "B": "Kontrollerer for det meste bolden uden pres.",
+        "C": "Kræver mere tid til at kontrollere bolden.",
+        "D": "Er udfordret af at kontrollere bolden, hvis den kommer for hårdt eller hurtigt – også når de ikke er presset."}),
+    ("boldkontrol", "Boldkontrol", {
+        "A": "Kan kontrollere bolden i løb.",
+        "B": "Kan drible i løb.",
+        "C": "Kan drible, men mister bolden i for høj fart.",
+        "D": "Mister bolden, hvis der løbes hurtigt med den."}),
+    ("spark", "Spark", {
+        "A": "Sparker godt.",
+        "B": "Sparker fint.",
+        "C": "Behøver ikke at kunne sparke langt eller præcist.",
+        "D": "Sparker flere huller i græsset eller i luften, end de rammer bolden – sparker skævt."}),
+    ("hurtighed", "Hurtighed", {
+        "A": "Løber hurtigt.",
+        "B": "Har rimelig kondition.",
+        "C": "Bliver hurtigt træt eller er langsom.",
+        "D": "(Ingen D-tekst i DBU's ark) Vælg D, hvis spilleren er endnu langsommere eller mere udkørt end C-beskrivelsen."}),
+    ("motorik", "Motorik", {
+        "A": "Fin motorik – kan vende kroppen og løbe modsat i god fart.",
+        "B": "Okay motorik – kan vende kroppen og løbe modsat i rimelig fart.",
+        "C": "Kan være motorisk udfordret.",
+        "D": "Nybegynder i generel bevægelse og motorik."}),
+    ("fysik", "Fysik", {
+        "A": "Relativt stor for alderen og bruger kroppen i dueller.",
+        "B": "Gennemsnitlig størrelse for alderen.",
+        "C": "Lille eller bruger ikke kroppen godt i dueller.",
+        "D": "Kan være bange for at slå sig."}),
+)
+DBU_KEYS = frozenset(f"{k}.{c}" for k, _, txt in DBU_ITEMS for c in txt)
+DBU_WEIGHT = {"A": 4, "B": 3, "C": 2, "D": 1}      # kun til at rangere spillere med samme niveau
+
+
+def dbu_result(ticked):
+    """ticked: mængde af 'kompetence.kolonne' – ét valg (A/B/C/D) pr. kompetence. Returnerer None uden valg, ellers dict(level, a, b, c, d, n, points).
+    Regel: bliver alle ti kompetencer scoret A, er spilleren A+. Ellers er niveauet det, der er flest af; ved lighed vælges det højeste (DBU: start altid ved A)."""
+    pick = {}
+    for x in ticked:
+        if x in DBU_KEYS:
+            k, c = x.split(".")
+            pick[k] = c
+    if not pick:
+        return None
+    n = {c: sum(1 for v in pick.values() if v == c) for c in DBU_COLS}
+    if n["A"] == len(DBU_ITEMS):
+        lv = "A+"
+    else:
+        top = max(n.values())
+        lv = next(c for c in DBU_COLS if n[c] == top)                 # A, B, C, D i rækkefølge → ved lighed det højeste
+    return dict(level=lv, a=n["A"], b=n["B"], c=n["C"], d=n["D"], n=len(pick), points=sum(DBU_WEIGHT[c] * n[c] for c in DBU_COLS))
 
 
 # ---------------------------------------------------------------- beregnet niveau (som standard 25 % A / 50 % B / 25 % C)

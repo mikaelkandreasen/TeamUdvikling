@@ -12,9 +12,22 @@
   {% endfor %}
 </details>
 {% endfor %}
-{% if features['levels'] %}<div class="card"><label for="lvl"><b>Samlet niveau for spilleren</b></label>{{ levelhelp() }}
-  <div class="muted small">Din samlede vurdering af spillerens niveau efter DBU's niveauer (se ?). Bruges til det automatisk beregnede niveau. Lad stå tomt, hvis du ikke kan vurdere det.</div>
-  <select id="lvl" name="level"><option value="">– ikke vurderet –</option>{% for lv in model.LEVELS %}<option value="{{ lv }}" {{ 'selected' if mylevel == lv }}>{{ model.LEVEL_LABEL.get(lv, lv) }}</option>{% endfor %}</select></div>{% endif %}
+{% if features['levels'] %}
+<details class="role">
+  <summary>Niveauvurdering efter DBU</summary>
+  <p class="muted small">Vælg for hver kompetence, hvilket niveau (A, B, C eller D) spilleren ligger på – start altid ved A, uanset hvad du tror om spilleren. Er <b>alle ti</b> scoret A, er spilleren <b>A+</b>. Ellers bliver niveauet det, der er <b>flest af</b> (ved lighed vælges det højeste). {{ levelhelp() }}</p>
+  <input type="hidden" name="dbu_present" value="1">
+  {% for key, label, texts in model.DBU_ITEMS %}
+  <div class="crit"><b>{{ label }}</b>
+    {% for col in model.DBU_COLS if texts.get(col) %}<label class="check"><input type="radio" name="dbu_{{ key }}" value="{{ col }}" {{ 'checked' if (key ~ '.' ~ col) in dbu }}> <span><b>{{ col }}</b> – {{ texts[col] }}</span></label>{% endfor %}
+    <label class="check"><input type="radio" name="dbu_{{ key }}" value="" {{ 'checked' if key not in dbu_done }}> <span class="muted">Ikke vurderet</span></label>
+  </div>{% endfor %}
+  {% if dbu_res %}<div class="card"><b>Dine valg giver: {{ model.LEVEL_LABEL.get(dbu_res['level'], dbu_res['level']) }}-spiller</b>
+    <div class="muted small">{{ dbu_res['n'] }} af {{ model.DBU_ITEMS|length }} vurderet · A: {{ dbu_res['a'] }} · B: {{ dbu_res['b'] }} · C: {{ dbu_res['c'] }} · D: {{ dbu_res['d'] }}. Gem for at opdatere.</div></div>{% endif %}
+</details>
+<div class="card"><label for="lvl"><b>Samlet niveau for spilleren</b></label>
+  <div class="muted small">Din samlede vurdering. Vælger du intet her, bruges niveauet fra dine valg ovenfor{% if dbu_res %} ({{ dbu_res['level'] }}){% endif %}. Vælg A+ eller Nystartet, hvis spilleren ligger uden for A–D.</div>
+  <select id="lvl" name="level"><option value="">– brug mine valg ovenfor –</option>{% for lv in model.LEVELS %}<option value="{{ lv }}" {{ 'selected' if mylevel == lv }}>{{ model.LEVEL_LABEL.get(lv, lv) }}</option>{% endfor %}</select></div>{% endif %}
 <div class="stickybar">
   <button class="btn" name="go" value="stay">Gem</button>
   {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}

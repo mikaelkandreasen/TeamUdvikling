@@ -571,3 +571,51 @@ def test_levels_a_plus_to_nystartet_help_box_and_migration(app, admin):
     page = admin.get("/team/levels").get_data(as_text=True)
     assert 'class="helpbox"' in page and "Nystartet" in page and "dbufyn.dk" in page
     assert 'class="helpbox"' in admin.get(f"/eval/1/{player_id(app, 'Anna Alfa')}").get_data(as_text=True)
+
+
+def test_dbu_rule_all_a_is_a_plus_otherwise_predominant():
+    from app import model
+    assert model.dbu_result(set()) is None and model.dbu_result({"findes.ikke"}) is None
+    assert len(model.DBU_ITEMS) == 10 and len(model.DBU_KEYS) == 40
+    assert model.dbu_result({f"{k}.A" for k, _, _ in model.DBU_ITEMS})["level"] == "A+"                  # alle ti scoret A
+    nine = {f"{k}.A" for k, _, _ in model.DBU_ITEMS[:9]}
+    assert model.dbu_result(nine)["level"] == "A"                                                       # kun ni vurderet → ikke A+
+    assert model.dbu_result(nine | {"fysik.B"})["level"] == "A"                                         # overvejende A
+    mix = {"engagement.B", "interesse.B", "viden.B", "teknik.A", "spark.C", "motorik.D"}
+    assert model.dbu_result(mix)["level"] == "B"
+    assert model.dbu_result({"engagement.B", "interesse.C"})["level"] == "B"                           # lighed → det højeste
+    assert model.dbu_result({"spark.D", "teknik.D", "fysik.C"})["level"] == "D"
+
+
+def test_dbu_choices_are_saved_per_trainer_and_drive_calculated_level(app, admin):
+    from app import model
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    names = [f"Spiller {c}" for c in "ABCDEFGH"]
+    for n in names:
+        add_player(admin, n)
+    keys = [k for k, _, _ in model.DBU_ITEMS]
+
+    def post(n, choice_by_key):
+        pid = player_id(app, n)
+        data = {"dbu_present": "1"}
+        data.update({f"dbu_{k}": v for k, v in choice_by_key.items()})
+        return admin.post(f"/eval/1/{pid}", data, page=f"/eval/1/{pid}")
+
+    allx = lambda x: {k: x for k in keys}
+    plan = [allx("D"), allx("D"), allx("C"), allx("C"), allx("B"), allx("B"), dict(allx("A"), fysik="B"), allx("A")]
+    for n, c in zip(names, plan):
+        post(n, c)
+    post("Spiller A", {"engagement": "Ugyldig", "interesse": "D"})                                       # ugyldigt valg gemmes ikke
+    assert sql(app, "SELECT COUNT(*) c FROM dbu_checks WHERE item LIKE '%Ugyldig%'")[0]["c"] == 0
+    post("Spiller A", allx("D"))
+    assert sql(app, "SELECT COUNT(*) c FROM dbu_checks WHERE player_id=?", player_id(app, "Spiller H"))[0]["c"] == 10
+    form = admin.get(f"/eval/1/{player_id(app, 'Spiller H')}").get_data(as_text=True)
+    assert "Dine valg giver: A+-spiller" in form and 'type="radio" name="dbu_engagement" value="A" checked' in form
+    page = admin.get("/team/levels").get_data(as_text=True)
+    assert "A: <b>2</b> · B: <b>4</b> · C: <b>2</b>" in page                                           # uden dropdown bruges DBU-valgene
+    # dropdown vejer tungere; at vælge «ikke vurderet» overalt rydder valgene igen
+    pid = player_id(app, "Spiller A")
+    post("Spiller A", {})
+    assert sql(app, "SELECT COUNT(*) c FROM dbu_checks WHERE player_id=?", pid)[0]["c"] == 0
+    assert "Holdsammensætning" in admin.get("/team/levels").get_data(as_text=True)

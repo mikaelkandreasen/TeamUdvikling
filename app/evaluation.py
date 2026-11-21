@@ -75,6 +75,10 @@ def eval_form(rnd, pid):
             else:
                 db.execute("DELETE FROM evaluations WHERE round=? AND player_id=? AND trainer_id=? AND crit=?",
                            (rnd, pid, g.user["id"], c["idx"]))
+        if "dbu_present" in request.form:
+            ticks = sorted({f"{k}.{request.form.get('dbu_' + k)}" for k, _, _ in model.DBU_ITEMS} & model.DBU_KEYS)
+            db.execute("DELETE FROM dbu_checks WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))
+            db.executemany("INSERT INTO dbu_checks(round,player_id,trainer_id,item) VALUES(?,?,?,?)", [(rnd, pid, g.user["id"], k) for k in ticks])
         if "level" in request.form:
             lv = request.form.get("level")
             if lv in model.LEVELS:
@@ -92,7 +96,8 @@ def eval_form(rnd, pid):
     scores = {r["crit"]: r["score"] for r in db.execute(
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
     mylevel = db.execute("SELECT level FROM level_ratings WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"])).fetchone()
-    return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, mylevel=mylevel["level"] if mylevel else None, info=round_info(db)[rnd - 1],
+    dbu = {r["item"] for r in db.execute("SELECT item FROM dbu_checks WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
+    return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, dbu=dbu, dbu_done={x.split(".")[0] for x in dbu}, dbu_res=model.dbu_result(dbu), mylevel=mylevel["level"] if mylevel else None, info=round_info(db)[rnd - 1],
                            prev_id=prev_id, next_id=next_id, criteria=team_criteria(db, team_id()),
                            open_roles=_open_roles(request.args.get("open")))
 
