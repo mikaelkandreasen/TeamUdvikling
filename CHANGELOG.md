@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-21
+
 ### Tilføjet
 - **Brugerstyring som oversigt:** Administration → Brugere er en kompakt liste (navn, rolle, klub, hold, «låst»/«ingen 2FA») med søgning og klubfilter. Nulstilling, e-mail, rolle, hold, assistent, oplåsning, «Se som træner» og sletning ligger på brugerens egen side (`/admin/users/<id>`), som også viser oprettet og senest logget ind.
 - **Træningsfokus** (Hold → Træningsfokus): holdets svageste og stærkeste kriterier i seneste runde samt spillernes højeste scorer i motivationsskemaet.
