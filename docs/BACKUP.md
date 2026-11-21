@@ -37,3 +37,6 @@ Kopiér `/data/backups` til et andet sted end hjemmeserveren, fx hver nat.
 30 3 * * * rsync -a /var/lib/docker/volumes/u11-data/_data/backups/ nas:/volume1/backup/team-udvikling/
 ```
 Backups indeholder børns data: krypter dem på den eksterne lagerplads (`rclone crypt` eller krypteret volumen), og begræns adgangen. Slet gamle kopier efter samme frist som i GDPR-dokumentet.
+
+## TOTP-nøglen
+TOTP-hemmeligheder er krypteret. Gem filen `/data/totp_key` (eller værdien af `TOTP_KEY`) et andet sted end databasebackups. Uden nøglen kan backuppen gendannes, men alle brugere skal have nulstillet 2FA.

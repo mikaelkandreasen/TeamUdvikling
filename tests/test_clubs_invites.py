@@ -348,3 +348,21 @@ def test_migration_moves_club_profile_logo_and_teams(tmp_path):
     con.execute("INSERT INTO teams(name,created_at,club_id) VALUES('U11','x',2)")            # samme holdnavn i anden klub er nu tilladt
     assert not con.execute("PRAGMA foreign_key_check").fetchall()
     con.close()
+
+
+def test_user_list_is_overview_and_detail_holds_actions(world):
+    app, admin, ca, cb, ta, tb = world
+    uid = lambda n: sql(app, "SELECT id FROM users WHERE username=?", n)[0]["id"]
+    page = admin.get("/admin/users").get_data(as_text=True)
+    assert "(tina)" in page and "Alfa Klub" in page and "U11 Alfa" in page
+    assert "Nulstil" not in page and "Slet" not in page                      # handlinger kun på detaljesiden
+    assert f"/admin/users/{uid('tina')}" in page
+    assert "(ole)" not in admin.get("/admin/users?q=tina").get_data(as_text=True)
+    detail = admin.get(f"/admin/users/{uid('tina')}").get_data(as_text=True)
+    assert "Nulstil" in detail and "Senest logget ind" in detail.replace("senest", "Senest") or "senest logget ind" in detail
+    # klubadmin: egen klubs trænere ja, andre klubber/sysadmin nej
+    assert ca.get(f"/admin/users/{uid('tina')}").status_code == 200
+    for n in ("ole", "bent", "admin"):
+        assert ca.get(f"/admin/users/{uid(n)}").status_code == 404
+    # trænere har ingen adgang
+    assert ta.get(f"/admin/users/{uid('tina')}").status_code in (302, 403, 404)

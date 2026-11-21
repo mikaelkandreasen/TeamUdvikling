@@ -104,7 +104,9 @@ footer{color:var(--mut);font-size:.78rem;text-align:center;padding:1rem}
  .tiles{grid-template-columns:repeat(4,1fr)}.stickybar{bottom:0;margin:0}
 }
 /* print */
+.printonly{display:none}
 @media print{
+ .printonly{display:block}
  .top,.side,.tabbar,.noprint,footer,.flash{display:none!important}body{background:#fff;font-size:11pt}main{padding:0;margin:0!important;max-width:none}
  body.authed main{margin:0!important}.card{border:0;padding:0}.report{page-break-after:always}.report:last-child{page-break-after:auto}
  .scroll{border:0;overflow:visible}th{position:static}

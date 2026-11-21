@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Brugerstyring som oversigt:** Administration → Brugere er en kompakt liste (navn, rolle, klub, hold, «låst»/«ingen 2FA») med søgning og klubfilter. Nulstilling, e-mail, rolle, hold, assistent, oplåsning, «Se som træner» og sletning ligger på brugerens egen side (`/admin/users/<id>`), som også viser oprettet og senest logget ind.
+- **Træningsfokus** (Hold → Træningsfokus): holdets svageste og stærkeste kriterier i seneste runde samt spillernes højeste scorer i motivationsskemaet.
+- **«Siden sidste runde»** i spillerprofil og rapport: samlet udvikling og de største op- og nedture (≥ 0,5 point).
+- **Print af opstilling** med spillerliste på A4.
+- **PWA-manifest** (neutralt navn/ikon, ingen service worker og ingen cache af data) – appen kan lægges på hjemmeskærmen.
+- Kriterietekster pr. hold, kalender via iCal, sikkerhedslog, opbevaringspolitik med automatisk sletning, testmail, valgfri tjek af lækkede adgangskoder (`PWNED_CHECK=1`), krav om frisk 2FA-kode ved nulstilling af 2FA/adgangskode.
+- **TOTP-hemmeligheder krypteres** i databasen (Fernet). Nøglen ligger i `TOTP_KEY` eller `/data/totp_key` – **tag backup af nøglen separat**; mistes den, skal 2FA nulstilles.
+
+### Rettet
+- Opbevaringssiden kunne slette inaktive spillere på tværs af klubber; er nu afgrænset til egen klub.
+- Tom `onclick` fjernet fra mascot-rapporten (CSP).
+
 ## [0.11.0] - 2026-11-21
 
 ### Tilføjet

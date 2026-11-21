@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Bekræft adgangskode{% endblock %}
+{% block content %}
+<div class="login card"><h1>Bekræft adgangskode</h1>
+  <p>For at oprette en ny 2FA skal du indtaste din adgangskode igen. Den nuværende 2FA erstattes først, når den nye kode er bekræftet.</p>
+  <form method="post">{{ csrf() }}<label for="p">Adgangskode</label><input id="p" type="password" name="password" autocomplete="current-password" required autofocus>
+    <div class="actions"><button class="btn block">Fortsæt</button></div></form></div>
+{% endblock %}

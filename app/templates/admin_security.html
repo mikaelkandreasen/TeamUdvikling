@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Sikkerhedslog{% endblock %}
+{% block content %}
+<h1>Sikkerhedslog</h1>
+<p class="muted">IP-blokeringer, mislykkede login og låste konti. Gemmes i 30 dage (IP-adresser er personoplysninger). Cloudflares egne blokeringer ses i Cloudflare → Security → Events.</p>
+<div class="card"><h2>Antal</h2><div class="scroll"><table class="responsive"><thead><tr><th>Type</th><th class="num">24 t</th><th class="num">7 dage</th><th class="num">30 dage</th></tr></thead><tbody>
+{% for c in counts %}<tr><td class="name">{{ c['kind'] }}</td><td class="num" data-label="24 t">{{ c['d1'] or 0 }}</td><td class="num" data-label="7 dage">{{ c['d7'] or 0 }}</td><td class="num" data-label="30 dage">{{ c['d30'] }}</td></tr>
+{% else %}<tr><td class="name">Ingen hændelser.</td></tr>{% endfor %}</tbody></table></div></div>
+{% if top %}<div class="card"><h2>Hyppigste IP-adresser</h2>{% for t in top %}<div>{{ t['ip'] }} · {{ t['n'] }}</div>{% endfor %}</div>{% endif %}
+<div class="card"><h2>Seneste 100</h2>{% for r in rows %}<div class="small">{{ r['when'] }} · <b>{{ r['kind'] }}</b> · {{ r['detail'] or '' }} · {{ r['ip'] }}</div>{% else %}<span class="muted">–</span>{% endfor %}</div>
+{% endblock %}

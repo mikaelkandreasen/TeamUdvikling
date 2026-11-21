@@ -53,3 +53,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Skrivebeskyttet adgang, svar uden login og sæsonskifte skulle bygges uden at duplikere rolle-logikken.
 **Valg:** Assistent = træner med `users.readonly=1` (al hold-/klubafgrænsning genbruges; ændringer blokeres globalt). Spillerlink er et selvstændigt engangstoken (`player_links`) med eget offentligt endpoint og kun hash gemt. Arkiverede hold (`teams.archived`) er skrivebeskyttede for hold-sider, men kan læses og genåbnes.
 **Konsekvens:** Nye skrive-endpoints i `players/evaluation/motivation/devdata/lineup/team` er automatisk låst på arkiverede hold; offentlige endpoints skal føjes til `PUBLIC` og beskyttes af tokens og `throttled`.
+
+## D-016 · Afviste udvidelser og kendte rester (2026-11-21)
+**Kontekst:** Server-PDF, login-side pr. klub, billedupload i bulk og PWA med offline-cache blev overvejet.
+**Valg:** Ingen server-PDF (browserens «gem som PDF» dækker det; undgår tung afhængighed). Ingen login-side pr. klub (afslører klubber, jf. D-014). PWA kun som manifest, uden service worker, så ingen persondata caches på enheden. iCal-hentning er https-only med kontrol af offentlig IP; en rest-risiko (DNS-rebinding mellem kontrol og hentning) accepteres, fordi adressen kun kan sættes af chef-træner/administrator. Sikkerhedslog (`security_events`) gemmer IP og hændelsestype i 30 dage.
+**Konsekvens:** Genovervej kun hvis der opstår et konkret behov.

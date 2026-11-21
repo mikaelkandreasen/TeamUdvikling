@@ -11,5 +11,5 @@
 <div class="card"><h2>Årsager i alt</h2>{% for k, n in totals.items() %}<div>{{ reasons.get(k, k) }}: <b>{{ n }}</b></div>{% else %}<span class="muted">–</span>{% endfor %}</div>
 {% if never %}<div class="card"><h2>Har ikke haft den endnu</h2>{{ never|join(', ') }}</div>{% endif %}
 <div class="card"><h2>Alle registreringer</h2>{% for r in log %}<div>{{ r['taken_on'] }} · {{ r['name'] }} · {{ reasons.get(r['reason'], r['reason']) }}{% if r['note'] %} – {{ r['note'] }}{% endif %}</div>{% else %}<span class="muted">–</span>{% endfor %}</div>
-<div class="actions noprint"><button class="btn sec" onclick="" data-print>Udskriv</button></div>
+<div class="actions noprint"><button class="btn sec" data-print>Udskriv</button></div>
 {% endblock %}

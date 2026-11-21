@@ -6,6 +6,8 @@
 <meta name="theme-color" content="{{ club['dark'] or '#1f3a5f' }}">
 <meta name="robots" content="noindex,nofollow">
 <title>{% block title %}{% endblock %} – {{ club['app_name'] }}</title>
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 {% if club['color'] %}<style>:root{--navy:{{ club['dark'] }};--navy2:{{ club['color'] }}}</style>{% endif %}

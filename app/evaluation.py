@@ -3,6 +3,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 
 from . import charts, model
 from .db import get_db
+from .team import team_criteria
 from .helpers import active_players, default_round, get_player, int_in, neighbours, photo_ids, round_info, team_id, valid_choice
 
 bp = Blueprint("evaluation", __name__)
@@ -84,7 +85,7 @@ def eval_form(rnd, pid):
     scores = {r["crit"]: r["score"] for r in db.execute(
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
     return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, info=round_info(db)[rnd - 1],
-                           prev_id=prev_id, next_id=next_id, criteria=model.CRITERIA,
+                           prev_id=prev_id, next_id=next_id, criteria=team_criteria(db, team_id()),
                            open_roles=_open_roles(request.args.get("open")))
 
 
@@ -175,7 +176,14 @@ def profile_data(db, p, rounds, rnd=None):
     radar = charts.radar(model.ROLES, series, label=f"Roller – {p['name']}") if series else None
     crit_rows = [dict(c=c, vals=[rounds[r].get(pid, {}).get("crit", [None] * 24)[c["idx"]] for r in g.rounds]) for c in model.CRITERIA]
     ranked = sorted([(c, res["crit"][c["idx"]]) for c in model.CRITERIA if res and res["crit"][c["idx"]] is not None], key=lambda x: x[1])
-    return dict(rnd=rnd, res=res, prev=prev, radar=radar, crit_rows=crit_rows, infos=infos,
+    changes = None
+    if res and prev and res["samlet"] is not None and prev["samlet"] is not None:
+        diffs = [(c, res["crit"][c["idx"]] - prev["crit"][c["idx"]]) for c in model.CRITERIA
+                 if res["crit"][c["idx"]] is not None and prev["crit"][c["idx"]] is not None]
+        up = sorted([d for d in diffs if d[1] >= 0.5], key=lambda d: -d[1])[:3]
+        down = sorted([d for d in diffs if d[1] <= -0.5], key=lambda d: d[1])[:3]
+        changes = dict(prev_label=infos[prev_r - 1]["label"], total=res["samlet"] - prev["samlet"], up=up, down=down)
+    return dict(rnd=rnd, res=res, prev=prev, changes=changes, radar=radar, crit_rows=crit_rows, infos=infos,
                 weakest=ranked[:3], strongest=list(reversed(ranked[-3:])),
                 role_rows=[dict(role=model.ROLES[i], vals=[rounds[r].get(pid, {}).get("roles", [None] * 4)[i] for r in g.rounds]) for i in range(4)],
                 samlet=[rounds[r].get(pid, {}).get("samlet") for r in g.rounds])

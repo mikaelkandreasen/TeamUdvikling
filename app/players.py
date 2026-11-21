@@ -56,11 +56,17 @@ def new():
         db = get_db()
         cur = db.execute(f"INSERT INTO players({','.join(FIELDS)},active,team_id) VALUES({','.join('?' * (len(FIELDS) + 2))})",
                          [f[k] or None for k in FIELDS] + [f["active"], team_id()])
+        _stamp_deactivation(db, cur.lastrowid)
         audit(db, g.user["username"], "spiller_oprettet", str(cur.lastrowid))
         db.commit()
         flash("Spilleren er oprettet.", "ok")
         return redirect(url_for("players.index"))
     return render_template("player_form.html", p={"active": 1}, new=True)
+
+
+def _stamp_deactivation(db, pid):
+    """Opbevaringsfristen regnes fra den dag, spilleren blev inaktiv."""
+    db.execute("UPDATE players SET deactivated_at=CASE WHEN active=0 THEN COALESCE(deactivated_at, date('now','localtime')) ELSE NULL END WHERE id=?", (pid,))
 
 
 @bp.route("/<int:pid>/edit", methods=["GET", "POST"])
@@ -76,6 +82,7 @@ def edit(pid):
             return render_template("player_form.html", p=f, new=False, photo=_photo_info(db, pid))
         db.execute(f"UPDATE players SET {','.join(k + '=?' for k in FIELDS)},active=? WHERE id=? AND team_id=?",
                    [f[k] or None for k in FIELDS] + [f["active"], pid, team_id()])
+        _stamp_deactivation(db, pid)
         audit(db, g.user["username"], "spiller_rettet", str(pid))
         db.commit()
         flash("Gemt.", "ok")

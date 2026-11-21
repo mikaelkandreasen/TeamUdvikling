@@ -4,7 +4,9 @@
 <h1>{% if L['is_ideal'] %}<span class="star" title="Idealhold">★</span> {% endif %}{{ L['name'] }}</h1>
 <p class="muted">{{ L['game_type'] }} · {{ L['formation'] }} · {{ filled }}/{{ total }} pladser besat{% if filled %} · {{ matched }} med spillerens eget positionsvalg{% endif %}</p>
 <div class="card">{{ pitch }}</div>
-<form method="post" class="card">{{ csrf() }}
+<div class="actions noprint"><button class="btn sec" data-print>Udskriv opstilling</button></div>
+<div class="printonly"><table><tbody>{% for r in rows %}{% for o in r['options'] if o['id'] == r['chosen'] %}<tr><td>{{ r['slot']['tag'] }}</td><td>{{ o['text'] }}</td></tr>{% endfor %}{% endfor %}</tbody></table></div>
+<form method="post" class="card noprint">{{ csrf() }}
   <h2>Spillere på pladserne</h2>
   {% for r in rows %}
   <div class="slot"><label for="s{{ r['slot']['i'] }}">{{ r['slot']['tag'] }}</label>
@@ -20,7 +22,7 @@
 </form>
 <div class="card"><h2>På bænken ({{ bench|length }})</h2>
   <div class="bench">{% for p in bench %}<span>{{ avatar(p, photos) }}{{ p['name'] }}</span>{% else %}<span class="muted">Alle aktive spillere er sat på banen.</span>{% endfor %}</div></div>
-<form method="post" action="{{ url_for('lineup.meta', lid=L['id']) }}" class="card">{{ csrf() }}
+<form method="post" action="{{ url_for('lineup.meta', lid=L['id']) }}" class="card noprint">{{ csrf() }}
   <h2>Navn og opstilling</h2>
   <label for="nm">Navn</label><input id="nm" type="text" name="name" value="{{ L['name'] }}" maxlength="60">
   <label for="fm">Opstilling ({{ L['game_type'] }})</label>

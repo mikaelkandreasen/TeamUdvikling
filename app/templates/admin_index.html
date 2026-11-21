@@ -5,7 +5,8 @@
   {% if sysadmin %}<a class="tile" href="{{ url_for('admin.clubs') }}">Klubber<small>opret klubber, udseende, klubadministratorer</small></a>{% endif %}
   <a class="tile" href="{{ url_for('admin.teams') }}">Hold<small>opret og administrer</small></a>
   <a class="tile" href="{{ url_for('admin.users') }}">Brugere<small>trænere, hold, 2FA</small></a>
-  {% if user['role'] == 'admin' %}<a class="tile" href="{{ url_for('admin.users_overview') }}">Alle brugere<small>klub, hold, oprettet, senest login</small></a>{% endif %}
+  {% if user['role'] == 'admin' %}<a class="tile" href="{{ url_for('admin.security') }}">Sikkerhedslog<small>blokeringer og mislykkede login</small></a>
+  <a class="tile" href="{{ url_for('admin.users_overview') }}">Alle brugere<small>klub, hold, oprettet, senest login</small></a>{% endif %}
   <a class="tile" href="{{ url_for('invites_admin.index') }}">Invitationer<small>send link til ny træner</small></a>
   {% if sysadmin %}<a class="tile alt" href="{{ url_for('admin.backlog') }}">Backlog<small>prioritér opgaver</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('admin.evaluations') }}">Evalueringer<small>runder og data</small></a>
@@ -20,4 +21,5 @@
 {% if sysadmin %}<div class="card" style="margin-top:.9rem"><h2>Backup</h2>
   <p class="muted small">Der tages automatisk en sikkerhedskopi (maks. én pr. døgn, de seneste 14 gemmes) i /data/backups. Her kan du hente en kopi af hele databasen.</p>
   <form method="post" action="{{ url_for('admin.make_backup') }}">{{ csrf() }}<button class="btn sec">Hent backup af databasen</button></form></div>{% endif %}
+{% if sysadmin %}<form method="post" action="{{ url_for('admin.testmail') }}" class="card">{{ csrf() }}<h2>E-mail</h2><p class="muted small">Sender en prøvemail til din egen adresse.</p><button class="btn sec">Send prøvemail</button></form>{% endif %}
 {% endblock %}

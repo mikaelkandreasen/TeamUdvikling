@@ -131,7 +131,7 @@ def test_password_change_and_admin_resets_revoke(app, admin, trainer):
     token = tok(c)
     assert with_cookie(app, token).get("/players/").status_code == 200
     uid = rows(app, "SELECT id FROM users WHERE username='tr'")[0]["id"]
-    admin.post(f"/admin/users/{uid}/reset-2fa", {}, page="/admin/users")
+    admin.post(f"/admin/users/{uid}/reset-2fa", {"code": _fresh_code(app, admin)}, page="/admin/users")
     assert rows(app, "SELECT COUNT(*) c FROM remember_tokens")[0]["c"] == 0
 
 
@@ -189,3 +189,9 @@ def test_garbage_cookie_is_harmless(app, trainer):
     for v in ("x", "A" * 43, "../../etc", "%00"):
         r = with_cookie(app, v).get("/players/")
         assert r.status_code == 302 and "/login" in r.headers["Location"]
+
+
+def _fresh_code(app, admin):
+    from app import db as _db, totp as _totp
+    con = _db.connect(app.config["DATABASE"]); con.execute("UPDATE users SET last_totp_step=0 WHERE username='admin'"); con.commit(); con.close()
+    return _totp.totp(admin.secret)

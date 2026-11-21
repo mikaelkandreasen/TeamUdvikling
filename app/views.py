@@ -5,6 +5,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 
 from . import activity, club, model, teams
 from .db import get_db
+from .team import team_criteria
 from .helpers import active_players, default_round, round_info, team_id
 
 bp = Blueprint("main", __name__)
@@ -69,7 +70,7 @@ def menu():
 
 @bp.route("/criteria")
 def criteria():
-    return render_template("criteria.html", criteria=model.CRITERIA, role_def=model.ROLE_DEF)
+    return render_template("criteria.html", criteria=team_criteria(get_db(), g.team["id"]) if g.get("team") else model.CRITERIA, role_def=model.ROLE_DEF)
 
 
 @bp.route("/switch-team", methods=["POST"])

@@ -10,25 +10,18 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 ## Senere (P1)
 - **B-011 · Skrivebeskyttet rolle** · S – "assistent/forælderhjælper" kan se, men ikke ændre.
 - **B-012 · Sæsonskifte** · M – kopiér hold til ny sæson (spillere + trænere, uden scores), arkivér det gamle; arkiverede hold er skrivebeskyttede.
-- **B-013 · Rediger kriterie-beskrivelser pr. hold i UI** · M – `model.DESC` bliver standard; hold kan overskrive tekster; ændringer logges.
 - **B-014 · Trivsel og motivation over tid** · M – flere målinger (datoer) i stedet for én værdi; linjediagram i rapporten.
 - **B-015 · Fremmøde pr. træning/kamp** · M – registrér dag for dag (mobilvenlig afkrydsning) i stedet for tællere; beregn fremmøde automatisk.
 - **B-016 · Tokenbaseret spillerlink** · M – engangslink (udløber) så spilleren kan svare på sin egen telefon uden login; kun motivationsformularen; ingen andre data synlige.
-- **B-017 · 2FA-hærdning** · S – krav om adgangskode ved gen-opsætning af 2FA; kryptér TOTP-hemmeligheder med nøgle fra miljøet.
 - **B-018 · Rate limiting pr. IP** · S – *delvist løst:* app-lås pr. konto/IP findes, og Cloudflare-regel dækker `/login`, `/nulstil`, `/invitation`. Mangler: blokeringslog i admin (valgfri).
-- **B-019 · Serverside PDF** · M – rapport som PDF-download (fx WeasyPrint) uden browserens print-dialog.
-- **B-020 · Opbevaringspolitik (GDPR)** · M – *delvist løst:* rydning af gamle logs/aktivitet findes. Mangler: påmindelse/anonymisering af inaktive spillere og skabelon til forældreinformation.
 
 - **B-021 · DBU KampKlar-integration** · M/L – Ingen officiel API. Undersøgt: uofficiel scraping af mit.dbu.dk (personligt DBU-login, kan gå i stykker, vilkår uafklarede) eller iCal-link til holdets kampe/aktiviteter. Uklart om andre spilleres tilmeldingsstatus er synlig. Claude API er ikke nødvendigt til hentning. Afventer brugerens valg – se docs/DECISIONS.md.
 
 - **B-022 · Ekstern pentest/scan af udrullet system** · S – OWASP ZAP/nuclei mod HTTPS-adressen, før den åbnes på internettet. *Status: Kommandoer til ZAP/nuclei i docs/DRIFT.md – selve scanningen udføres af dig.*
-- **B-023 · Kryptering af TOTP-hemmeligheder i hvile** · M – fx envelope med nøgle uden for databasen.
-- **B-024 · Opbevaringstid pr. spiller** · M – `deactivated_at` og automatisk sletning efter aftalt frist.
 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
-- **B-031 · Login-side pr. klub (`/k/<klub>`)** · S – valgfri adresse pr. klub med klubbens udseende; erstatter behovet for at huske enheden.
 
 ## Idéer (uprioriteret)
 - Udskrivning af holdsætning (A4) til kampdag; deling som billede.
@@ -46,6 +39,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **v0.12.0** – B-013 kriterietekster pr. hold, B-017 2FA-hærdning, B-023 kryptering af TOTP-hemmeligheder, B-020/B-024 opbevaringspolitik og automatisk sletning, B-018 sikkerhedslog, kalender via iCal (kamptider uden DBU-scraping), testmail, valgfri tjek af lækkede adgangskoder, 2FA-kode til nulstillinger, brugeroversigt med detaljeside, træningsfokus, «siden sidste runde», print af opstilling, PWA-manifest. Afvist: B-019 server-PDF (browserens «gem som PDF» dækker behovet, jf. D-016), B-031 login pr. klub (strider mod neutral loginside, D-014).
 - **v0.11.0** – B-004 backup/restore (kontrol + vejledning), B-030 CI-røgtest, B-003/B-022 tjeklister (docs/DRIFT.md), B-012 sæsonskifte, B-015 fremmøde pr. træning/kamp, B-014 trivsel over tid (motivation over tid mangler), B-011 assistent med læseadgang, B-016 spillerlink.
 - **B-001** – Docker-build og Dockhand-deploy kører i drift på hjemmeserveren (CI/GHCR-udgivelse er stadig uverificeret – se B-030).
 - **B-002** – HTTPS via Cloudflare Tunnel (`COOKIE_SECURE=1`, `__Host-`-cookies, ProxyFix).

@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}Træningsfokus{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('team.index') }}">‹ Hold</a></p>
+<h1>Forslag til træningsfokus</h1>
+{% if not rnd %}<div class="card muted">Der er ikke evalueringer endnu. Når trænerne har scoret spillerne, vises holdets svageste områder her.</div>
+{% else %}
+<p class="muted">Ud fra {{ infos[rnd - 1]['label'] }} ({{ n }} spillere med score). Et oplæg til trænergruppen – ikke en facitliste.</p>
+<div class="card"><h2>Holdets laveste områder</h2>
+  {% for c, v in lowest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b><div class="muted small">{{ c['desc'] }}</div></div>{% endfor %}</div>
+<div class="card"><h2>Holdets styrker</h2>
+  {% for c, v in highest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
+{% endif %}
+{% if wishes %}<div class="card"><h2>Det spillerne selv scorer højest</h2>
+  {% for w in wishes %}<div>{{ w['text'] }} <b>({{ w['avg']|dk }})</b> <span class="muted small">{{ w['cat'] }} · {{ w['n'] }} svar</span></div>{% endfor %}
+  <p class="muted small">Brug det til at lave øvelser, børnene har lyst til – og som træner det, holdet har brug for.</p></div>{% endif %}
+{% endblock %}

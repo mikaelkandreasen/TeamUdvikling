@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import activity, features, auth, charts, club, db, helpers, model, photos, remember, teams
+from . import activity, features, secrets_box, auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -65,6 +65,7 @@ def create_app(config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         MAX_CONTENT_LENGTH=1024 * 1024,
         VERSION=read_version(),
+        PWNED_CHECK=os.environ.get("PWNED_CHECK", "0") == "1",
     )
     if config:
         app.config.update(config)
@@ -73,6 +74,10 @@ def create_app(config=None):
     if not app.config.get("SECRET_KEY"):
         app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
     db.init_db(app.config["DATABASE"])
+    app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
+    _con = db.connect(app.config["DATABASE"])
+    secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
+    _con.close()
     if app.config["TRUSTED_PROXIES"]:      # kun bag en reverse proxy du styrer: giver ægte klient-IP og https-skema
         n = app.config["TRUSTED_PROXIES"]
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=n, x_proto=n, x_host=0)

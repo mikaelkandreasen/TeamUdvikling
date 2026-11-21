@@ -1,0 +1,22 @@
+{
+ "name": "Team Udvikling",
+ "short_name": "Udvikling",
+ "start_url": "/",
+ "display": "standalone",
+ "background_color": "#1f3a5f",
+ "theme_color": "#1f3a5f",
+ "lang": "da",
+ "icons": [
+  {
+   "src": "/static/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "/static/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}

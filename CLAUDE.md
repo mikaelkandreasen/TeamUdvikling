@@ -26,7 +26,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 `app/__init__.py` (create_app, CSRF, sikkerhedsheadere) · `auth.py` (login/2FA/lockout/gate) · `teams.py` (hold-adgang) ·
 `db.py` (skema, backup, indstillinger) · `model.py` (roller, kriterier, ALLE beregninger – rene funktioner) ·
 `features.py` (funktionsvalg pr. hold), `team.py` (holdindstillinger, noter, niveau, mascot), `split.py` (deling i A/B/C-hold), `evaluation.py`, `motivation.py`, `devdata.py`, `reports.py`, `players.py`, `admin.py`, `views.py` (blueprints) ·
-`scope.py` (roller/klub-afgrænsning) · `invites.py` (invitationer) · `activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
+`scope.py` (roller/klub-afgrænsning) · `invites.py` (invitationer) · `activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `features.py` (funktionsvalg pr. hold) · `team.py` (holdside) · `split.py` · `ical.py` · `secrets_box.py` (kryptering af TOTP) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
 
 ## Regler der IKKE må brydes
 0. **Klub-afgrænsning.** Roller: `admin` (system), `clubadmin`, `trainer` (`scope.py`). Alt der kan nås via admin-sider skal afgrænses til klubben via `scope.can_manage_*`/`_pick_club` – og svare 404 for andre klubber. Holdnavne er unikke pr. klub. Tilføj isolationstest i `tests/test_clubs_invites.py`.

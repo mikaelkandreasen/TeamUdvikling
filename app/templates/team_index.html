@@ -5,6 +5,8 @@
 <p class="muted">{{ n_players }} aktive spillere · {{ prof['game_type'] }} (spillere på banen: {{ prof['size'] }}) + {{ prof['subs'] }} udskiftere</p>
 <div class="tiles">
   {% if features['lineup'] %}<a class="tile" href="{{ url_for('lineup.split_view') }}">Del i A/B/C-hold<small>automatisk efter niveau</small></a>{% endif %}
+  <a class="tile" href="{{ url_for('team.focus') }}">Træningsfokus<small>holdets svageste områder</small></a>
+  <a class="tile alt" href="{{ url_for('team.calendar') }}">Kalender<small>kampe og aktiviteter</small></a>
   {% if features['levels'] %}<a class="tile" href="{{ url_for('team.levels') }}">Spillerniveau<small>A+, A, B, C, Ny</small></a>{% endif %}
   {% if features['notes'] %}<a class="tile alt" href="{{ url_for('team.notes') }}">Noter<small>holdets noter</small></a>{% endif %}
   {% if features['mascot'] %}<a class="tile alt" href="{{ url_for('team.mascot') }}">Mascot{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}<small>hvem har den med hjem</small></a>
@@ -12,6 +14,7 @@
   {% if can_configure() %}<a class="tile alt" href="{{ url_for('team.season') }}">Sæsonskifte<small>nyt hold til ny sæson</small></a>
   <a class="tile alt" href="{{ url_for('invites_admin.index') }}">Invitér trænere<small>send link på e-mail</small></a>
   <a class="tile alt" href="{{ url_for('team.settings') }}">Holdindstillinger<small>kamptype, funktioner, slogan</small></a>
+  <a class="tile alt" href="{{ url_for('team.criteria') }}">Kriterietekster<small>egne formuleringer</small></a>
   <a class="tile alt" href="{{ url_for('admin.evaluations') }}">Evalueringsrunder<small>{{ rounds|length }} runder · tilføj/fjern</small></a>
   <a class="tile alt" href="{{ url_for('admin.settings') }}">Rundenavne og datoer<small>{{ team['name'] }}</small></a>{% endif %}
 </div>

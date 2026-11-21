@@ -1,11 +1,12 @@
 """Holdets side: indstillinger (chef-træner), noter, spillerniveau, slogan og mascot med rapport."""
 import datetime
+import json
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import features, formations, model, scope
+from . import features, formations, ical, model, motivation, scope
 from .db import audit, get_db, get_setting, set_setting
-from .helpers import active_players, int_in, team_id
+from .helpers import active_players, int_in, round_info, team_id
 
 bp = Blueprint("team", __name__, url_prefix="/team")
 
@@ -40,6 +41,37 @@ def index():
     return render_template("team_index.html", prof=profile(get_db(), team_id()), n_players=len(active_players(get_db())))
 
 
+def focus_data(db, tid, players):
+    """Forslag til træningsfokus: holdets laveste kriterier i seneste runde med data + spillernes højeste ønsker (kun for dette hold)."""
+    rounds = model.load_rounds(db, tid)
+    ids = [p["id"] for p in players]
+    rnd = next((r for r in reversed(g.rounds) if any(i in rounds[r] and rounds[r][i]["samlet"] is not None for i in ids)), None)
+    crit, n = [], 0
+    if rnd:
+        res = [rounds[rnd][i] for i in ids if i in rounds[rnd] and rounds[rnd][i]["samlet"] is not None]
+        n = len(res)
+        crit = sorted([(c, model.mean([x["crit"][c["idx"]] for x in res])) for c in model.CRITERIA], key=lambda t: (t[1] is None, t[1]))
+        crit = [t for t in crit if t[1] is not None]
+    wishes = []
+    cats, qs = motivation.load_questions(db, tid)
+    ans = {}
+    for r in db.execute("SELECT a.player_id, a.qidx, a.score FROM motivation_answers a JOIN players p ON p.id=a.player_id WHERE p.team_id=?", (tid,)):
+        if r["player_id"] in ids:
+            ans.setdefault(r["qidx"], []).append(r["score"])
+    for q in qs:
+        v = ans.get(q["qidx"])
+        if q["text"].strip() and v:
+            wishes.append(dict(text=q["text"], cat=cats.get(q["cat"], ""), avg=model.mean(v), n=len(v)))
+    wishes.sort(key=lambda w: -w["avg"])
+    return dict(rnd=rnd, n=n, lowest=crit[:5], highest=list(reversed(crit[-3:])), wishes=wishes[:5])
+
+
+@bp.route("/focus")
+def focus():
+    db = get_db()
+    return render_template("team_focus.html", infos=round_info(db), **focus_data(db, team_id(), active_players(db)))
+
+
 @bp.route("/settings", methods=["GET", "POST"])
 def settings():
     _need_config()
@@ -55,6 +87,14 @@ def settings():
         set_setting(db, tid, "subs", str(subs))
         for k in features.KEYS:
             set_setting(db, tid, f"feat_{k}", "1" if request.form.get(f"feat_{k}") else "0")
+        url = (request.form.get("ical_url") or "").strip()[:500]
+        if url:
+            try:
+                ical.check_url(url)
+            except ical.FeedError as exc:
+                flash(f"Kalenderadressen blev ikke gemt: {exc}", "error")
+                url = ""
+        set_setting(db, tid, "ical_url", url)
         db.execute("UPDATE teams SET slogan=?, mascot_name=? WHERE id=?",
                    ((request.form.get("slogan") or "").strip()[:80] or None, (request.form.get("mascot_name") or "").strip()[:40] or None, tid))
         audit(db, g.user["username"], "holdindstillinger_gemt", g.team["name"])
@@ -62,7 +102,7 @@ def settings():
         flash("Holdindstillinger gemt.", "ok")
         return redirect(url_for("team.settings"))
     heads = [r["display_name"] for r in db.execute("SELECT u.display_name FROM team_heads h JOIN users u ON u.id=h.user_id WHERE h.team_id=? ORDER BY u.display_name COLLATE NOCASE", (tid,))]
-    return render_template("team_settings.html", prof=profile(db, tid), feats=features.load(db, tid), FEATURES=features.FEATURES, types=formations.GAME_TYPES,
+    return render_template("team_settings.html", ical_url=get_setting(db, tid, "ical_url") or "", prof=profile(db, tid), feats=features.load(db, tid), FEATURES=features.FEATURES, types=formations.GAME_TYPES,
                            heads=heads, n_rounds=len(g.rounds))
 
 
@@ -250,3 +290,89 @@ def season():
     _teams.switch(db, g.user, new)
     flash(f"Nyt hold «{name}» er oprettet med {n} spillere. Evalueringer og scores starter forfra; det gamle hold er bevaret.", "ok")
     return redirect(url_for("team.index"))
+
+
+# ----------------------------------------------------------------------------- egne kriterietekster
+def team_criteria(db, tid):
+    """De 24 kriterier med holdets egne beskrivelser (standardtekster hvor intet er overskrevet)."""
+    out = []
+    for c in model.CRITERIA:
+        custom = (get_setting(db, tid, f"crit_desc_{c['idx']}") or "").strip()
+        out.append(dict(c, desc=custom or c["desc"], custom=bool(custom)))
+    return out
+
+
+@bp.route("/criteria", methods=["GET", "POST"])
+def criteria():
+    _need_config()
+    db = get_db()
+    tid = team_id()
+    if request.method == "POST":
+        n = 0
+        for c in model.CRITERIA:
+            v = (request.form.get(f"desc_{c['idx']}") or "").strip()[:300]
+            if v == c["desc"]:
+                v = ""
+            if v != (get_setting(db, tid, f"crit_desc_{c['idx']}") or ""):
+                n += 1
+            set_setting(db, tid, f"crit_desc_{c['idx']}", v)
+        audit(db, g.user["username"], "kriterietekster_gemt", f"{g.team['name']}: {n} ændret")
+        db.commit()
+        flash("Kriterietekster gemt. Tomme felter bruger standardteksten.", "ok")
+        return redirect(url_for("team.criteria"))
+    return render_template("team_criteria.html", crit=team_criteria(db, tid))
+
+
+# ----------------------------------------------------------------------------- kalender (iCal)
+def _cached_events(db, tid):
+    try:
+        return json.loads(get_setting(db, tid, "ical_cache") or "[]")
+    except ValueError:
+        return []
+
+
+@bp.route("/calendar", methods=["GET", "POST"])
+def calendar():
+    """Kampe og aktiviteter fra holdets kalenderfeed (fx KampKlar). Hentes kun på knaptryk; afholdte kan oprettes som fremmøde."""
+    db = get_db()
+    tid = team_id()
+    url = get_setting(db, tid, "ical_url") or ""
+    today = datetime.date.today()
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "refresh":
+            try:
+                events = ical.parse(ical.fetch(url))
+                lo, hi = (today - datetime.timedelta(days=90)).isoformat(), (today + datetime.timedelta(days=180)).isoformat()
+                events = [e for e in events if lo <= e["day"] <= hi][:300]
+                set_setting(db, tid, "ical_cache", json.dumps(events))
+                set_setting(db, tid, "ical_at", datetime.datetime.now().strftime("%d-%m-%Y %H:%M"))
+                db.commit()
+                flash(f"Kalenderen er hentet: {len(events)} aftaler.", "ok")
+            except ical.FeedError as exc:
+                flash(str(exc), "error")
+        elif action == "import" and features.current().get("devdata", True):
+            events = _cached_events(db, tid)
+            n = 0
+            for raw in request.form.getlist("ev"):
+                if not raw.isdigit() or int(raw) >= len(events):
+                    continue
+                e = events[int(raw)]
+                if e["day"] > today.isoformat():
+                    continue                                          # kun afholdte
+                kind = ical.kind_of(e["summary"])
+                if db.execute("SELECT 1 FROM att_events WHERE team_id=? AND day=? AND kind=?", (tid, e["day"], kind)).fetchone():
+                    continue
+                cur = db.execute("INSERT INTO att_events(team_id,kind,day,note,created_by) VALUES(?,?,?,?,?)", (tid, kind, e["day"], e["summary"][:200] or None, g.user["username"]))
+                db.execute("INSERT INTO att_marks(event_id,player_id) SELECT ?, id FROM players WHERE team_id=? AND active=1", (cur.lastrowid, tid))
+                n += 1
+            db.commit()
+            flash(f"{n} registreringer oprettet – afkryds fremmøde under Fremmøde.", "ok")
+        return redirect(url_for("team.calendar"))
+    events = _cached_events(db, tid)
+    have = {(r["day"], r["kind"]) for r in db.execute("SELECT day, kind FROM att_events WHERE team_id=?", (tid,))}
+    tdy = today.isoformat()
+    upcoming = [dict(e, kind=ical.kind_of(e["summary"])) for e in events if e["day"] >= tdy][:15]
+    past = [dict(e, i=i, kind=ical.kind_of(e["summary"])) for i, e in enumerate(events) if e["day"] < tdy]
+    past = [e for e in reversed(past) if (e["day"], e["kind"]) not in have][:30]
+    return render_template("team_calendar.html", url=url, upcoming=upcoming, past=past, at=get_setting(db, tid, "ical_at") or "")

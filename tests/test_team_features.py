@@ -305,3 +305,196 @@ def test_player_link_single_use_expiry_and_scope(app, admin):
     url2 = re.search(r'value="https?://[^"/]+(/svar/[\w-]+)"', r.get_data(as_text=True)).group(1)
     admin.post("/team/settings", {"game_type": "5v5", "subs": "1"}, page="/team/settings")      # alle funktioner fra
     assert Client(app).get(url2).status_code == 400
+
+
+# ----------------------------------------------------------------------------- opbevaringsfrist
+def test_retention_is_club_scoped_and_deadline_based(world):
+    app, admin, ca, cb, ta, tb = world
+    switch(ca, team_id(app, "U11 Alfa")); switch(cb, team_id(app, "U11 Beta"))
+    for c, n in ((ca, "Alfa Inaktiv"), (cb, "Beta Inaktiv")):
+        c.post("/players/new", {"name": n, "birth_date": "2016-03-10", "position": "Angreb"}, page="/players/new")       # active udeladt = inaktiv
+    assert sql(app, "SELECT COUNT(*) c FROM players WHERE active=0 AND deactivated_at IS NOT NULL")[0]["c"] == 2
+    admin.post("/admin/retention", {"action": "settings", "months": "6", "auto": "1"}, page="/admin/retention")
+    sql(app, "UPDATE players SET deactivated_at='2020-01-01' WHERE name='Alfa Inaktiv'")
+    assert "over fristen" in ca.get("/admin/retention").get_data(as_text=True)
+    assert ca.post("/admin/retention", {"action": "settings", "months": "0"}, page="/admin/retention").status_code == 403   # kun systemadministrator
+    ca.post("/admin/retention", {"action": "delete_all", "confirm": "ja"}, page="/admin/retention")
+    names = {r["name"] for r in sql(app, "SELECT name FROM players")}
+    assert "Alfa Inaktiv" not in names and "Beta Inaktiv" in names                                # klubadministrator rammer kun egen klub
+    sql(app, "UPDATE players SET deactivated_at='2020-01-01' WHERE name='Beta Inaktiv'")
+    from app import db as appdb
+    con = appdb.connect(app.config["DATABASE"]); appdb.purge_old(con); con.close()                 # automatisk sletning ved fristens udløb
+    assert "Beta Inaktiv" not in {r["name"] for r in sql(app, "SELECT name FROM players")}
+
+
+# ----------------------------------------------------------------------------- sikkerhedslog
+def test_security_log_records_failures_and_ip_blocks(app, admin):
+    from app import auth
+    make_team(admin, "A")
+    make_trainer(app, admin, "tr", ["A"])
+    c = Client(app)
+    for _ in range(3):
+        c.login("tr", "forkert-adgangskode-123")
+    page = admin.get("/admin/security").get_data(as_text=True)
+    assert "login_fejl" in page or "konto_låst" in page or "Ingen hændelser" not in page
+    for _ in range(30):                                                  # IP-begrænsning slår til
+        c.c.post("/login", data={"username": "tr", "password": "x", "csrf_token": c.token()})
+    assert "ip_blokeret" in admin.get("/admin/security").get_data(as_text=True)
+    assert Client(app).get("/admin/security").status_code in (302, 403)
+
+
+# ----------------------------------------------------------------------------- egne kriterietekster
+def test_team_criteria_override_and_isolation(app, admin):
+    from app import model
+    make_team(admin, "A"); make_team(admin, "B")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa")
+    pa = player_id(app, "Anna Alfa")
+    data = {f"desc_{c['idx']}": c["desc"] for c in model.CRITERIA}
+    data["desc_0"] = "Vores egen tekst om teknik"
+    admin.post("/team/criteria", data, page="/team/criteria")
+    assert "Vores egen tekst om teknik" in admin.get("/criteria").get_data(as_text=True)
+    assert "Vores egen tekst om teknik" in admin.get(f"/eval/1/{pa}").get_data(as_text=True)
+    assert sql(app, "SELECT COUNT(*) c FROM settings WHERE key LIKE 't%:crit_desc_%' AND value<>''")[0]["c"] == 1          # kun ændrede tekster gemmes
+    switch(admin, team_id(app, "B"))
+    assert "Vores egen tekst om teknik" not in admin.get("/criteria").get_data(as_text=True)                                # andet hold urørt
+    switch(admin, team_id(app, "A"))
+    data["desc_0"] = ""
+    admin.post("/team/criteria", data, page="/team/criteria")
+    assert "Vores egen tekst om teknik" not in admin.get("/criteria").get_data(as_text=True)                                # tom = standard
+
+
+# ----------------------------------------------------------------------------- iCal
+ICS = """BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:a1
+DTSTART:{past}T170000
+SUMMARY:Træning på banen
+END:VEVENT
+BEGIN:VEVENT
+UID:a2
+DTSTART;VALUE=DATE:{past2}
+SUMMARY:Kamp mod Alfa IF\\, hjemme
+LOCATION:Virring
+ Stadion
+END:VEVENT
+BEGIN:VEVENT
+UID:a3
+DTSTART:{future}T100000Z
+SUMMARY:Stævne
+STATUS:CANCELLED
+END:VEVENT
+BEGIN:VEVENT
+UID:a4
+DTSTART:{future}T100000Z
+SUMMARY:Kamp mod Beta
+END:VEVENT
+END:VCALENDAR
+"""
+
+
+def test_ical_parse_folding_cancelled_and_kind():
+    from app import ical
+    ev = ical.parse(ICS.format(past="20260101", past2="20260102", future="20990101"))
+    assert [e["summary"] for e in ev] == ["Træning på banen", "Kamp mod Alfa IF, hjemme", "Kamp mod Beta"]          # aflyst fjernet
+    assert ev[0]["time"] == "17:00" and ev[1]["location"] == "VirringStadion" and ev[1]["time"] == ""
+    assert [ical.kind_of(e["summary"]) for e in ev] == ["training", "match", "match"]
+
+
+def test_ical_url_must_be_public_https(monkeypatch):
+    from app import ical
+    for bad in ("http://example.com/x.ics", "https://user:pw@example.com/x.ics", "https://example.com:8443/x.ics", "ftp://x", ""):
+        with pytest.raises(ical.FeedError):
+            ical.check_url(bad)
+    monkeypatch.setattr(ical.socket, "getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("127.0.0.1", 443))])
+    with pytest.raises(ical.FeedError):
+        ical.check_url("https://intern.example.com/x.ics")
+    monkeypatch.setattr(ical.socket, "getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("169.254.169.254", 443))])
+    with pytest.raises(ical.FeedError):
+        ical.check_url("https://metadata.example.com/x.ics")
+    monkeypatch.setattr(ical.socket, "getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 443))])
+    assert ical.check_url("https://example.com/x.ics")
+
+
+def test_calendar_refresh_and_import_past_as_attendance(app, admin, monkeypatch):
+    import datetime
+    from app import ical
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa")
+    monkeypatch.setattr(ical.socket, "getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 443))])
+    admin.post("/team/settings", {"game_type": "5v5", "subs": "1", "ical_url": "http://intern/x.ics", "feat_devdata": "1"}, page="/team/settings")
+    assert not sql(app, "SELECT 1 FROM settings WHERE key LIKE '%ical_url' AND value<>''")                        # http afvist
+    admin.post("/team/settings", {"game_type": "5v5", "subs": "1", "ical_url": "https://example.com/k.ics", "feat_devdata": "1"}, page="/team/settings")
+    today = datetime.date.today()
+    text = ICS.format(past=(today - datetime.timedelta(days=3)).strftime("%Y%m%d"), past2=(today - datetime.timedelta(days=5)).strftime("%Y%m%d"), future=(today + datetime.timedelta(days=30)).strftime("%Y%m%d"))
+    monkeypatch.setattr(ical, "fetch", lambda url: text)
+    admin.post("/team/calendar", {"action": "refresh"}, page="/team/calendar")
+    page = admin.get("/team/calendar").get_data(as_text=True)
+    assert "Kamp mod Beta" in page and "Stævne" not in page
+    assert "Afholdte uden fremmøde" in page
+    admin.post("/team/calendar", {"action": "import", "ev": ["0", "1", "99", "x"]}, page="/team/calendar")
+    kinds = {r["kind"] for r in sql(app, "SELECT kind FROM att_events")}
+    assert kinds == {"training", "match"} and sql(app, "SELECT COUNT(*) c FROM att_marks")[0]["c"] == 2
+    admin.post("/team/calendar", {"action": "import", "ev": ["0", "1"]}, page="/team/calendar")                    # ingen dubletter
+    assert sql(app, "SELECT COUNT(*) c FROM att_events")[0]["c"] == 2
+
+
+def test_user_resets_require_fresh_admin_code(app, admin):
+    from app import db as appdb, totp
+    make_team(admin, "A")
+    make_trainer(app, admin, "tr", ["A"])
+    uid = sql(app, "SELECT id FROM users WHERE username='tr'")[0]["id"]
+    hash0 = sql(app, "SELECT pw_hash FROM users WHERE id=?", uid)[0]["pw_hash"]
+    admin.post(f"/admin/users/{uid}/reset-password", {}, page="/admin/users")                       # uden kode
+    admin.post(f"/admin/users/{uid}/reset-2fa", {"code": "000000"}, page="/admin/users")           # forkert kode
+    assert sql(app, "SELECT pw_hash FROM users WHERE id=?", uid)[0]["pw_hash"] == hash0
+    assert sql(app, "SELECT totp_enabled FROM users WHERE id=?", uid)[0]["totp_enabled"] == 1
+    admin.post(f"/admin/users/{uid}/reset-password", {"code": code(app, admin)}, page="/admin/users")
+    assert sql(app, "SELECT pw_hash FROM users WHERE id=?", uid)[0]["pw_hash"] != hash0
+
+
+def test_focus_page_changes_text_and_manifest(app, admin):
+    """Træningsfokus, 'siden sidste runde' og neutral PWA-manifest (ingen klubdata, ingen service worker)."""
+    import os
+    from helpers import score_all
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    assert "Der er ikke evalueringer endnu" in admin.get("/team/focus").get_data(as_text=True)
+    add_player(admin, "Anna Alfa")
+    pid = player_id(app, "Anna Alfa")
+    score_all(admin, 1, pid, 2)
+    score_all(admin, 2, pid, 4)
+    page = admin.get("/team/focus").get_data(as_text=True)
+    assert "Holdets laveste områder" in page and "1 spillere" in page
+    prof = admin.get(f"/profile/{pid}?runde=2").get_data(as_text=True)
+    assert "Siden" in prof and "Samlet op med 2,0" in prof and "▲" in prof
+    assert "Udskriv opstilling" not in prof
+    m = admin.get("/static/manifest.webmanifest")
+    assert m.status_code == 200 and b"Team Udvikling" in m.data and b"club" not in m.data.lower()
+    assert admin.get("/static/icon-192.png").status_code == 200
+    assert b"manifest.webmanifest" in admin.get("/team/").data
+    assert not [f for f in os.listdir(os.path.join(app.root_path, "static")) if f.endswith(".js") and "sw" in f.lower()]
+
+
+def test_testmail_and_pwned_check(app, admin, monkeypatch):
+    from app import auth
+    app.config.update(MAIL_BACKEND="memory", PUBLIC_URL="https://t.example", SMTP_FROM="u11@t.example")
+    sql(app, "UPDATE users SET email=NULL WHERE username='admin'")
+    assert "ingen e-mailadresse" in admin.post("/admin/testmail", {}, page="/admin/", follow_redirects=True).get_data(as_text=True)
+    sql(app, "UPDATE users SET email='admin@example.dk' WHERE username='admin'")
+    assert "Prøvemail sendt" in admin.post("/admin/testmail", {}, page="/admin/", follow_redirects=True).get_data(as_text=True)
+    assert app.extensions["outbox"][-1]["to"] == "admin@example.dk"
+    with app.app_context():
+        assert auth.pwned_count("password") == 0                      # slået fra som standard
+        app.config["PWNED_CHECK"] = True
+        import hashlib, io
+        h = hashlib.sha1(b"hemmelig-test").hexdigest().upper()
+
+        class R(io.BytesIO):
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: R(f"{h[5:]}:42\r\n0000000000000000000000000000000000A:0".encode()))
+        assert auth.pwned_count("hemmelig-test") == 42
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: (_ for _ in ()).throw(OSError("net")))
+        assert auth.pwned_count("hemmelig-test") == 0                 # fail-open

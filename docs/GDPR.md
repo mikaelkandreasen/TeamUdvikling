@@ -57,3 +57,8 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 3. Aftal opbevaringstid for udtrådte spillere (anbefalet: slet senest 3 måneder efter udtræden).
 4. Lav DPIA og dokumentér, hvem der har administratoradgang.
 5. Tag stilling til, om DBU KampKlar-integration (B-010) må behandle børnedata hos tredjepart, før den bygges.
+
+## Tilføjet i v0.12.0
+- **Sikkerhedslog:** hændelsestype, brugernavn og IP gemmes i 30 dage og slettes automatisk.
+- **Opbevaringstid:** inaktive spillere kan slettes efter aftalt frist (standard 12 mdr.), manuelt eller automatisk; kun i egen klub.
+- **Spillerlink, fremmøde, trivsel, mascot-log og noter** er personoplysninger om børn og følger samme sletning som spilleren.

@@ -11,7 +11,7 @@ from flask import (Blueprint, abort, current_app, flash, g, redirect, render_tem
 from markupsafe import Markup
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import lockout, remember, reset_tokens, totp
+from . import lockout, remember, reset_tokens, secrets_box, totp
 from .db import audit, backup_if_due, club_get, get_db, purge_old
 
 bp = Blueprint("auth", __name__)
@@ -119,6 +119,12 @@ def record_fail(db):
 
 
 def _too_many():
+    try:
+        db = get_db()
+        security_event(db, "ip_blokeret", request.path[:60], dedupe=600)
+        db.commit()
+    except Exception:       # logning må aldrig forhindre selve afvisningen
+        current_app.logger.exception("Kunne ikke logge IP-blokering")
     return ("For mange mislykkede forsøg fra din forbindelse. Vent et par minutter og prøv igen.", 429, {"Retry-After": str(IP_WINDOW)})
 
 
@@ -194,6 +200,25 @@ def new_recovery_codes(db, uid, n=8):
     return codes
 
 
+def pwned_count(pw):
+    """Antal gange adgangskoden findes i kendte lækager (Have I Been Pwned, k-anonymitet: kun de første 5 tegn af SHA-1 sendes).
+    Fejl/timeout → 0 (fail-open). Kun aktiv hvis PWNED_CHECK=1."""
+    if not current_app.config.get("PWNED_CHECK"):
+        return 0
+    import urllib.request
+    h = hashlib.sha1(pw.encode()).hexdigest().upper()
+    try:
+        req = urllib.request.Request("https://api.pwnedpasswords.com/range/" + h[:5], headers={"User-Agent": "TeamUdvikling", "Add-Padding": "true"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            for line in r.read(1_000_000).decode().splitlines():
+                suffix, _, n = line.partition(":")
+                if suffix.strip() == h[5:]:
+                    return int(n.strip() or 0)
+    except Exception:       # noqa: BLE001 – netværksfejl må ikke blokere oprettelse
+        return 0
+    return 0
+
+
 def check_password_policy(pw, username=""):
     if len(pw) < MIN_PW:
         return f"Adgangskoden skal være mindst {MIN_PW} tegn."
@@ -203,13 +228,30 @@ def check_password_policy(pw, username=""):
         return "Adgangskoden må ikke indeholde brugernavnet."
     if len(set(pw)) < 5:
         return "Adgangskoden er for ensartet."
+    if pwned_count(pw) > 0:
+        return "Adgangskoden findes i kendte datalæk. Vælg en anden."
     return None
+
+
+def security_event(db, kind, detail="", dedupe=0):
+    """Sikkerhedslog (30 dage): IP-blokeringer, mislykkede login og låste konti. `dedupe` = sekunder, hvor samme IP+type kun logges én gang."""
+    ip = client_ip()
+    now = int(time.time())
+    if dedupe and db.execute("SELECT 1 FROM security_events WHERE ip=? AND kind=? AND ts>?", (ip, kind, now - dedupe)).fetchone():
+        return
+    db.execute("INSERT INTO security_events(ts,kind,detail,ip) VALUES(?,?,?,?)", (now, kind, (detail or "")[:100], ip))
 
 
 def _fail(db, user):
     locked = lockout.register_fail(db, user)
     audit(db, user["username"], "login_fejl", "låst" if locked else "")
+    security_event(db, "konto_låst" if locked else "login_fejl", user["username"])
     db.commit()
+
+
+def user_totp_secret(user):
+    """Dekrypteret 2FA-hemmelighed (None hvis ingen eller forkert nøgle)."""
+    return secrets_box.decrypt(current_app.config["TOTP_KEY_BYTES"], user["totp_secret"])
 
 
 def _ok(db, user):
@@ -220,7 +262,7 @@ def _ok(db, user):
 def verify_admin_code(db, user, code):
     """Trin-op: kræver en frisk 2FA-kode fra den indloggede bruger (replay-beskyttet). Fejl tæller som mislykket login
     (kontolåsning + IP-spærre), så en kapret session ikke kan gætte koden."""
-    step = totp.verify(user["totp_secret"], code, user["last_totp_step"])
+    step = totp.verify(user_totp_secret(user), code, user["last_totp_step"])
     if step and consume_totp_step(db, user["id"], step):
         db.commit()
         return True
@@ -297,7 +339,7 @@ def login_2fa():
         if lockout.is_locked(db, user):
             flash("Kontoen er midlertidigt låst. Prøv igen senere.", "error")
         else:
-            step = totp.verify(user["totp_secret"], code, user["last_totp_step"])
+            step = totp.verify(user_totp_secret(user), code, user["last_totp_step"])
             if step and consume_totp_step(db, user["id"], step):
                 _ok(db, user)
                 _finish_login(db, user, request.form.get("remember") == "1")
@@ -346,13 +388,16 @@ def twofa_setup():
         return redirect(url_for("auth.account"))
     if session.get("stage") == "pw_ok":
         return redirect(url_for("auth.login_2fa"))
+    if session.get("stage") == "ok" and user["totp_enabled"] and time.time() - session.get("reauth_2fa", 0) > 300:
+        return redirect(url_for("auth.twofa_reauth"))       # ny 2FA-opsætning kræver adgangskoden igen
     secret = session.get("pending_secret")
     if not secret:
         secret = session["pending_secret"] = totp.new_secret()
     if request.method == "POST":
         step = totp.verify(secret, request.form.get("code", ""))
         if step:
-            db.execute("UPDATE users SET totp_secret=?, totp_enabled=1, last_totp_step=? WHERE id=?", (secret, step, user["id"]))
+            db.execute("UPDATE users SET totp_secret=?, totp_enabled=1, last_totp_step=? WHERE id=?",
+                       (secrets_box.encrypt(current_app.config["TOTP_KEY_BYTES"], secret), step, user["id"]))
             codes = new_recovery_codes(db, user["id"])
             audit(db, user["username"], "2fa_aktiveret")
             db.commit()
@@ -363,6 +408,24 @@ def twofa_setup():
         flash("Koden passer ikke. Tjek at telefonens ur er korrekt, og prøv igen.", "error")
     uri = totp.otpauth_uri(secret, user["username"], club_get(db)["app_name"])
     return render_template("twofa_setup.html", secret=secret, uri=uri, qr=_qr_svg(uri))
+
+
+@bp.route("/2fa/bekraeft", methods=["GET", "POST"])
+def twofa_reauth():
+    """Før en eksisterende 2FA kan erstattes, skal adgangskoden bekræftes igen (en kapret session må ikke kunne overtage 2FA)."""
+    if not g.user or session.get("stage") != "ok":
+        return redirect(url_for("auth.login"))
+    db = get_db()
+    if request.method == "POST":
+        if throttled(db):
+            return _too_many()
+        if check_password_hash(g.user["pw_hash"], request.form.get("password", "")):
+            session["reauth_2fa"] = int(time.time())
+            return redirect(url_for("auth.twofa_setup", ny=1))
+        _fail(db, g.user)
+        record_fail(db)
+        flash("Forkert adgangskode.", "error")
+    return render_template("twofa_reauth.html")
 
 
 @bp.route("/setup", methods=["GET", "POST"])

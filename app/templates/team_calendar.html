@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Kalender{% endblock %}
+{% block content %}
+<h1>Kalender – {{ team['name'] }}</h1>
+{% if not url %}<div class="card">Ingen kalenderadresse er sat.{% if can_configure() %} Tilføj den under <a href="{{ url_for('team.settings') }}">Holdindstillinger</a>.{% else %} Bed chef-træneren tilføje den.{% endif %}</div>
+{% else %}
+<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="refresh"><button class="btn">Hent kalender</button>{% if at %} <span class="muted small">senest hentet {{ at }}</span>{% endif %}</form>
+<div class="card"><h2>Kommende</h2>{% for e in upcoming %}<div>{{ e['day']|date_dk }}{% if e['time'] %} kl. {{ e['time'] }}{% endif %} · {{ 'Kamp' if e['kind'] == 'match' else 'Aktivitet' }} · <b>{{ e['summary'] }}</b>{% if e['location'] %} <span class="muted small">({{ e['location'] }})</span>{% endif %}</div>
+  {% else %}<span class="muted">Ingen kommende aftaler (tryk «Hent kalender»).</span>{% endfor %}</div>
+{% if past and features['devdata'] %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="import"><h2>Afholdte uden fremmøde</h2>
+  {% for e in past %}<label class="check"><input type="checkbox" name="ev" value="{{ e['i'] }}" checked> {{ e['day']|date_dk }} · {{ 'Kamp' if e['kind'] == 'match' else 'Træning' }} · {{ e['summary'] }}</label>{% endfor %}
+  <div class="actions"><button class="btn">Opret som fremmøde</button></div></form>{% endif %}
+{% endif %}
+{% endblock %}

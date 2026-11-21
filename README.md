@@ -36,6 +36,8 @@ Administrator kan give hver bruger en e-mailadresse (Administration → Brugere)
 
 | Variabel | Eksempel | Bemærkning |
 |---|---|---|
+| `TOTP_KEY` | (valgfri) | Nøgle til kryptering af 2FA-hemmeligheder. Uden den oprettes `/data/totp_key`. Tag backup af den. |
+| `PWNED_CHECK` | `1` | (valgfri) Tjek nye adgangskoder mod kendte lækager. |
 | `PUBLIC_URL` | `https://teamudvikling.saem.dk` | Bruges i linket i mailen. Påkrævet. |
 | `SMTP_HOST` | `smtp.dinudbyder.dk` | Påkrævet. |
 | `SMTP_PORT` | `587` | 587 (starttls) eller 465 (ssl). |

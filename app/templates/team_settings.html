@@ -9,6 +9,8 @@
   <p class="muted small">Bruges til at dele truppen i A/B/C-hold: holdstørrelse = spillere på banen + udskiftere.</p>
   <label for="sl">Slogan</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="fx Sammen er vi stærkest">
   <label for="mn">Mascot (navn)</label><input id="mn" type="text" name="mascot_name" maxlength="40" value="{{ team['mascot_name'] or '' }}" placeholder="fx Bamse">
+  <label for="ic">Kalenderadresse (iCal, valgfri)</label><input id="ic" type="url" name="ical_url" maxlength="500" value="{{ ical_url }}" placeholder="https://…/kalender.ics">
+  <p class="muted small">Fx holdets kalender-link fra KampKlar eller klubbens kalender. Kun https; hentes kun når en træner trykker «Hent» under Kalender.</p>
   <h2>Funktioner</h2>
   <p class="muted small">Vælg hvad holdet vil bruge. Slåede-fra funktioner skjules, og data bevares.</p>
   {% for k, label, d in FEATURES %}<label class="check"><input type="checkbox" name="feat_{{ k }}" value="1" {{ 'checked' if feats[k] }}> {{ label }}</label>{% endfor %}

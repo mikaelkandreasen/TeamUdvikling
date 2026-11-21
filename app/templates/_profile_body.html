@@ -5,6 +5,11 @@
   <thead><tr><th>Rolle</th>{% for i in infos %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
   <tbody>{% for rr in role_rows %}<tr><td>{{ rr['role'] }}</td>{% for v in rr['vals'] %}{{ heatcell(v) }}{% endfor %}</tr>{% endfor %}
   <tr class="avg"><td>Samlet</td>{% for v in samlet %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr></tbody></table></div>
+{% if changes %}<div class="card"><h3>Siden {{ changes['prev_label'] }}</h3>
+  <div>Samlet {{ 'op' if changes['total'] > 0.05 else ('ned' if changes['total'] < -0.05 else 'uændret') }}{% if changes['total']|abs > 0.05 %} med {{ changes['total']|abs|dk }}{% endif %}.</div>
+  {% for c, d in changes['up'] %}<div>▲ {{ c['role'] }} – {{ c['skill'] }} <b>(+{{ d|dk }})</b></div>{% endfor %}
+  {% for c, d in changes['down'] %}<div>▼ {{ c['role'] }} – {{ c['skill'] }} <b>(−{{ d|abs|dk }})</b></div>{% endfor %}
+  {% if not changes['up'] and not changes['down'] %}<div class="muted small">Ingen enkeltområder har ændret sig med 0,5 point eller mere.</div>{% endif %}</div>{% endif %}
 {% if strongest %}
 <div class="row" style="margin-top:.8rem">
   <div class="card"><h3>Styrker</h3>{% for c, v in strongest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>

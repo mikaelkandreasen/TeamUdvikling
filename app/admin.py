@@ -36,6 +36,29 @@ def index():
     return render_template("admin_index.html", sysadmin=scope.is_sysadmin(g.user))
 
 
+@bp.route("/testmail", methods=["POST"])
+@admin_required
+def testmail():
+    """Sender en prøvemail til systemadministratorens egen adresse, så SMTP-opsætningen kan afprøves uden at nulstille nogen."""
+    db = get_db()
+    to = (g.user["email"] or "").strip()
+    todo = mailer.missing()
+    if todo:
+        flash(f"E-mail er ikke sat op: mangler {todo}.", "error")
+    elif not to:
+        flash("Din bruger har ingen e-mailadresse. Tilføj den under Brugere, og prøv igen.", "error")
+    else:
+        try:
+            mailer.send(to, "Prøvemail fra Team Udvikling", "Hvis du kan læse dette, virker e-mailopsætningen.\n")
+            audit(db, g.user["username"], "testmail_sendt")
+            db.commit()
+            flash(f"Prøvemail sendt til {to}.", "ok")
+        except Exception as exc:      # noqa: BLE001 – SMTP kan fejle på mange måder
+            current_app.logger.warning("Prøvemail fejlede (%s)", type(exc).__name__)
+            flash(f"Prøvemailen kunne ikke sendes ({type(exc).__name__}). Tjek SMTP-indstillingerne.", "error")
+    return redirect(url_for("admin.index"))
+
+
 def _visible_clubs(db):
     """Klubber den indloggede må administrere: alle (systemadministrator) eller egen."""
     if scope.is_sysadmin(g.user):
@@ -184,13 +207,45 @@ def _user_rows(db):
                       "WHERE u.club_id=? AND u.role<>'admin' ORDER BY u.username", (g.user["club_id"],)).fetchall()
 
 
-def _render_users(db, temp=None, temp_user=None):
-    mem = {}
-    for r in db.execute("SELECT user_id, team_id FROM user_teams"):
-        mem.setdefault(r["user_id"], set()).add(r["team_id"])
-    return render_template("admin_users.html", users=_user_rows(db), mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user,
-                           mail_missing=mailer.missing(), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user),
-                           role_label=scope.ROLE_LABEL, can_manage=lambda u: scope.can_manage_user(g.user, u))
+def _render_users(db):
+    """Overskuelig liste over alle brugere (navn, rolle, klub, hold). Detaljer og nulstilling ligger på brugerens egen side."""
+    teams = {}
+    for r in db.execute("SELECT ut.user_id, t.name FROM user_teams ut JOIN teams t ON t.id=ut.team_id ORDER BY t.name COLLATE NOCASE"):
+        teams.setdefault(r["user_id"], []).append(r["name"])
+    q = (request.args.get("q") or "").strip().lower()
+    club = int_in(request.args.get("club"), 1, 10 ** 9)
+    rows = []
+    for u in _user_rows(db):
+        if club and u["club_id"] != club:
+            continue
+        if q and q not in (u["display_name"] + " " + u["username"] + " " + (u["email"] or "")).lower():
+            continue
+        rows.append(dict(u=u, teams=teams.get(u["id"], [])))
+    return render_template("admin_users.html", rows=rows, all_teams=_team_rows(db), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user),
+                           role_label=scope.ROLE_LABEL, can_manage=lambda u: scope.can_manage_user(g.user, u), q=q, club_filter=club, total=len(_user_rows(db)))
+
+
+def _render_user_detail(db, u, temp=None):
+    mem = {r["team_id"] for r in db.execute("SELECT team_id FROM user_teams WHERE user_id=?", (u["id"],))}
+    club = db.execute("SELECT name FROM clubs WHERE id=?", (u["club_id"],)).fetchone() if u["club_id"] else None
+    return render_template("admin_user.html", u=dict(u, club_name=club["name"] if club else None), mem=mem, all_teams=_team_rows(db), temp=temp,
+                           mail_missing=mailer.missing(), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user), role_label=scope.ROLE_LABEL,
+                           last_login=_fmt_ts(u["last_login"]))
+
+
+def _fmt_ts(ts):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    return datetime.fromtimestamp(ts, ZoneInfo(current_app.config.get("TIMEZONE") or "UTC")).strftime("%d-%m-%Y %H:%M") if ts else ""
+
+
+@bp.route("/users/<int:uid>")
+def user_detail(uid):
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    if not u or not scope.can_manage_user(g.user, u):
+        abort(404)
+    return _render_user_detail(db, u)
 
 
 def _set_user_teams(db, uid, team_ids, club_id):
@@ -247,8 +302,23 @@ def users():
             audit(db, g.user["username"], "bruger_oprettet", f"{username} ({role})")
             db.commit()
             flash(f"Bruger '{username}' oprettet. Midlertidig adgangskode vises kun nu.", "ok")
-            return _render_users(db, temp, username)
+            return _render_user_detail(db, db.execute("SELECT * FROM users WHERE id=?", (cur.lastrowid,)).fetchone(), temp)
     return _render_users(db)
+
+
+def _code_gate(db):
+    """Trin-op: egen frisk 2FA-kode kræves til følsomme handlinger. None = ok, ellers et svar der skal returneres."""
+    if throttled(db):
+        return _too_many()
+    if verify_admin_code(db, g.user, request.form.get("code", "")):
+        return None
+    if lockout.is_locked(db, db.execute("SELECT * FROM users WHERE id=?", (g.user["id"],)).fetchone()):
+        revoke_session(db)
+        db.commit()
+        session.clear()
+        return redirect(url_for("auth.login"))
+    flash("Forkert eller allerede brugt 2FA-kode. Vent på en ny kode i appen og prøv igen.", "error")
+    return redirect(url_for("admin.user_detail", uid=request.view_args["uid"]))
 
 
 @bp.route("/users/<int:uid>/<action>", methods=["POST"])
@@ -279,13 +349,13 @@ def user_action(uid, action):
         cid = _pick_club(db, request.form.get("club")) if role != "admin" else None
         if role not in scope.ROLES or (role != "admin" and not cid):
             flash("Vælg rolle (og klub).", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         if u["role"] == "admin" and role != "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
             flash("Der skal altid være mindst én systemadministrator.", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         if uid == g.user["id"] and role != "admin":
             flash("Du kan ikke fjerne din egen systemadministrator-rolle.", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         db.execute("UPDATE users SET role=?, club_id=? WHERE id=?", (role, cid, uid))
         if role != "trainer" or cid != u["club_id"]:
             db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
@@ -295,7 +365,7 @@ def user_action(uid, action):
         email, err = mailer.normalize_email(request.form.get("email"))
         if err:
             flash(err, "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         db.execute("UPDATE users SET email=? WHERE id=?", (email, uid))
         reset_tokens.revoke_user(db, uid)                 # afventende links gik til den gamle adresse
         flash("E-mailadresse gemt." if email else "E-mailadresse fjernet.", "ok")
@@ -312,19 +382,25 @@ def user_action(uid, action):
                 session.clear()                           # for mange forkerte koder → ud
                 return redirect(url_for("auth.login"))
             flash("Forkert eller allerede brugt 2FA-kode. Vent på en ny kode i appen og prøv igen.", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         ok, msg = reset.send_reset(db, u, purpose, g.user["username"])
         audit(db, g.user["username"], "mail_nulstil_sendt" if ok else "mail_nulstil_fejlet", f"{u['username']} ({purpose})")
         db.commit()
         flash(msg, "ok" if ok else "error")
-        return redirect(url_for("admin.users"))
+        return redirect(url_for("admin.user_detail", uid=uid))
     elif action == "reset-2fa":
+        bad = _code_gate(db)
+        if bad is not None:
+            return bad
         db.execute("UPDATE users SET totp_secret=NULL, totp_enabled=0, last_totp_step=0 WHERE id=?", (uid,))
         db.execute("DELETE FROM recovery_codes WHERE user_id=?", (uid,))
         remember.revoke_user(db, uid)
         reset_tokens.revoke_user(db, uid)
         flash("2FA nulstillet – brugeren skal oprette den igen ved næste login.", "ok")
     elif action == "reset-password":
+        bad = _code_gate(db)
+        if bad is not None:
+            return bad
         temp = secrets.token_urlsafe(12)
         db.execute("UPDATE users SET pw_hash=?, must_change_pw=1 WHERE id=?", (generate_password_hash(temp), uid))
         remember.revoke_user(db, uid)
@@ -336,17 +412,19 @@ def user_action(uid, action):
     elif action == "delete":
         if uid == g.user["id"]:
             flash("Du kan ikke slette dig selv.", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         if u["role"] == "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
             flash("Der skal altid være mindst én systemadministrator.", "error")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("admin.user_detail", uid=uid))
         db.execute("DELETE FROM users WHERE id=?", (uid,))
         flash("Bruger slettet (træners egne evalueringer slettes også).", "ok")
     else:
         abort(404)
     audit(db, g.user["username"], f"bruger_{action}", u["username"])
     db.commit()
-    return _render_users(db, temp, u["username"] if temp else None)
+    if action == "delete":
+        return redirect(url_for("admin.users"))
+    return _render_user_detail(db, db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone(), temp)
 
 
 # ------------------------------------------------------------------- indstillinger mv.
@@ -495,22 +573,57 @@ def club_profile():
 MAX_UPLOAD = club.MAX_LOGO_BYTES
 
 
+@bp.route("/security")
+@admin_required
+def security():
+    """Blokeringslog: IP-blokeringer, mislykkede login og låste konti de seneste 30 dage."""
+    db = get_db()
+    now = int(time.time())
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    zone = ZoneInfo(current_app.config.get("TIMEZONE") or "UTC")
+    counts = db.execute("SELECT kind, SUM(ts>?) AS d1, SUM(ts>?) AS d7, COUNT(*) AS d30 FROM security_events GROUP BY kind ORDER BY kind", (now - 86400, now - 7 * 86400)).fetchall()
+    top = db.execute("SELECT ip, COUNT(*) n FROM security_events GROUP BY ip ORDER BY n DESC LIMIT 10").fetchall()
+    rows = [dict(r, when=datetime.fromtimestamp(r["ts"], zone).strftime("%d-%m-%Y %H:%M")) for r in db.execute("SELECT * FROM security_events ORDER BY ts DESC, id DESC LIMIT 100")]
+    return render_template("admin_security.html", counts=counts, top=top, rows=rows)
+
+
 # ----------------------------------------------------------------------------- dataoprydning (GDPR)
 @bp.route("/retention", methods=["GET", "POST"])
 def retention():
+    """Opbevaringsfrist for inaktive spillere. Klubadministratorer ser og sletter kun egen klubs spillere."""
+    from .db import get_global, set_global
     db = get_db()
+    club_sql = "" if scope.is_sysadmin(g.user) else " AND t.club_id=%d" % int(g.user["club_id"])
+    months = get_global(db, "retention_months", 12)
+    overdue_sql = ("p.active=0 AND p.deactivated_at IS NOT NULL AND p.deactivated_at < date('now','localtime',?)" if months else "0")
+    args = (f"-{months} months",) if months else ()
     if request.method == "POST":
-        if request.form.get("confirm") != "ja":
+        action = request.form.get("action", "delete_all")
+        if action == "settings":
+            if not scope.is_sysadmin(g.user):
+                abort(403)
+            m = int_in(request.form.get("months"), 0, 120) or 0
+            set_global(db, "retention_months", m)
+            set_global(db, "retention_auto", 1 if request.form.get("auto") and m else 0)
+            audit(db, g.user["username"], "opbevaringsfrist_sat", f"{m} mdr, auto={1 if request.form.get('auto') and m else 0}")
+            db.commit()
+            flash("Opbevaringsfrist gemt.", "ok")
+        elif request.form.get("confirm") != "ja":
             flash("Sletning kræver bekræftelse.", "error")
         else:
-            n = db.execute("SELECT COUNT(*) FROM players WHERE active=0").fetchone()[0]
-            db.execute("DELETE FROM players WHERE active=0")
-            audit(db, g.user["username"], "inaktive_spillere_slettet", f"antal={n}")
+            where = overdue_sql if action == "delete_overdue" else "p.active=0"
+            ids = [r["id"] for r in db.execute(f"SELECT p.id FROM players p JOIN teams t ON t.id=p.team_id WHERE {where}{club_sql}", args if action == "delete_overdue" else ())]
+            for pid in ids:
+                db.execute("DELETE FROM players WHERE id=?", (pid,))
+            audit(db, g.user["username"], "inaktive_spillere_slettet" if action == "delete_all" else "forfaldne_spillere_slettet", f"antal={len(ids)}")
             db.commit()
-            flash(f"{n} inaktive spillere og alle deres data er slettet (kopier i automatiske backups forsvinder inden for 14 dage).", "ok")
+            flash(f"{len(ids)} spillere og alle deres data er slettet (kopier i automatiske backups forsvinder inden for 14 dage).", "ok")
         return redirect(url_for("admin.retention"))
-    rows = db.execute("SELECT t.name tn, COUNT(*) n FROM players p JOIN teams t ON t.id=p.team_id WHERE p.active=0 GROUP BY t.id ORDER BY t.name").fetchall()
-    return render_template("admin_retention.html", rows=rows)
+    rows = db.execute(f"SELECT t.name tn, COUNT(*) n, SUM(CASE WHEN {overdue_sql} THEN 1 ELSE 0 END) due FROM players p JOIN teams t ON t.id=p.team_id "
+                      f"WHERE p.active=0{club_sql} GROUP BY t.id ORDER BY t.name", args).fetchall()
+    return render_template("admin_retention.html", rows=rows, months=months, auto=get_global(db, "retention_auto", 0), sysadmin=scope.is_sysadmin(g.user),
+                           due_total=sum((r["due"] or 0) for r in rows))
 
 
 # ----------------------------------------------------------------------------- import af spillere/hold

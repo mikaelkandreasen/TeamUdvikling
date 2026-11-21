@@ -63,7 +63,7 @@ Link: 256-bit engangstoken, kun HMAC-hash i databasen, 60 minutters levetid, mak
 Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug TLS (`starttls`/`ssl`).
 
 ## Kendte restrisici (accepteret / backlog)
-- TOTP-hemmeligheder ligger i klartekst i databasen (og i backups). Beskyt volumen og backups; kryptering i hvile står i backloggen (B-012).
+- TOTP-hemmeligheder er krypteret i databasen (Fernet, `enc1:`). Nøglen (`TOTP_KEY` eller `/data/totp_key`) skal sikres separat fra backups; mistes den, skal 2FA nulstilles. Sikkerhedslog (`/admin/security`) gemmer hændelser og IP i 30 dage. Valgfri tjek af lækkede adgangskoder (`PWNED_CHECK=1`, sender kun de første 5 tegn af en hash). iCal-hentning: https-only, offentlig IP; rest-risiko ved DNS-rebinding accepteret (D-016).
 - CSP tillader `style-src 'unsafe-inline'` (inline `style=`-attributter). Scripts er strengt `self`.
 - Nulstilling via e-mail findes kun som admin-godkendt handling (ingen offentlig «glemt adgangskode»); se afsnittet nedenfor. En kompromitteret postkasse kan kun nulstille adgangskoden, aldrig omgå 2FA.
 - Sessioner er signerede cookies (ikke server-side); idle-timeout 45 min, maks. 8 timer.

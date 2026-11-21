@@ -165,7 +165,7 @@ def test_2fa_reset_kills_live_session(app, admin):
     con = db.connect(app.config["DATABASE"])
     uid = con.execute("SELECT id FROM users WHERE username='tr'").fetchone()[0]
     con.close()
-    admin.post(f"/admin/users/{uid}/reset-2fa", {}, page="/admin/users")
+    admin.post(f"/admin/users/{uid}/reset-2fa", {"code": _fresh_code(app, admin)}, page="/admin/users")
     r = t.get("/players/")
     assert r.status_code == 302 and "/login" in r.headers["Location"]
 
@@ -235,3 +235,9 @@ def test_recovery_codes_long_and_not_plain_sha(app, admin):
     hashes = {r[0] for r in con.execute("SELECT code_hash FROM recovery_codes")}
     con.close()
     assert hashlib.sha256(code.group(1).replace("-", "").encode()).hexdigest() not in hashes   # nøglet hash, ikke ren SHA-256
+
+
+def _fresh_code(app, admin):
+    from app import db as _db, totp as _totp
+    con = _db.connect(app.config["DATABASE"]); con.execute("UPDATE users SET last_totp_step=0 WHERE username='admin'"); con.commit(); con.close()
+    return _totp.totp(admin.secret)

@@ -1,11 +1,18 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Dataoprydning{% endblock %}
 {% block content %}
 <h1>Dataoprydning</h1>
-<p class="muted">Data om børn skal ikke opbevares længere end nødvendigt. Marker spillere som inaktive, når de stopper, og slet dem her. Sletningen fjerner evalueringer, motivation og udviklingsdata. Automatiske backups overskrives inden for 14 dage.</p>
-<div class="card">
-  {% if rows %}<ul>{% for r in rows %}<li>{{ r['tn'] }}: <b>{{ r['n'] }}</b> inaktive spillere</li>{% endfor %}</ul>
-  <form method="post">{{ csrf() }}<label><input type="checkbox" name="confirm" value="ja"> Ja, slet alle inaktive spillere permanent</label>
-    <div class="actions"><button class="btn danger">Slet inaktive spillere</button></div></form>
+<p class="muted">Data om børn skal ikke opbevares længere end nødvendigt. Marker spillere som inaktive, når de stopper. Opbevaringsfristen regnes fra den dag, de blev inaktive. Sletningen fjerner evalueringer, motivation og udviklingsdata. Automatiske backups overskrives inden for 14 dage.</p>
+{% if due_total %}<div class="card" style="border-color:#e0a800"><b>{{ due_total }} inaktive spillere har overskredet fristen på {{ months }} måneder</b> og bør slettes.</div>{% endif %}
+<div class="card"><h2>Inaktive spillere</h2>
+  {% if rows %}<ul>{% for r in rows %}<li>{{ r['tn'] }}: <b>{{ r['n'] }}</b> inaktive{% if r['due'] %}, heraf <b>{{ r['due'] }}</b> over fristen{% endif %}</li>{% endfor %}</ul>
+  {% if due_total %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="delete_overdue"><label class="check"><input type="checkbox" name="confirm" value="ja"> Ja, slet spillere over fristen permanent</label>
+    <div class="actions"><button class="btn danger">Slet spillere over fristen</button></div></form>{% endif %}
+  <details><summary>Slet alle inaktive (uanset frist)</summary><form method="post">{{ csrf() }}<input type="hidden" name="action" value="delete_all"><label class="check"><input type="checkbox" name="confirm" value="ja"> Ja, slet alle inaktive spillere permanent</label>
+    <div class="actions"><button class="btn danger">Slet alle inaktive</button></div></form></details>
   {% else %}<p>Ingen inaktive spillere.</p>{% endif %}
 </div>
+{% if sysadmin %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="settings"><h2>Opbevaringsfrist (hele systemet)</h2>
+  <label for="m">Måneder efter at en spiller er blevet inaktiv (0 = ingen frist)</label><input id="m" type="number" name="months" min="0" max="120" value="{{ months }}">
+  <label class="check"><input type="checkbox" name="auto" value="1" {{ 'checked' if auto }}> Slet automatisk, når fristen er overskredet (sker ved næste login)</label>
+  <div class="actions"><button class="btn">Gem</button></div></form>{% endif %}
 {% endblock %}
