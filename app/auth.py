@@ -236,6 +236,8 @@ def _finish_login(db, user, remember_device=False):
     db.execute("UPDATE users SET last_login=? WHERE id=?", (int(time.time()), user["id"]))
     if remember_device:
         remember.issue(db, user)
+    else:
+        g.clear_club = True                       # loginsiden er neutral, medmindre seneste login huskede enheden
     audit(db, user["username"], "login")
     db.commit()
     try:

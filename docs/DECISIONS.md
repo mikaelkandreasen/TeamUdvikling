@@ -43,3 +43,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Hold har forskellige behov (kamptype, hvilke data der spores), og en chef-træner skal selv kunne styre sit hold og invitere trænere uden klubadministrator.
 **Valg:** Funktionsvalg som holdindstillinger (`feat_*`) med 404-guard pr. blueprint; chef-trænere i tabellen `team_heads` (flere pr. hold); de får adgang til holdindstillinger, evalueringsrunder og invitationer til egne hold, men ikke brugere, klubber eller eksport. Holddeling er en ren funktion (`split.py`): rang efter niveau (A+, A, B; uvurderede = C), derefter samlet score; A-holdene fyldes først, overskydende A-vurderede flyttes til B-holdene før B-spillere.
 **Konsekvens:** Nye hold-sider skal afgrænses til `g.team` og have isolationstest; mascot-log og noter er personoplysninger (se GDPR).
+
+## D-014 · Neutral loginside (2026-11-21)
+**Kontekst:** En offentlig loginside med klubbens logo/navn afslører, hvilke klubber der findes, og vælger ikke klub for brugeren (brugernavne er globalt unikke).
+**Valg:** Før login vises kun produktnavnet og standardfarver. Cookien `u11_lc` (klub-id, ingen hemmelighed) sættes kun ved «husk mig» og styrer udseendet på loginsiden for den enhed.
+**Konsekvens:** Første gang på en ny enhed ses et neutralt login; udseendet kommer efter login.

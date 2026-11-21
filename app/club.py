@@ -6,9 +6,9 @@ Kun PNG, JPEG og WebP accepteres (indhold tjekkes, ikke filnavn). SVG afvises be
 import re
 import time
 
-from flask import current_app, g, url_for
+from flask import current_app, g, request, session, url_for
 
-from .db import club_get, get_db
+from .db import DEFAULT_APP_NAME, club_get, get_db
 
 MAX_LOGO_BYTES = 512 * 1024
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -78,10 +78,35 @@ def current_club_id():
     return None
 
 
+def _authed():
+    return g.get("user") is not None and session.get("stage") == "ok"
+
+
+def _public_info():
+    """Før login: helt neutralt (ingen logo, farve eller klubnavn). Undtagelse: enheden husker seneste login (husk mig i X dage) –
+    så vises den klubs udseende, brugeren sidst loggede ind i."""
+    from . import remember
+    raw = request.cookies.get(remember.club_cookie_name(), "")
+    row = None
+    if raw.isdigit() and len(raw) < 10:
+        row = get_db().execute("SELECT * FROM clubs WHERE id=?", (int(raw),)).fetchone()
+    if row is None:
+        g.club_info = dict(name="", app_name=DEFAULT_APP_NAME, color="", dark="", has_logo=False, logo_url="", id=None,
+                           address="", email="", phone="", website="", footer="", logo_mime="", logo_v="")
+        return g.club_info
+    c = club_get(get_db(), row["id"])
+    color = c["color"] if HEX.match(c["color"] or "") else ""
+    g.club_info = dict(c, has_logo=bool(c["logo_mime"]), logo_url=url_for("main.club_logo", cid=c["id"], v=c["logo_v"]) if c["logo_mime"] else "",
+                       color=color, dark=shade(color, 0.72) if color else "")
+    return g.club_info
+
+
 def info():
     """Klubprofil til skabeloner (cachet pr. request)."""
     if "club_info" in g:
         return g.club_info
+    if not _authed():
+        return _public_info()
     c = club_get(get_db(), current_club_id())
     has_logo = bool(c["logo_mime"])
     color = c["color"] if HEX.match(c["color"] or "") else ""

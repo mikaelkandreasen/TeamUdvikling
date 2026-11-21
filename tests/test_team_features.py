@@ -144,3 +144,19 @@ def test_username_check_and_overview(world):
     assert "tina" in page and "Alfa Klub" in page and "U11 Alfa" in page and "Senest logget ind" in page
     assert sql(app, "SELECT last_login FROM users WHERE username='tina'")[0]["last_login"]
     assert ca.get("/admin/users/overview").status_code == 403
+
+
+def test_login_branding_only_from_remembered_last_login(world):
+    from test_remember import login, tok
+    app, admin, ca, cb, ta, tb = world
+    sql(app, "UPDATE clubs SET color='#1f3a5f' WHERE id=1")
+    c, _ = login(app, "tina", ta.secret, remember=True)
+    assert tok(c, "u11_lc") == "1"                                  # husket enhed → klub-cookie
+    c2, _ = login(app, "tina", ta.secret, remember=False)
+    assert tok(c2, "u11_lc") is None                                # ingen husk → ingen klub-cookie
+    anon = Client(app)
+    page = anon.get("/login").get_data(as_text=True)
+    assert "Alfa Klub" not in page and "--navy2" not in page
+    known = app.test_client()
+    known.set_cookie("u11_lc", "1")
+    assert "--navy2" in known.get("/login").get_data(as_text=True)

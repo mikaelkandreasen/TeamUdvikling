@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Neutral loginside:** logo, farver og klubnavn vises ikke længere før login. Kun hvis enheden husker seneste login («husk mig»), vises den klubs udseende, man sidst loggede ind i (en lille cookie med klub-id, samme levetid som «husk mig»; fjernes ved et login uden «husk mig»).
+
 ## [0.10.0] - 2026-11-21
 
 ### Tilføjet

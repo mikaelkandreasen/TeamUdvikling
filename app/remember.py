@@ -29,6 +29,11 @@ def cookie_name():
     return "__Host-u11_rm" if current_app.config["SESSION_COOKIE_SECURE"] else "u11_rm"
 
 
+def club_cookie_name():
+    """Husker kun hvilken klubs udseende loginsiden må vise på denne enhed (sættes kun ved «husk mig»)."""
+    return "__Host-u11_lc" if current_app.config["SESSION_COOKIE_SECURE"] else "u11_lc"
+
+
 def _hash(token):
     return hmac.new(current_app.config["SECRET_KEY"].encode(), token.encode(), hashlib.sha256).hexdigest()
 
@@ -46,6 +51,10 @@ def issue(db, user):
     audit(db, user["username"], "husk_enhed_sat")
     db.commit()
     g.set_remember = (token, now + days() * 86400)
+    if user["club_id"]:
+        g.set_club = (user["club_id"], now + days() * 86400)
+    else:
+        g.clear_club = True
 
 
 def revoke_user(db, uid):
@@ -120,4 +129,9 @@ def apply_cookie(resp):
         resp.set_cookie(cookie_name(), token, max_age=max(1, exp - int(time.time())), httponly=True, secure=secure, samesite="Lax", path="/")
     elif g.get("clear_remember"):
         resp.delete_cookie(cookie_name(), path="/", secure=secure, httponly=True, samesite="Lax")
+    if g.get("set_club"):
+        cid, exp = g.set_club
+        resp.set_cookie(club_cookie_name(), str(cid), max_age=max(1, exp - int(time.time())), httponly=True, secure=secure, samesite="Lax", path="/")
+    elif g.get("clear_club"):
+        resp.delete_cookie(club_cookie_name(), path="/", secure=secure, httponly=True, samesite="Lax")
     return resp

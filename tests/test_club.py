@@ -48,7 +48,14 @@ def test_logo_upload_served_publicly_and_removable(app, team):
     from conftest import Client
     anon = Client(app)                                          # loginsiden kan vise logoet uden login
     assert anon.get("/branding/logo/1").status_code == 200
-    assert "/branding/logo/1?v=" in anon.get("/login").get_data(as_text=True)
+    page = anon.get("/login").get_data(as_text=True)               # loginsiden er neutral: hverken logo, farve eller klubnavn
+    assert "/branding/logo/" not in page and "--navy2" not in page and "Klub" not in page
+    known = app.test_client()                                    # enheden husker seneste login → klubbens udseende
+    known.set_cookie("u11_lc", "1")
+    assert "/branding/logo/1?v=" in known.get("/login").get_data(as_text=True)
+    junk = app.test_client()
+    junk.set_cookie("u11_lc", "999")
+    assert "/branding/logo/" not in junk.get("/login").get_data(as_text=True)
     assert "/branding/logo/1?v=" in team.get("/").get_data(as_text=True)
     team.post("/admin/club", {"action": "remove_logo"}, page="/admin/club")
     assert team.get("/branding/logo/1").status_code == 404
