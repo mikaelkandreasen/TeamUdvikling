@@ -221,8 +221,11 @@ def _render_users(db):
         if q and q not in (u["display_name"] + " " + u["username"] + " " + (u["email"] or "")).lower():
             continue
         rows.append(dict(u=u, teams=teams.get(u["id"], [])))
+    from . import invites
+    now = int(time.time())
+    invs = [dict(r, state=invites.status(r, now), sent=_fmt_ts(r["created_at"])) for r in invites._rows(db)]
     return render_template("admin_users.html", rows=rows, all_teams=_team_rows(db), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user),
-                           role_label=scope.ROLE_LABEL, can_manage=lambda u: scope.can_manage_user(g.user, u), q=q, club_filter=club, total=len(_user_rows(db)))
+                           role_label=scope.ROLE_LABEL, can_manage=lambda u: scope.can_manage_user(g.user, u), q=q, club_filter=club, total=len(_user_rows(db)), invs=invs)
 
 
 def _render_user_detail(db, u, temp=None):

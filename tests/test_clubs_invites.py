@@ -366,3 +366,13 @@ def test_user_list_is_overview_and_detail_holds_actions(world):
         assert ca.get(f"/admin/users/{uid(n)}").status_code == 404
     # trænere har ingen adgang
     assert ta.get(f"/admin/users/{uid('tina')}").status_code in (302, 403, 404)
+
+
+def test_users_page_lists_sent_invitations_scoped(world):
+    app, admin, ca, cb, ta, tb = world
+    invite(app, admin, "alfa@example.dk", club=club_id(app, "Alfa Klub"))
+    invite(app, admin, "beta@example.dk", club=club_id(app, "Beta Klub"))
+    page = admin.get("/admin/users").get_data(as_text=True)
+    assert "Sendte invitationer" in page and "alfa@example.dk" in page and "beta@example.dk" in page and "afventer" in page
+    own = ca.get("/admin/users").get_data(as_text=True)
+    assert "alfa@example.dk" in own and "beta@example.dk" not in own

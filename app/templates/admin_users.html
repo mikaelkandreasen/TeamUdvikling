@@ -1,4 +1,12 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Brugere{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Brugere<h2>Sendte invitationer</h2>
+{% for r in invs[:15] %}
+<a class="pcard" href="{{ url_for('invites_admin.index') }}" style="display:block;text-decoration:none;color:inherit">
+  <div><b>{{ r['email'] }}</b> <span class="badge">{{ r['state'] }}</span></div>
+  <div class="muted small">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else ('assistent' if r['as_readonly'] else 'træner')) }}{% if clubs|length > 1 %} · {{ r['club_name'] }}{% endif %} · sendt af {{ r['created_by'] }} · {{ r['sent'] }}</div>
+</a>
+{% else %}<div class="card muted">Ingen invitationer sendt endnu.</div>{% endfor %}
+<div class="actions"><a class="btn sec" href="{{ url_for('invites_admin.index') }}">Invitér ny / se alle{{ ' (' ~ invs|length ~ ')' if invs|length > 15 }}</a></div>
+{% endblock %}
 {% block content %}
 <h1>Brugere</h1>
 <details class="card"><summary><b>+ Opret bruger</b></summary>
