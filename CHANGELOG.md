@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-21
+
 ### Tilføjet
 - **Samlet niveau pr. træner:** i evalueringen giver hver træner en samlet niveauvurdering (1–5) af spilleren, ud over de 24 kriterier. Vurderingen gemmes pr. træner og runde og kan rettes eller ryddes.
 - **Beregnet niveau:** spillerne fordeles efter score – øverste 25 % = A, midterste 50 % = B, nederste 25 % = C. Score er gennemsnittet af trænernes niveauvurdering i seneste runde; uden vurdering bruges samlet score fra kriterierne. Ved lige score følger spilleren den bedre gruppe, og er alle ens, er alle B.
