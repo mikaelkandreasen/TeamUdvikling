@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-21
+
 ### Tilføjet
 - **Invitation på e-mail:** en administrator kan sende en invitation til en ny træner (eller klubadministrator). Personen åbner linket, vælger selv brugernavn og adgangskode og sætter 2FA op. Linket virker i **7 dage**, kan kun bruges én gang og kan tilbagekaldes eller sendes igen. Afsendelse kræver administratorens egen 2FA-kode (som ved nulstilling). Kun administratorer kan invitere.
 - **Flere klubber:** hver klub har eget navn, egen farve og eget logo, egne hold og egne trænere. Klubbens udseende vises, når man er logget ind på et af klubbens hold. Holdnavne er unikke pr. klub.
