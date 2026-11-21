@@ -1,15 +1,14 @@
-"""Klubprofil: navn, kontaktinfo, rapport-fodtekst, farve og logo (gælder alle hold).
+"""Klubprofil pr. klub: navn, kontaktinfo, rapport-fodtekst, farve og logo (alle hold i klubben bruger klubbens udseende).
 
-Logoet gemmes som fil i /data/branding og serves af `main.club_logo` (offentligt, så det kan vises på loginsiden).
+Logoet gemmes i databasen (clubs.logo) og serves af `main.club_logo` (offentligt, så det kan vises på loginsiden).
 Kun PNG, JPEG og WebP accepteres (indhold tjekkes, ikke filnavn). SVG afvises bevidst (kan indeholde scripts).
 """
-import os
 import re
 import time
 
 from flask import current_app, g, url_for
 
-from .db import club_get, club_set, get_db
+from .db import club_get, get_db
 
 MAX_LOGO_BYTES = 512 * 1024
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -53,12 +52,8 @@ def valid_color(value):
     return None
 
 
-def logo_path():
-    return os.path.join(current_app.config["U11_DATA_DIR"], "branding", "logo.bin")
-
-
-def save_logo(db, data):
-    """Gemmer logo. Returnerer None ved succes, ellers fejltekst."""
+def save_logo(db, club_id, data):
+    """Gemmer klubbens logo i databasen. Returnerer None ved succes, ellers fejltekst."""
     if not data:
         return "Vælg en billedfil."
     if len(data) > MAX_LOGO_BYTES:
@@ -66,30 +61,30 @@ def save_logo(db, data):
     mime = sniff_image(data)
     if not mime:
         return "Logoet skal være PNG, JPEG eller WebP."
-    os.makedirs(os.path.dirname(logo_path()), exist_ok=True)
-    with open(logo_path(), "wb") as f:
-        f.write(data)
-    club_set(db, "logo_mime", mime)
-    club_set(db, "logo_v", str(int(time.time())))
+    db.execute("UPDATE clubs SET logo=?, logo_mime=?, logo_v=? WHERE id=?", (data, mime, str(int(time.time())), club_id))
     return None
 
 
-def remove_logo(db):
-    try:
-        os.remove(logo_path())
-    except FileNotFoundError:
-        pass
-    club_set(db, "logo_mime", "")
-    club_set(db, "logo_v", "")
+def remove_logo(db, club_id):
+    db.execute("UPDATE clubs SET logo=NULL, logo_mime='', logo_v='' WHERE id=?", (club_id,))
+
+
+def current_club_id():
+    """Hvilken klubs udseende der vises: det aktive holds klub, ellers brugerens klub, ellers standardklubben."""
+    if g.get("team") is not None and g.team["club_id"]:
+        return g.team["club_id"]
+    if g.get("user") is not None and g.user["club_id"]:
+        return g.user["club_id"]
+    return None
 
 
 def info():
     """Klubprofil til skabeloner (cachet pr. request)."""
     if "club_info" in g:
         return g.club_info
-    c = club_get(get_db())
-    has_logo = bool(c["logo_mime"]) and os.path.exists(logo_path())
+    c = club_get(get_db(), current_club_id())
+    has_logo = bool(c["logo_mime"])
     color = c["color"] if HEX.match(c["color"] or "") else ""
-    g.club_info = dict(c, has_logo=has_logo, logo_url=url_for("main.club_logo", v=c["logo_v"]) if has_logo else "",
+    g.club_info = dict(c, has_logo=has_logo, logo_url=url_for("main.club_logo", cid=c["id"], v=c["logo_v"]) if has_logo else "",
                        color=color, dark=shade(color, 0.72) if color else "")
     return g.club_info

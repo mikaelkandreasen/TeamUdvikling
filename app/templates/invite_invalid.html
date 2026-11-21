@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}Ugyldig invitation{% endblock %}
+{% block content %}
+<div class="login card">
+  <h1>Invitationen virker ikke</h1>
+  <p>Linket er brugt, udløbet (invitationer virker i 7 dage), tilbagekaldt eller forkert. Bed den, der inviterede dig, om at sende en ny.</p>
+  <div class="actions"><a class="btn block" href="{{ url_for('auth.login') }}">Til login</a></div>
+</div>
+{% endblock %}

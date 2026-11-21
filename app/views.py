@@ -1,4 +1,6 @@
 """Forside, mobilforside, menu og kriterie-side."""
+import io
+
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, url_for
 
 from . import activity, club, model, teams
@@ -86,13 +88,13 @@ def no_team():
     return render_template("no_team.html")
 
 
-@bp.route("/branding/logo")
-def club_logo():
-    """Klubbens logo (offentligt, så det kan vises på loginsiden)."""
-    c = club.info()
-    if not c["has_logo"]:
+@bp.route("/branding/logo/<int:cid>")
+def club_logo(cid):
+    """En klubs logo (offentligt, så det kan vises på loginsiden)."""
+    row = get_db().execute("SELECT logo, logo_mime FROM clubs WHERE id=?", (cid,)).fetchone()
+    if not row or not row["logo"]:
         abort(404)
-    return send_file(club.logo_path(), mimetype=club.club_get(get_db())["logo_mime"], conditional=True)
+    return send_file(io.BytesIO(row["logo"]), mimetype=row["logo_mime"])
 
 
 @bp.route("/privatliv")

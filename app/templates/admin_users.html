@@ -7,12 +7,13 @@
   <div class="row"><div><label for="u">Brugernavn</label><input id="u" type="text" name="username" autocapitalize="none" required></div>
   <div><label for="n">Navn</label><input id="n" type="text" name="display_name"></div></div>
   <label for="em">E-mail (valgfri – bruges kun til nulstilling efter din godkendelse)</label><input id="em" type="email" name="email" autocomplete="off" autocapitalize="none" maxlength="254">
-  <label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner (kun tildelte hold)</option><option value="admin">Administrator (alle hold)</option></select>
-  <label>Hold (vælg ét eller flere – en træner kan høre til flere hold)</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
+  {% if sysadmin %}<label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner (kun tildelte hold)</option><option value="clubadmin">Klubadministrator (egen klub)</option><option value="admin">Systemadministrator (alle klubber)</option></select>{% endif %}
+  {% if clubs|length > 1 %}<label for="cb">Klub (ikke for systemadministratorer)</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
+  <label>Hold (kun for trænere – vælg ét eller flere i brugerens klub)</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
   <div class="actions"><button class="btn">Opret bruger</button></div></form>
 {% for u in users %}
-<div class="card"><h2>{{ u['display_name'] }} <span class="muted">({{ u['username'] }})</span></h2>
-  <p class="muted">{{ 'Administrator – alle hold' if u['role'] == 'admin' else 'Træner' }} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
+{% if can_manage(u) %}<div class="card"><h2>{{ u['display_name'] }} <span class="muted">({{ u['username'] }})</span></h2>
+  <p class="muted">{{ role_label[u['role']] }}{% if u['club_name'] and clubs|length > 1 %} · {{ u['club_name'] }}{% endif %} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
   <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='email') }}">{{ csrf() }}
     <label for="e{{ u['id'] }}">E-mail</label>
     <div class="row"><input id="e{{ u['id'] }}" type="email" name="email" value="{{ u['email'] or '' }}" placeholder="ingen" autocomplete="off" autocapitalize="none" maxlength="254">
@@ -27,9 +28,14 @@
     <p class="muted small">Skriv en frisk kode fra din app. Er den brugt ved login lige før, så vent på næste kode. Linket virker i 60 minutter.</p>
     <div class="actions"><button class="btn">Godkend og send e-mail</button></div></form>
   {% elif u['email'] %}<p class="muted small">E-mail kan ikke sendes endnu: mangler {{ mail_missing }} i stackens miljøvariable.</p>{% endif %}
-  {% if u['role'] != 'admin' %}
+  {% if sysadmin %}
+  <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='role') }}">{{ csrf() }}
+    <div class="row"><select name="role" aria-label="Rolle">{% for r in ('trainer','clubadmin','admin') %}<option value="{{ r }}" {{ 'selected' if u['role'] == r }}>{{ role_label[r] }}</option>{% endfor %}</select>
+    <select name="club" aria-label="Klub">{% for k in clubs %}<option value="{{ k['id'] }}" {{ 'selected' if u['club_id'] == k['id'] }}>{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
+    <button class="btn sec">Gem rolle</button></div></form>{% endif %}
+  {% if u['role'] == 'trainer' %}
   <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='teams') }}">{{ csrf() }}
-    {% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem.get(u['id'], []) }}> {{ t['name'] }}</label>{% endfor %}
+    {% for t in all_teams if t['club_id'] == u['club_id'] %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem.get(u['id'], []) }}> {{ t['name'] }}</label>{% endfor %}
     <div class="actions"><button class="btn sec">Gem hold</button></div></form>{% endif %}
   <div class="actions">
     {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.view_as', uid=u['id']) }}">{{ csrf() }}<button class="btn">Se som træner</button></form>{% endif %}
@@ -37,5 +43,6 @@
     <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action=act) }}">{{ csrf() }}<button class="btn sec">{{ label }}</button></form>{% endfor %}
     {% if u['id'] != user['id'] %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='delete') }}">{{ csrf() }}<button class="btn danger">Slet</button></form>{% endif %}
   </div></div>
+{% else %}<div class="card"><h2>{{ u['display_name'] }} <span class="muted">({{ u['username'] }})</span></h2><p class="muted">{{ role_label[u['role']] }} – roller styres af en systemadministrator.</p></div>{% endif %}
 {% endfor %}
 {% endblock %}

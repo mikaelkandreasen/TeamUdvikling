@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Klubber{% endblock %}
+{% block content %}
+<h1>Klubber</h1>
+<p class="muted">Hver klub har sit eget udseende (farve, logo, navn), sine egne hold og sin egen klubadministrator. Trænere ser kun deres egen klub.</p>
+<form method="post" class="card">{{ csrf() }}<h2>Opret klub</h2>
+  <label for="n">Klubnavn</label><input id="n" type="text" name="name" required maxlength="80" placeholder="fx Virring Fodbold">
+  <div class="actions"><button class="btn">Opret klub</button></div></form>
+{% for c in clubs %}
+<div class="card"><h2>{% if c['logo_mime'] %}<img src="{{ url_for('main.club_logo', cid=c['id'], v=c['logo_v']) }}" alt="" style="height:1.4em;vertical-align:middle"> {% endif %}{{ c['name'] or '(uden navn)' }}
+  {% if c['color'] %}<span class="badge" style="background:{{ c['color'] }};color:#fff">farve</span>{% endif %}</h2>
+  <p class="muted">{{ c['teams'] }} hold · {{ c['trainers'] }} trænere</p>
+  <p><b>Klubadministratorer:</b> {% for a in admins.get(c['id'], []) %}{{ a['display_name'] }}{{ ', ' if not loop.last }}{% else %}<span class="muted">ingen endnu</span>{% endfor %}</p>
+  <div class="actions"><a class="btn" href="{{ url_for('admin.club_profile', club=c['id']) }}">Udseende og profil</a>
+    <a class="btn sec" href="{{ url_for('invites_admin.index') }}">Invitér</a></div>
+  {% if not c['teams'] and not c['trainers'] and clubs|length > 1 %}
+  <details><summary>Slet klub</summary><form method="post" action="{{ url_for('admin.club_delete', cid=c['id']) }}">{{ csrf() }}
+    <p class="muted small">Skriv klubbens navn for at bekræfte. Kun tomme klubber kan slettes.</p>
+    <input type="text" name="confirm" placeholder="{{ c['name'] }}" autocomplete="off"><div class="actions"><button class="btn danger">Slet klub</button></div></form></details>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

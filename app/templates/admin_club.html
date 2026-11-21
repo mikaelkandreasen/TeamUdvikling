@@ -1,8 +1,9 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Klubprofil{% endblock %}
 {% block content %}
 <h1>Klubprofil</h1>
-<p class="muted">Vises i header, på loginsiden og på spillerrapporterne. Gælder alle hold.</p>
-<form method="post" enctype="multipart/form-data" class="card">{{ csrf() }}<input type="hidden" name="action" value="save">
+<p class="muted">Vises i header, på loginsiden og på spillerrapporterne. Gælder alle hold i klubben.</p>
+{% if clubs|length > 1 %}<form method="get" class="card"><label for="cl">Klub</label><select id="cl" name="club" data-autosubmit>{% for k in clubs %}<option value="{{ k['id'] }}" {{ 'selected' if k['id'] == cid }}>{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select><noscript><button class="btn sec">Vis</button></noscript></form>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card">{{ csrf() }}<input type="hidden" name="action" value="save"><input type="hidden" name="club" value="{{ cid }}">
   <label for="an">Systemets navn</label><input id="an" type="text" name="app_name" value="{{ c['app_name'] }}" maxlength="60" placeholder="Team Udvikling">
   <p class="muted small">Vises i header, fanenavn, fodlinje, 2FA-appen og e-mails. Tom = Team Udvikling.</p>
   <label for="n">Klubnavn</label><input id="n" type="text" name="name" value="{{ c['name'] }}" maxlength="80" placeholder="fx Virring Fodbold">
@@ -15,8 +16,8 @@
   <div class="row"><input id="c" type="text" name="color" value="{{ c['color'] }}" maxlength="7" placeholder="#1f3a5f" style="max-width:10rem">
     {% if c['color'] %}<span class="badge" style="background:{{ c['color'] }};color:#fff">Eksempel</span>{% endif %}</div>
   <label for="l">Logo (PNG, JPEG eller WebP, højst 512 kB)</label><input id="l" type="file" name="logo" accept="image/png,image/jpeg,image/webp">
-  {% if c['logo_mime'] %}<p><img src="{{ url_for('main.club_logo', v=c['logo_v']) }}" alt="Nuværende logo" style="max-height:80px;max-width:100%"></p>{% endif %}
+  {% if c['logo_mime'] %}<p><img src="{{ url_for('main.club_logo', cid=cid, v=c['logo_v']) }}" alt="Nuværende logo" style="max-height:80px;max-width:100%"></p>{% endif %}
   <div class="actions"><button class="btn">Gem</button></div>
 </form>
-{% if c['logo_mime'] %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="remove_logo"><button class="btn danger">Fjern logo</button></form>{% endif %}
+{% if c['logo_mime'] %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="remove_logo"><input type="hidden" name="club" value="{{ cid }}"><button class="btn danger">Fjern logo</button></form>{% endif %}
 {% endblock %}

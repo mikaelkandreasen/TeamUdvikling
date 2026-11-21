@@ -25,7 +25,7 @@ _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
 IP_MAX_FAILS = 20          # fejlede forsøg pr. IP pr. IP_WINDOW (beskytter mod password spraying og låse-DoS)
 IP_WINDOW = 600
-PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy", "reset.link"}
+PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy", "reset.link", "invites.accept"}
 PRE_2FA = {"auth.login_2fa", "auth.twofa_setup", "auth.logout", "auth.force_password"}
 
 
@@ -36,10 +36,16 @@ def current_user():
 ADMIN_FRESH = 8 * 3600     # administration kræver fuldt login (kode/2FA) inden for de seneste 8 timer
 
 
-def admin_required(view):
+def _role_required(*roles):
+    def deco(view):
+        return _fresh_login(view, roles)
+    return deco
+
+
+def _fresh_login(view, roles):
     @wraps(view)
     def wrapped(*a, **kw):
-        if not g.user or g.user["role"] != "admin":
+        if not g.user or g.user["role"] not in roles:
             abort(403)
         if time.time() - session.get("auth_at", 0) > ADMIN_FRESH:       # husket enhed: trin-op
             remember.revoke_current(get_db())
@@ -50,6 +56,16 @@ def admin_required(view):
             return redirect(url_for("auth.login", next=request.path if request.method == "GET" else None))
         return view(*a, **kw)
     return wrapped
+
+
+def admin_required(view):
+    """Kun systemadministratorer."""
+    return _fresh_login(view, ("admin",))
+
+
+def manager_required(view):
+    """Systemadministratorer og klubadministratorer (sidstnævnte afgrænses til egen klub i selve visningerne)."""
+    return _fresh_login(view, ("admin", "clubadmin"))
 
 
 def _key():
@@ -130,9 +146,9 @@ def load_user():
     g.user = row
     session["seen"] = int(time.time())
     vid = session.get("view_as")
-    if vid and row["role"] == "admin":                    # administrator ser siden som en træner (skrivebeskyttet)
+    if vid and row["role"] in ("admin", "clubadmin"):     # administrator ser siden som en træner (skrivebeskyttet)
         t = db.execute("SELECT * FROM users WHERE id=? AND role='trainer'", (vid,)).fetchone()
-        if t:
+        if t and (row["role"] == "admin" or t["club_id"] == row["club_id"]):
             g.admin_user, g.user, g.viewing = row, t, True
         else:
             session.pop("view_as", None)
@@ -301,7 +317,7 @@ def login_2fa():
                 db.commit()
                 session.clear()
                 return redirect(url_for("auth.login"))
-    return render_template("login_2fa.html", remember_days=remember.days(), is_admin=user["role"] == "admin")
+    return render_template("login_2fa.html", remember_days=remember.days(), is_admin=user["role"] in ("admin", "clubadmin"))
 
 
 def _qr_svg(uri):

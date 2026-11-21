@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS recovery_codes(
   id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   code_hash TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS teams(
-  id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE, season TEXT, created_at TEXT NOT NULL);
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL COLLATE NOCASE, season TEXT, created_at TEXT NOT NULL,
+  club_id INTEGER REFERENCES clubs(id) ON DELETE CASCADE, UNIQUE(club_id, name));
 CREATE TABLE IF NOT EXISTS user_teams(
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, PRIMARY KEY(user_id, team_id));
@@ -76,6 +77,15 @@ CREATE TABLE IF NOT EXISTS revoked_sessions(sid_hash TEXT PRIMARY KEY, expires_a
 CREATE TABLE IF NOT EXISTS presence(user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, last_seen INTEGER NOT NULL, team_id INTEGER);
 CREATE TABLE IF NOT EXISTS activity(user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, slot INTEGER NOT NULL, team_id INTEGER, PRIMARY KEY(user_id, slot));
 CREATE INDEX IF NOT EXISTS ix_activity_slot ON activity(slot);
+CREATE TABLE IF NOT EXISTS clubs(
+  id INTEGER PRIMARY KEY, name TEXT NOT NULL, app_name TEXT, address TEXT, email TEXT, phone TEXT, website TEXT, footer TEXT,
+  color TEXT, logo BLOB, logo_mime TEXT, logo_v TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS invitations(
+  id INTEGER PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, email TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'trainer',
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE, team_ids TEXT NOT NULL DEFAULT '',
+  created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, used_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL);
+CREATE INDEX IF NOT EXISTS ix_invitations_club ON invitations(club_id, created_at);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -88,7 +98,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 7   # v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 8   # v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -102,11 +112,50 @@ def _migrate(con):
             con.execute(f"ALTER TABLE players ADD COLUMN {c} TEXT")
 
 
+def _migrate_clubs(con):
+    """v8: klubprofilen flyttes fra settings ('club:*') og logofilen til tabellen clubs; eksisterende hold/brugere får klub 1."""
+    ucols = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
+    if "club_id" not in ucols:
+        con.execute("ALTER TABLE users ADD COLUMN club_id INTEGER REFERENCES clubs(id)")
+    if con.execute("SELECT COUNT(*) FROM clubs").fetchone()[0] == 0:
+        legacy = {r["key"][5:]: r["value"] or "" for r in con.execute("SELECT key, value FROM settings WHERE key LIKE 'club:%'")}
+        logo = None
+        try:
+            main_file = next(r["file"] for r in con.execute("PRAGMA database_list") if r["name"] == "main")
+            with open(os.path.join(os.path.dirname(main_file), "branding", "logo.bin"), "rb") as fh:
+                logo = fh.read()
+        except (StopIteration, OSError):
+            pass
+        con.execute("INSERT INTO clubs(id,name,app_name,address,email,phone,website,footer,color,logo,logo_mime,logo_v,created_at) "
+                    "VALUES(1,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))",
+                    (legacy.get("name") or "", legacy.get("app_name") or "", legacy.get("address", ""), legacy.get("email", ""),
+                     legacy.get("phone", ""), legacy.get("website", ""), legacy.get("footer", ""), legacy.get("color", ""),
+                     logo, legacy.get("logo_mime", "") if logo else "", legacy.get("logo_v", "") if logo else ""))
+        con.execute("DELETE FROM settings WHERE key LIKE 'club:%'")
+    first = con.execute("SELECT MIN(id) FROM clubs").fetchone()[0]
+    if "club_id" not in {r["name"] for r in con.execute("PRAGMA table_info(teams)")}:
+        # Holdnavne skal være unikke pr. klub (før: globalt). SQLite kan ikke fjerne UNIQUE → genopbyg tabellen (officiel 12-trins metode).
+        con.commit()
+        con.execute("PRAGMA foreign_keys=OFF")
+        con.executescript("""BEGIN;
+            CREATE TABLE teams_new(id INTEGER PRIMARY KEY, name TEXT NOT NULL COLLATE NOCASE, season TEXT, created_at TEXT NOT NULL,
+              club_id INTEGER REFERENCES clubs(id) ON DELETE CASCADE, UNIQUE(club_id, name));
+            INSERT INTO teams_new(id,name,season,created_at,club_id) SELECT id,name,season,created_at,%d FROM teams;
+            DROP TABLE teams;
+            ALTER TABLE teams_new RENAME TO teams;
+            COMMIT;""" % first)
+        con.execute("PRAGMA foreign_keys=ON")
+        assert not con.execute("PRAGMA foreign_key_check").fetchall()
+    con.execute("UPDATE teams SET club_id=? WHERE club_id IS NULL", (first,))
+    con.execute("UPDATE users SET club_id=? WHERE club_id IS NULL AND role<>'admin'", (first,))
+
+
 def init_db(path):
     con = connect(path)
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(SCHEMA)
     _migrate(con)
+    _migrate_clubs(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
@@ -125,8 +174,18 @@ def seed_team(db, team_id):
             qidx += 1
 
 
-def create_team(db, name, season=""):
-    cur = db.execute("INSERT INTO teams(name,season,created_at) VALUES(?,?,datetime('now'))", (name, season or None))
+def default_club_id(db):
+    return db.execute("SELECT MIN(id) FROM clubs").fetchone()[0]
+
+
+def create_club(db, name):
+    cur = db.execute("INSERT INTO clubs(name,created_at) VALUES(?,datetime('now'))", (name,))
+    return cur.lastrowid
+
+
+def create_team(db, name, season="", club_id=None):
+    cur = db.execute("INSERT INTO teams(name,season,created_at,club_id) VALUES(?,?,datetime('now'),?)",
+                     (name, season or None, club_id or default_club_id(db)))
     seed_team(db, cur.lastrowid)
     return cur.lastrowid
 
@@ -211,16 +270,20 @@ DEFAULT_APP_NAME = "Team Udvikling"
 CLUB_FIELDS = ("name", "app_name", "address", "email", "phone", "website", "footer", "color")
 
 
-def club_get(db):
+def club_get(db, club_id=None):
+    """Klubprofil. Uden id: standardklubben (den ældste). Ukendt id → standardklubben (aldrig en fejl i skabeloner)."""
+    row = db.execute("SELECT * FROM clubs WHERE id=?", (club_id,)).fetchone() if club_id else None
+    row = row or db.execute("SELECT * FROM clubs ORDER BY id LIMIT 1").fetchone()
     out = {f: "" for f in CLUB_FIELDS + ("logo_mime", "logo_v")}
-    for row in db.execute("SELECT key, value FROM settings WHERE key LIKE 'club:%'"):
-        k = row["key"][5:]
-        if k in out:
-            out[k] = row["value"] or ""
+    out["id"] = None
+    if row:
+        out.update({k: (row[k] or "") for k in CLUB_FIELDS + ("logo_mime", "logo_v")})
+        out["id"] = row["id"]
     out["app_name"] = out["app_name"].strip() or DEFAULT_APP_NAME
     return out
 
 
-def club_set(db, key, value):
-    db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-               (f"club:{key}", value))
+def club_set(db, club_id, key, value):
+    if key not in CLUB_FIELDS + ("logo_mime", "logo_v"):
+        raise ValueError(key)
+    db.execute(f"UPDATE clubs SET {key}=? WHERE id=?", (value, club_id))

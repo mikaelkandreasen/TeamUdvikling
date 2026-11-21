@@ -146,9 +146,9 @@ def create_app(config=None):
     from . import filters
     filters.register(app)
 
-    from . import admin, devdata, evaluation, lineup, motivation, players, reports, reset
+    from . import admin, devdata, evaluation, invites, lineup, motivation, players, reports, reset
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")

@@ -40,6 +40,12 @@ Vurderet og ikke indført: `ALLOWED_HOSTS`/origin-hemmelighed (tunnelen gør ori
 ## Kontroller der bestod (testet)
 Alle ruter kræver login og 2FA (`pw_ok`-session kan ikke springe 2FA over); alle POST kræver CSRF; trænere kan ikke nå admin eller andre holds spillere (IDOR-sweep over alle ruter); lagret XSS escapes på alle sider; SQL-injektion i login; brugeropremsning (ens svar for ukendt/kendt bruger); replay af TOTP-kode; upload af SVG/forklædte filer afvises; 413 ved for store forespørgsler; ingen stacktraces.
 
+## Roller, klubber og invitationer (v0.9.0)
+- Roller: systemadministrator (`admin`), klubadministrator (`clubadmin`, kun egen klub), træner. Adgang til hold: træner via tildeling **og** samme klub; klubadministrator alle hold i egen klub; systemadministrator alle.
+- Klubadministratorer kan ikke se eller ændre brugere/hold/profil i andre klubber (404), ikke oprette administratorer og ikke åbne systemsider (backup, eksport, audit, brug, klubber, backlog).
+- Invitationer: 256-bit token (kun HMAC-hash gemmes), 7 dages levetid, engangsbrug (atomisk), kan tilbagekaldes, kræver afsenderens friske 2FA-kode, rate-begrænset pr. IP. Nye brugere skal sætte 2FA op, før de får adgang. Link-GET forbruger ikke tokenet.
+- Cloudflare: tilføj `/invitation` til rate-limit-reglen sammen med `/login` og `/nulstil`.
+
 ## Spillerbilleder (v0.7.0)
 - Upload kræver samtykke-afkrydsning; maks. 12 MB og 40 mio. pixel; kun JPEG/PNG/WebP (indholdet åbnes og genkodes – filendelse/type fra klienten stoles ikke på). SVG/HTML/GIF/afkortede filer afvises. EXIF, GPS og farveprofil fjernes ved genkodning.
 - Leveres kun via hold-afgrænset endpoint (404 for andre hold), kræver login, `Cache-Control: no-store`. Revisionsloggen får kun «foto gemt/slettet», aldrig billeddata.

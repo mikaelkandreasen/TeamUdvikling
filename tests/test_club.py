@@ -41,17 +41,17 @@ def test_profile_text_color_and_footer_show_up(app, team):
 
 
 def test_logo_upload_served_publicly_and_removable(app, team):
-    assert team.get("/branding/logo").status_code == 404
+    assert team.get("/branding/logo/1").status_code == 404
     save(team, name="Klub", logo=("logo.png", png_bytes()))
-    r = team.get("/branding/logo")
+    r = team.get("/branding/logo/1")
     assert r.status_code == 200 and r.mimetype == "image/png" and r.headers["X-Content-Type-Options"] == "nosniff"
     from conftest import Client
     anon = Client(app)                                          # loginsiden kan vise logoet uden login
-    assert anon.get("/branding/logo").status_code == 200
-    assert "/branding/logo?v=" in anon.get("/login").get_data(as_text=True)
-    assert "/branding/logo?v=" in team.get("/").get_data(as_text=True)
+    assert anon.get("/branding/logo/1").status_code == 200
+    assert "/branding/logo/1?v=" in anon.get("/login").get_data(as_text=True)
+    assert "/branding/logo/1?v=" in team.get("/").get_data(as_text=True)
     team.post("/admin/club", {"action": "remove_logo"}, page="/admin/club")
-    assert team.get("/branding/logo").status_code == 404
+    assert team.get("/branding/logo/1").status_code == 404
 
 
 @pytest.mark.parametrize("name,data,msg", [
@@ -62,7 +62,7 @@ def test_logo_upload_served_publicly_and_removable(app, team):
 def test_bad_logo_rejected(app, team, name, data, msg):
     r = save(team, logo=(name, data))
     assert msg in r.get_data(as_text=True)
-    assert team.get("/branding/logo").status_code == 404
+    assert team.get("/branding/logo/1").status_code == 404
 
 
 @pytest.mark.parametrize("color", ["red", "#fff", "#ffff00", "#12345g", "javascript:1"])

@@ -12,8 +12,10 @@ from .db import get_setting
 def accessible_teams(db, user):
     if user["role"] == "admin":
         return db.execute("SELECT * FROM teams ORDER BY name COLLATE NOCASE").fetchall()
-    return db.execute("SELECT t.* FROM teams t JOIN user_teams ut ON ut.team_id=t.id WHERE ut.user_id=? "
-                      "ORDER BY t.name COLLATE NOCASE", (user["id"],)).fetchall()
+    if user["role"] == "clubadmin":
+        return db.execute("SELECT * FROM teams WHERE club_id=? ORDER BY name COLLATE NOCASE", (user["club_id"],)).fetchall()
+    return db.execute("SELECT t.* FROM teams t JOIN user_teams ut ON ut.team_id=t.id WHERE ut.user_id=? AND t.club_id IS ? "
+                      "ORDER BY t.name COLLATE NOCASE", (user["id"], user["club_id"])).fetchall()
 
 
 def team_rounds(db, team_id):

@@ -6,31 +6,96 @@ import time
 from flask import Blueprint, Response, abort, current_app, flash, g, redirect, render_template, request, send_file, session, url_for
 from werkzeug.security import generate_password_hash
 
-from . import activity, club, importer, mailer, model, remember, reset, reset_tokens
+from . import activity, club, importer, mailer, model, remember, reset, reset_tokens, scope
 from . import lockout
-from .auth import _too_many, admin_required, revoke_session, throttled, verify_admin_code
-from .db import audit, backup, club_get, club_set, create_team, get_db, set_setting
+from .auth import _too_many, admin_required, manager_required, revoke_session, throttled, verify_admin_code
+from .db import audit, backup, club_get, club_set, create_club, create_team, default_club_id, get_db, set_setting
 from .helpers import int_in, round_info, team_id
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
 @bp.before_request
-@admin_required
+@manager_required
 def _guard():
     return None
 
 
 @bp.route("/")
 def index():
-    return render_template("admin_index.html")
+    return render_template("admin_index.html", sysadmin=scope.is_sysadmin(g.user))
+
+
+def _visible_clubs(db):
+    """Klubber den indloggede må administrere: alle (systemadministrator) eller egen."""
+    if scope.is_sysadmin(g.user):
+        return db.execute("SELECT * FROM clubs ORDER BY name COLLATE NOCASE, id").fetchall()
+    return db.execute("SELECT * FROM clubs WHERE id=?", (g.user["club_id"],)).fetchall()
+
+
+def _pick_club(db, raw):
+    """Klub fra en formular, valideret mod hvad brugeren må administrere. Klubadministratorer får altid egen klub."""
+    if not scope.is_sysadmin(g.user):
+        return g.user["club_id"]
+    if raw in (None, ""):                                 # ingen valgt (kun én klub i formularen) → aktive holds klub, ellers standardklubben
+        return (g.team["club_id"] if g.get("team") else None) or default_club_id(db)
+    cid = int_in(raw, 1, 10 ** 9)
+    return cid if cid and db.execute("SELECT 1 FROM clubs WHERE id=?", (cid,)).fetchone() else None
+
+
+# ----------------------------------------------------------------------------- klubber (kun systemadministratorer)
+@bp.route("/clubs", methods=["GET", "POST"])
+@admin_required
+def clubs():
+    db = get_db()
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()[:80]
+        if not name:
+            flash("Klubnavn mangler.", "error")
+        elif db.execute("SELECT 1 FROM clubs WHERE name=? COLLATE NOCASE", (name,)).fetchone():
+            flash("Der findes allerede en klub med det navn.", "error")
+        else:
+            cid = create_club(db, name)
+            audit(db, g.user["username"], "klub_oprettet", name)
+            db.commit()
+            flash(f"Klubben '{name}' er oprettet. Indstil udseende og invitér en klubadministrator.", "ok")
+            return redirect(url_for("admin.club_profile", club=cid))
+    rows = db.execute("SELECT c.*, (SELECT COUNT(*) FROM teams t WHERE t.club_id=c.id) AS teams, "
+                      "(SELECT COUNT(*) FROM users u WHERE u.club_id=c.id AND u.role='trainer') AS trainers FROM clubs c ORDER BY c.name COLLATE NOCASE, c.id").fetchall()
+    admins = {}
+    for u in db.execute("SELECT * FROM users WHERE role='clubadmin' ORDER BY display_name COLLATE NOCASE"):
+        admins.setdefault(u["club_id"], []).append(u)
+    return render_template("admin_clubs.html", clubs=rows, admins=admins)
+
+
+@bp.route("/clubs/<int:cid>/delete", methods=["POST"])
+@admin_required
+def club_delete(cid):
+    db = get_db()
+    c = db.execute("SELECT * FROM clubs WHERE id=?", (cid,)).fetchone()
+    if not c:
+        abort(404)
+    if db.execute("SELECT 1 FROM teams WHERE club_id=?", (cid,)).fetchone() or db.execute("SELECT 1 FROM users WHERE club_id=?", (cid,)).fetchone():
+        flash("En klub kan kun slettes, når den ikke har hold eller brugere. Slet eller flyt dem først.", "error")
+    elif db.execute("SELECT COUNT(*) FROM clubs").fetchone()[0] <= 1:
+        flash("Der skal altid være mindst én klub.", "error")
+    elif request.form.get("confirm", "").strip() != c["name"]:
+        flash("Skriv klubbens navn præcist for at bekræfte sletning.", "error")
+    else:
+        db.execute("DELETE FROM clubs WHERE id=?", (cid,))
+        audit(db, g.user["username"], "klub_slettet", c["name"])
+        db.commit()
+        flash(f"Klubben '{c['name']}' er slettet.", "ok")
+    return redirect(url_for("admin.clubs"))
 
 
 # ----------------------------------------------------------------------------- hold
 def _team_rows(db):
-    return db.execute(
-        "SELECT t.*, (SELECT COUNT(*) FROM players p WHERE p.team_id=t.id) AS players, "
-        "(SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id=t.id) AS trainers FROM teams t ORDER BY t.name COLLATE NOCASE").fetchall()
+    sql = ("SELECT t.*, c.name AS club_name, (SELECT COUNT(*) FROM players p WHERE p.team_id=t.id) AS players, "
+           "(SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id=t.id) AS trainers FROM teams t LEFT JOIN clubs c ON c.id=t.club_id ")
+    if scope.is_sysadmin(g.user):
+        return db.execute(sql + "ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE").fetchall()
+    return db.execute(sql + "WHERE t.club_id=? ORDER BY t.name COLLATE NOCASE", (g.user["club_id"],)).fetchall()
 
 
 @bp.route("/teams", methods=["GET", "POST"])
@@ -38,28 +103,31 @@ def teams():
     db = get_db()
     if request.method == "POST":
         name = request.form.get("name", "").strip()[:80]
-        if not name:
+        cid = _pick_club(db, request.form.get("club"))
+        if not cid:
+            flash("Vælg en klub.", "error")
+        elif not name:
             flash("Holdnavn mangler.", "error")
-        elif db.execute("SELECT 1 FROM teams WHERE name=?", (name,)).fetchone():
-            flash("Der findes allerede et hold med det navn.", "error")
+        elif db.execute("SELECT 1 FROM teams WHERE name=? AND club_id=?", (name, cid)).fetchone():
+            flash("Der findes allerede et hold med det navn i klubben.", "error")
         else:
-            create_team(db, name, request.form.get("season", "").strip()[:20])
+            create_team(db, name, request.form.get("season", "").strip()[:20], cid)
             audit(db, g.user["username"], "hold_oprettet", name)
             db.commit()
             flash(f"Holdet '{name}' er oprettet.", "ok")
             return redirect(url_for("admin.teams"))
-    return render_template("admin_teams.html", teams=_team_rows(db))
+    return render_template("admin_teams.html", teams=_team_rows(db), clubs=_visible_clubs(db))
 
 
 @bp.route("/teams/<int:tid>/<action>", methods=["POST"])
 def team_action(tid, action):
     db = get_db()
     t = db.execute("SELECT * FROM teams WHERE id=?", (tid,)).fetchone()
-    if not t:
+    if not t or not scope.can_manage_club(g.user, t["club_id"]):
         abort(404)
     if action == "rename":
         name = request.form.get("name", "").strip()[:80]
-        clash = db.execute("SELECT 1 FROM teams WHERE name=? AND id<>?", (name, tid)).fetchone()
+        clash = db.execute("SELECT 1 FROM teams WHERE name=? AND club_id=? AND id<>?", (name, t["club_id"], tid)).fetchone()
         if not name or clash:
             flash("Ugyldigt eller optaget holdnavn.", "error")
         else:
@@ -81,17 +149,25 @@ def team_action(tid, action):
 
 
 # --------------------------------------------------------------------------- brugere
+def _user_rows(db):
+    if scope.is_sysadmin(g.user):
+        return db.execute("SELECT u.*, c.name AS club_name FROM users u LEFT JOIN clubs c ON c.id=u.club_id ORDER BY u.username").fetchall()
+    return db.execute("SELECT u.*, c.name AS club_name FROM users u LEFT JOIN clubs c ON c.id=u.club_id "
+                      "WHERE u.club_id=? AND u.role<>'admin' ORDER BY u.username", (g.user["club_id"],)).fetchall()
+
+
 def _render_users(db, temp=None, temp_user=None):
-    users = db.execute("SELECT * FROM users ORDER BY username").fetchall()
     mem = {}
     for r in db.execute("SELECT user_id, team_id FROM user_teams"):
         mem.setdefault(r["user_id"], set()).add(r["team_id"])
-    return render_template("admin_users.html", users=users, mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user,
-                           mail_missing=mailer.missing())
+    return render_template("admin_users.html", users=_user_rows(db), mem=mem, all_teams=_team_rows(db), temp=temp, temp_user=temp_user,
+                           mail_missing=mailer.missing(), clubs=_visible_clubs(db), sysadmin=scope.is_sysadmin(g.user),
+                           role_label=scope.ROLE_LABEL, can_manage=lambda u: scope.can_manage_user(g.user, u))
 
 
-def _set_user_teams(db, uid, team_ids):
-    valid = {r["id"] for r in db.execute("SELECT id FROM teams")}
+def _set_user_teams(db, uid, team_ids, club_id):
+    """Kun hold i brugerens egen klub kan tildeles."""
+    valid = {r["id"] for r in db.execute("SELECT id FROM teams WHERE club_id IS ?", (club_id,))} if club_id else set()
     db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
     for t in {int(x) for x in team_ids if str(x).isdigit()} & valid:
         db.execute("INSERT INTO user_teams(user_id,team_id) VALUES(?,?)", (uid, t))
@@ -103,19 +179,22 @@ def users():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         name = request.form.get("display_name", "").strip() or username
-        role = "admin" if request.form.get("role") == "admin" else "trainer"
+        role = request.form.get("role") if scope.is_sysadmin(g.user) and request.form.get("role") in scope.ROLES else "trainer"
+        club_id = None if role == "admin" else _pick_club(db, request.form.get("club"))
         email, email_err = mailer.normalize_email(request.form.get("email"))
         if not username:
             flash("Brugernavn mangler.", "error")
+        elif role != "admin" and not club_id:
+            flash("Vælg en klub.", "error")
         elif email_err:
             flash(email_err, "error")
         elif db.execute("SELECT 1 FROM users WHERE username=?", (username,)).fetchone():
             flash("Brugernavnet findes allerede.", "error")
         else:
             temp = secrets.token_urlsafe(12)
-            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email) VALUES(?,?,?,?,1,datetime('now'),?)",
-                             (username, name, generate_password_hash(temp), role, email))
-            _set_user_teams(db, cur.lastrowid, request.form.getlist("teams"))
+            cur = db.execute("INSERT INTO users(username,display_name,pw_hash,role,must_change_pw,created_at,email,club_id) VALUES(?,?,?,?,1,datetime('now'),?,?)",
+                             (username, name, generate_password_hash(temp), role, email, club_id))
+            _set_user_teams(db, cur.lastrowid, request.form.getlist("teams") if role == "trainer" else [], club_id)
             audit(db, g.user["username"], "bruger_oprettet", f"{username} ({role})")
             db.commit()
             flash(f"Bruger '{username}' oprettet. Midlertidig adgangskode vises kun nu.", "ok")
@@ -127,12 +206,33 @@ def users():
 def user_action(uid, action):
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-    if not u:
+    if not u or not scope.can_manage_user(g.user, u):
         abort(404)
     temp = None
     if action == "teams":
-        _set_user_teams(db, uid, request.form.getlist("teams"))
+        if u["role"] == "admin":
+            abort(400)
+        _set_user_teams(db, uid, request.form.getlist("teams") if u["role"] == "trainer" else [], u["club_id"])
         flash("Holdtilknytning gemt.", "ok")
+    elif action == "role":
+        if not scope.is_sysadmin(g.user):
+            abort(404)
+        role = request.form.get("role")
+        cid = _pick_club(db, request.form.get("club")) if role != "admin" else None
+        if role not in scope.ROLES or (role != "admin" and not cid):
+            flash("Vælg rolle (og klub).", "error")
+            return redirect(url_for("admin.users"))
+        if u["role"] == "admin" and role != "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
+            flash("Der skal altid være mindst én systemadministrator.", "error")
+            return redirect(url_for("admin.users"))
+        if uid == g.user["id"] and role != "admin":
+            flash("Du kan ikke fjerne din egen systemadministrator-rolle.", "error")
+            return redirect(url_for("admin.users"))
+        db.execute("UPDATE users SET role=?, club_id=? WHERE id=?", (role, cid, uid))
+        if role != "trainer" or cid != u["club_id"]:
+            db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
+        remember.revoke_user(db, uid)
+        flash(f"Rollen er ændret til {scope.ROLE_LABEL[role].lower()}.", "ok")
     elif action == "email":
         email, err = mailer.normalize_email(request.form.get("email"))
         if err:
@@ -180,7 +280,7 @@ def user_action(uid, action):
             flash("Du kan ikke slette dig selv.", "error")
             return redirect(url_for("admin.users"))
         if u["role"] == "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
-            flash("Der skal altid være mindst én administrator.", "error")
+            flash("Der skal altid være mindst én systemadministrator.", "error")
             return redirect(url_for("admin.users"))
         db.execute("DELETE FROM users WHERE id=?", (uid,))
         flash("Bruger slettet (træners egne evalueringer slettes også).", "ok")
@@ -208,6 +308,7 @@ def settings():
 
 
 @bp.route("/backup", methods=["POST"])
+@admin_required
 def make_backup():
     dest = backup(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"])
     audit(get_db(), g.user["username"], "backup_hentet")
@@ -216,6 +317,7 @@ def make_backup():
 
 
 @bp.route("/usage")
+@admin_required
 def usage():
     db = get_db()
     days = int_in(request.args.get("days"), 1, 180) or 30
@@ -230,6 +332,7 @@ def usage():
 
 
 @bp.route("/audit")
+@admin_required
 def audit_log():
     rows = get_db().execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT 300").fetchall()
     return render_template("admin_audit.html", rows=rows)
@@ -244,6 +347,7 @@ def _append(ws, row):
 
 
 @bp.route("/export.xlsx")
+@admin_required
 def export_xlsx():
     """Excel-eksport af det aktive holds data."""
     from openpyxl import Workbook
@@ -296,35 +400,38 @@ def export_xlsx():
 @bp.route("/club", methods=["GET", "POST"])
 def club_profile():
     db = get_db()
+    cid = _pick_club(db, request.values.get("club")) or (g.team["club_id"] if g.get("team") else None) or club_get(db)["id"]
+    if not scope.can_manage_club(g.user, cid):
+        abort(404)
     if request.method == "POST":
         action = request.form.get("action", "save")
         if action == "remove_logo":
-            club.remove_logo(db)
+            club.remove_logo(db, cid)
             audit(db, g.user["username"], "klublogo_fjernet")
             db.commit()
             flash("Logoet er fjernet.", "ok")
-            return redirect(url_for("admin.club_profile"))
+            return redirect(url_for("admin.club_profile", club=cid))
         problem = club.valid_color(request.form.get("color", "").strip())
         if problem:
             flash(problem, "error")
         else:
             limits = dict(name=80, app_name=60, address=160, email=120, phone=40, website=120, footer=300)
             for k, n in limits.items():
-                club_set(db, k, (request.form.get(k) or "").strip()[:n])
-            club_set(db, "color", request.form.get("color", "").strip())
+                club_set(db, cid, k, (request.form.get(k) or "").strip()[:n])
+            club_set(db, cid, "color", request.form.get("color", "").strip())
             upload = request.files.get("logo")
             if upload and upload.filename:
-                err = club.save_logo(db, upload.read(MAX_UPLOAD + 1))
+                err = club.save_logo(db, cid, upload.read(MAX_UPLOAD + 1))
                 if err:
                     flash(err, "error")
                     db.commit()
-                    return redirect(url_for("admin.club_profile"))
+                    return redirect(url_for("admin.club_profile", club=cid))
                 audit(db, g.user["username"], "klublogo_uploadet")
             audit(db, g.user["username"], "klubprofil_gemt")
             db.commit()
             flash("Klubprofilen er gemt.", "ok")
-        return redirect(url_for("admin.club_profile"))
-    return render_template("admin_club.html", c=club_get(db))
+        return redirect(url_for("admin.club_profile", club=cid))
+    return render_template("admin_club.html", c=club_get(db, cid), cid=cid, clubs=_visible_clubs(db))
 
 
 MAX_UPLOAD = club.MAX_LOGO_BYTES
@@ -400,7 +507,7 @@ def view_as(uid):
     from flask import session
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE id=? AND role='trainer'", (uid,)).fetchone()
-    if not u:
+    if not u or not scope.can_manage_user(g.user, u):
         abort(404)
     session["view_as"] = uid
     audit(db, g.user["username"], "se_som_traener", u["username"])
@@ -482,6 +589,7 @@ def _seed_backlog(db):
 
 
 @bp.route("/backlog", methods=["GET", "POST"])
+@admin_required
 def backlog():
     db = get_db()
     _seed_backlog(db)

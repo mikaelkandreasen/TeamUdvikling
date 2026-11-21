@@ -26,9 +26,10 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 `app/__init__.py` (create_app, CSRF, sikkerhedsheadere) · `auth.py` (login/2FA/lockout/gate) · `teams.py` (hold-adgang) ·
 `db.py` (skema, backup, indstillinger) · `model.py` (roller, kriterier, ALLE beregninger – rene funktioner) ·
 `evaluation.py`, `motivation.py`, `devdata.py`, `reports.py`, `players.py`, `admin.py`, `views.py` (blueprints) ·
-`activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
+`scope.py` (roller/klub-afgrænsning) · `invites.py` (invitationer) · `activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
 
 ## Regler der IKKE må brydes
+0. **Klub-afgrænsning.** Roller: `admin` (system), `clubadmin`, `trainer` (`scope.py`). Alt der kan nås via admin-sider skal afgrænses til klubben via `scope.can_manage_*`/`_pick_club` – og svare 404 for andre klubber. Holdnavne er unikke pr. klub. Tilføj isolationstest i `tests/test_clubs_invites.py`.
 1. **Hold-afgrænsning.** Al adgang til spillerdata skal gå via `helpers.get_player()` / `helpers.active_players()` /
    `model.load_rounds(db, team_id())` eller en SQL med `players.team_id = ?`. Nye forespørgsler, der rører spillere,
    evalueringer, svar eller udviklingsdata, skal afgrænses til `g.team`. Tilføj altid en isolationstest i `tests/test_teams.py`.
