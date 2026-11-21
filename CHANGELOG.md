@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-21
+
 ### Tilføjet
 - **Holdindstillinger** (chef-træner, klubadministrator, systemadministrator): kamptype (3/5/8/11 på banen) + antal udskiftere, slogan, mascot-navn og valg af hvilke funktioner holdet bruger (udviklingsdata, motivation, holdsætning, niveau, noter, mascot). Slåede-fra funktioner skjules og svarer 404; data bevares.
 - **Chef-træner** pr. hold (flere mulige): må ændre holdindstillinger, oprette/fjerne evalueringsrunder (nu op til 20) og invitere trænere til eget hold. Vælges af klubadministrator under Hold – eller via invitation.
