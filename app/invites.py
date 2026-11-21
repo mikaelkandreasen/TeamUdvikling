@@ -1,6 +1,7 @@
 """Invitationer: en administrator sender en e-mail med et personligt link, hvor den inviterede selv opretter sin bruger.
 
-* Kun administratorer (system- og klubadministratorer for egen klub) kan sende, og de bekræfter med egen 2FA-kode (som ved nulstilling).
+* Administratorer (system- og klubadministratorer for egen klub) og chef-trænere (for egne hold) kan sende, og de bekræfter med egen 2FA-kode (som ved nulstilling).
+* Der kan inviteres som træner eller som chef-træner (får rettigheder til holdets indstillinger og må selv invitere til holdet).
 * Linket virker i 7 dage og kan kun bruges én gang. Kun HMAC-hash af tokenet gemmes.
 * Den inviterede vælger brugernavn, navn og adgangskode og sætter derefter 2FA op, før der gives adgang.
 * Klubadministratorer kan kun invitere trænere til egne hold; systemadministratorer kan også invitere klubadministratorer.
@@ -15,7 +16,7 @@ from flask import Blueprint, abort, current_app, flash, g, redirect, render_temp
 from werkzeug.security import generate_password_hash
 
 from . import lockout, mailer, scope
-from .auth import _bind, _too_many, check_password_policy, manager_required, record_fail, revoke_session, throttled, verify_admin_code
+from .auth import _bind, _fresh_login, _too_many, check_password_policy, record_fail, revoke_session, throttled, verify_admin_code
 from .db import audit, club_get, default_club_id, get_db
 from .helpers import int_in
 
@@ -30,13 +31,13 @@ def _h(token):
     return hmac.new(current_app.config["SECRET_KEY"].encode(), (token or "").encode(), hashlib.sha256).hexdigest()
 
 
-def issue(db, email, role, club_id, team_ids, created_by, now=None):
+def issue(db, email, role, club_id, team_ids, created_by, now=None, as_head=False):
     """Opretter en invitation (tidligere ubrugte til samme adresse i klubben tilbagekaldes). Returnerer rå token."""
     now = int(now if now is not None else time.time())
     db.execute("UPDATE invitations SET revoked=1 WHERE email=? AND club_id=? AND used_at IS NULL AND revoked=0", (email, club_id))
     token = secrets.token_urlsafe(32)
-    db.execute("INSERT INTO invitations(token_hash,email,role,club_id,team_ids,created_by,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?)",
-               (_h(token), email, role, club_id, ",".join(str(t) for t in team_ids), created_by, now, now + TTL))
+    db.execute("INSERT INTO invitations(token_hash,email,role,club_id,team_ids,created_by,created_at,expires_at,as_head) VALUES(?,?,?,?,?,?,?,?,?)",
+               (_h(token), email, role, club_id, ",".join(str(t) for t in team_ids), created_by, now, now + TTL, 1 if as_head and role == "trainer" else 0))
     return token
 
 
@@ -60,7 +61,7 @@ def status(row, now=None):
 def _mail(db, row, token, inviter):
     info = club_get(db, row["club_id"])
     club = info["name"] or info["app_name"]
-    what = "klubadministrator" if row["role"] == "clubadmin" else "træner"
+    what = "klubadministrator" if row["role"] == "clubadmin" else ("chef-træner" if row["as_head"] else "træner")
     body = (f"Hej,\n\n{inviter} har inviteret dig som {what} i {club} ({info['app_name']}).\n\n"
             "Åbn linket, vælg brugernavn og adgangskode, og sæt to-faktor-login (2FA) op med en autentificeringsapp:\n\n"
             f"{mailer.public_url()}/invitation/{token}\n\n"
@@ -69,7 +70,7 @@ def _mail(db, row, token, inviter):
     mailer.send(row["email"], f"Invitation til {club}", body)
 
 
-def send(db, email, role, club_id, team_ids, inviter):
+def send(db, email, role, club_id, team_ids, inviter, as_head=False):
     """Opretter og sender. Returnerer (ok, besked). Kalderen har kontrolleret rettigheder og 2FA-kode."""
     todo = mailer.missing()
     if todo:
@@ -78,7 +79,7 @@ def send(db, email, role, club_id, team_ids, inviter):
                          (club_id, int(time.time()))).fetchone()[0]
     if pending >= MAX_PENDING_PER_CLUB:
         return False, "Der er for mange afventende invitationer. Tilbagekald nogle først."
-    token = issue(db, email, role, club_id, team_ids, inviter)
+    token = issue(db, email, role, club_id, team_ids, inviter, as_head=as_head)
     row = db.execute("SELECT * FROM invitations WHERE token_hash=?", (_h(token),)).fetchone()
     try:
         _mail(db, row, token, inviter)
@@ -91,10 +92,19 @@ def send(db, email, role, club_id, team_ids, inviter):
 
 
 # ----------------------------------------------------------------------------- administrator
+def _heads():
+    """Hold som den indloggede er chef-træner for (tom for administratorer)."""
+    return scope.head_team_ids(get_db(), g.user)
+
+
+def _check():
+    if not scope.is_manager(g.user) and not _heads():
+        abort(403)
+
+
 @admin_bp.before_request
-@manager_required
 def _guard():
-    return None
+    return _fresh_login(_check, ("admin", "clubadmin", "trainer"))()
 
 
 def _clubs(db):
@@ -104,6 +114,9 @@ def _clubs(db):
 
 
 def _teams(db):
+    if not scope.is_manager(g.user):
+        ids = sorted(_heads())
+        return db.execute(f"SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id WHERE t.id IN ({','.join('?' * len(ids))}) ORDER BY t.name COLLATE NOCASE", ids).fetchall()
     if scope.is_sysadmin(g.user):
         return db.execute("SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE").fetchall()
     return db.execute("SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id WHERE t.club_id=? ORDER BY t.name COLLATE NOCASE", (g.user["club_id"],)).fetchall()
@@ -111,6 +124,8 @@ def _teams(db):
 
 def _rows(db):
     sql = ("SELECT i.*, c.name AS club_name FROM invitations i JOIN clubs c ON c.id=i.club_id ")
+    if not scope.is_manager(g.user):
+        return db.execute(sql + "WHERE i.club_id=? AND i.created_by=? ORDER BY i.created_at DESC LIMIT 100", (g.user["club_id"], g.user["username"])).fetchall()
     if scope.is_sysadmin(g.user):
         return db.execute(sql + "ORDER BY i.created_at DESC LIMIT 100").fetchall()
     return db.execute(sql + "WHERE i.club_id=? ORDER BY i.created_at DESC LIMIT 100", (g.user["club_id"],)).fetchall()
@@ -119,7 +134,7 @@ def _rows(db):
 def _page(db):
     now = int(time.time())
     return render_template("admin_invitations.html", rows=[dict(r, state=status(r, now)) for r in _rows(db)], clubs=_clubs(db),
-                           all_teams=_teams(db), sysadmin=scope.is_sysadmin(g.user), mail_missing=mailer.missing())
+                           all_teams=_teams(db), sysadmin=scope.is_sysadmin(g.user), manager=scope.is_manager(g.user), mail_missing=mailer.missing())
 
 
 def _code_ok(db):
@@ -144,6 +159,7 @@ def index():
         return _page(db)
     email, err = mailer.normalize_email(request.form.get("email"))
     role = request.form.get("role", "trainer")
+    as_head = request.form.get("as_head") == "1" and role == "trainer"
     if role not in ("trainer", "clubadmin") or (role == "clubadmin" and not scope.is_sysadmin(g.user)):
         abort(404 if role == "clubadmin" else 400)
     raw_club = request.form.get("club")
@@ -158,12 +174,20 @@ def index():
         flash("Der findes allerede en bruger med den e-mailadresse.", "error")
         return redirect(url_for("invites_admin.index"))
     valid = {r["id"] for r in db.execute("SELECT id FROM teams WHERE club_id=?", (club_id,))}
+    if not scope.is_manager(g.user):
+        valid &= _heads()                       # chef-trænere kan kun invitere til egne hold
     teams = sorted({int(x) for x in request.form.getlist("teams") if str(x).isdigit()} & valid) if role == "trainer" else []
+    if role == "trainer" and not scope.is_manager(g.user) and not teams:
+        flash("Vælg mindst ét af dine hold.", "error")
+        return redirect(url_for("invites_admin.index"))
+    if as_head and not teams:
+        flash("Vælg det hold, personen skal være chef-træner for.", "error")
+        return redirect(url_for("invites_admin.index"))
     bad = _code_ok(db)
     if bad is not None:
         return bad
-    ok, msg = send(db, email, role, club_id, teams, g.user["username"])
-    audit(db, g.user["username"], "invitation_sendt" if ok else "invitation_fejlet", f"{email} ({role})")
+    ok, msg = send(db, email, role, club_id, teams, g.user["username"], as_head)
+    audit(db, g.user["username"], "invitation_sendt" if ok else "invitation_fejlet", f"{email} ({role}{', chef' if as_head else ''})")
     db.commit()
     flash(msg, "ok" if ok else "error")
     return redirect(url_for("invites_admin.index"))
@@ -171,7 +195,12 @@ def index():
 
 def _own(db, iid):
     row = db.execute("SELECT * FROM invitations WHERE id=?", (iid,)).fetchone()
-    if not row or not scope.can_manage_club(g.user, row["club_id"]) or (row["role"] == "clubadmin" and not scope.is_sysadmin(g.user)):
+    if not row or (row["role"] == "clubadmin" and not scope.is_sysadmin(g.user)):
+        abort(404)
+    if scope.is_manager(g.user):
+        if not scope.can_manage_club(g.user, row["club_id"]):
+            abort(404)
+    elif row["created_by"] != g.user["username"] or row["club_id"] != g.user["club_id"]:
         abort(404)
     return row
 
@@ -201,7 +230,11 @@ def resend(iid):
     if bad is not None:
         return bad
     teams = [int(x) for x in row["team_ids"].split(",") if x]
-    ok, msg = send(db, row["email"], row["role"], row["club_id"], teams, g.user["username"])
+    if not scope.is_manager(g.user):
+        teams = [t for t in teams if t in _heads()]
+        if not teams:
+            abort(404)
+    ok, msg = send(db, row["email"], row["role"], row["club_id"], teams, g.user["username"], bool(row["as_head"]))
     audit(db, g.user["username"], "invitation_sendt_igen" if ok else "invitation_fejlet", row["email"])
     db.commit()
     flash(msg, "ok" if ok else "error")
@@ -211,6 +244,21 @@ def resend(iid):
 # ----------------------------------------------------------------------------- den inviterede (offentlig side)
 def _invalid():
     return render_template("invite_invalid.html"), 400
+
+
+@bp.route("/invitation/<token>/brugernavn")
+def check_username(token):
+    """Live-tjek af ledigt brugernavn. Kræver et gyldigt invitationslink (ingen åben opslagstjeneste) og er begrænset pr. IP."""
+    db = get_db()
+    if throttled(db):
+        return {"ok": False, "msg": "For mange forsøg – vent lidt."}, 429
+    if not lookup(db, token):
+        return {"ok": False, "msg": ""}, 400
+    u = (request.args.get("u") or "").strip()[:60]
+    if not u:
+        return {"ok": False, "msg": ""}
+    free = not db.execute("SELECT 1 FROM users WHERE username=?", (u,)).fetchone()
+    return {"ok": free, "msg": "Brugernavnet er ledigt." if free else "Brugernavnet er optaget – vælg et andet."}
 
 
 @bp.route("/invitation/<token>", methods=["GET", "POST"])
@@ -255,6 +303,8 @@ def accept(token):
             for t in [int(x) for x in row["team_ids"].split(",") if x]:
                 if db.execute("SELECT 1 FROM teams WHERE id=? AND club_id=?", (t, row["club_id"])).fetchone():
                     db.execute("INSERT OR IGNORE INTO user_teams(user_id,team_id) VALUES(?,?)", (uid, t))
+                    if row["as_head"]:
+                        db.execute("INSERT OR IGNORE INTO team_heads(team_id,user_id) VALUES(?,?)", (t, uid))
         db.execute("UPDATE invitations SET user_id=? WHERE id=?", (uid, row["id"]))
         audit(db, username, "invitation_brugt", f"{row['email']} ({row['role']}) inviteret af {row['created_by']}")
         db.commit()

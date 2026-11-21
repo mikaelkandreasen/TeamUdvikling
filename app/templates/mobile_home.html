@@ -2,9 +2,9 @@
 {% block content %}
 <div class="tiles">
   <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">Evaluér<small>{{ prog[cur-1]['label'] }}</small></a>
-  <a class="tile" href="{{ url_for('motivation.tablet_list') }}">Spillerskema<small>til tablet/telefon</small></a>
+  {% if features['motivation'] %}<a class="tile" href="{{ url_for('motivation.tablet_list') }}">Spillerskema<small>til tablet/telefon</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">Overblik<small>hele holdet</small></a>
-  <a class="tile alt" href="{{ url_for('devdata.matrix') }}">Fremmøde<small>trivsel &amp; motorik</small></a>
+  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">Fremmøde<small>trivsel &amp; motorik</small></a>{% endif %}
 </div>
 <h2>Spillere ({{ cards|length }})</h2>
 {% for c in cards %}

@@ -106,6 +106,8 @@ def try_restore(db):
     session["uid"] = user["id"]
     session["seen"] = now
     session["stage"] = "ok"
+    db.execute("UPDATE users SET last_login=? WHERE id=?", (now, user["id"]))
+    db.commit()
     session["auth_at"] = 0                                         # ikke 'frisk': administration kræver nyt login
     _bind(user["pw_hash"])
     return True

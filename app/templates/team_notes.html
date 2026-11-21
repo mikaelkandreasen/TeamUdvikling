@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Noter{% endblock %}
+{% block content %}
+<h1>Holdnoter – {{ team['name'] }}</h1>
+<form method="post" action="{{ url_for('team.notes_add') }}" class="card">{{ csrf() }}
+  <label for="b">Ny note</label><textarea id="b" name="body" maxlength="2000" required placeholder="fx Fokus til næste træning, aftaler med forældre …"></textarea>
+  <div class="actions"><button class="btn">Gem note</button></div></form>
+{% for n in rows %}
+<div class="card"><p style="white-space:pre-wrap">{{ n['body'] }}</p>
+  <p class="muted small">{{ n['author'] }} · {{ n['created_at'] }}</p>
+  {% if n['user_id'] == user['id'] or can_configure() %}<form method="post" action="{{ url_for('team.notes_delete', nid=n['id']) }}">{{ csrf() }}<button class="btn sec">Slet</button></form>{% endif %}</div>
+{% else %}<div class="card muted">Ingen noter endnu.</div>{% endfor %}
+{% endblock %}

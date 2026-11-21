@@ -5,7 +5,8 @@
   <p>Du er inviteret som {{ 'klubadministrator' if role == 'clubadmin' else 'træner' }} med e-mailadressen <b>{{ email }}</b>. Vælg brugernavn og adgangskode. Bagefter sætter du 2FA op med en autentificeringsapp.</p>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="u">Brugernavn</label><input id="u" type="text" name="username" value="{{ username or '' }}" autocapitalize="none" autocomplete="username" required autofocus maxlength="60">
+    <label for="u">Brugernavn</label><input id="u" type="text" name="username" data-userchk="{{ url_for('invites.check_username', token=token) }}" aria-describedby="uchk" value="{{ username or '' }}" autocapitalize="none" autocomplete="username" required autofocus maxlength="60">
+    <p id="uchk" class="muted small" role="status" aria-live="polite"></p>
     <label for="d">Dit navn</label><input id="d" type="text" name="display_name" value="{{ display_name or '' }}" autocomplete="name" maxlength="80">
     <label for="p1">Adgangskode (mindst 12 tegn)</label><input id="p1" type="password" name="password" autocomplete="new-password" required>
     <label for="p2">Gentag adgangskode</label><input id="p2" type="password" name="password2" autocomplete="new-password" required>

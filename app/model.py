@@ -9,7 +9,7 @@ ROLES = ["Boldholder", "Medspiller", "Presspiller", "Støttespiller"]
 SKILLS = ["Teknik", "Bevægelse", "Scanning", "Timing", "Positionering", "Maskering"]
 N_SKILLS = len(SKILLS)
 N_CRIT = len(ROLES) * N_SKILLS  # 24
-MAX_ROUNDS = 8
+MAX_ROUNDS = 20
 DEFAULT_ROUNDS = 4
 ROUNDS = tuple(range(1, MAX_ROUNDS + 1))       # alle mulige runder; hvert hold bruger de første n (g.rounds)
 # Positioner (dropdown). De seks gamle værdier er stadig gyldige, så eksisterende data virker uændret.
@@ -218,3 +218,10 @@ def ratio(num, den):
     if num is None or not den:
         return None
     return num / den
+
+
+# Spillerniveau (trænerens vurdering) – fra bedst til nyeste; «Ny» = ny spiller, endnu ikke vurderet
+LEVELS = ("A+", "A", "B", "C", "Ny")
+# Hvorfor har spilleren fået mascotten med hjem?
+MASCOT_REASONS = {"indsats": "Flot indsats", "fremgang": "Stor fremgang", "kammerat": "God kammerat", "hjaelp": "Hjælpsom",
+                  "foerste": "Første gang / tur", "fodselsdag": "Fødselsdag", "andet": "Andet"}

@@ -10,7 +10,7 @@ from .db import audit, get_db
 from .helpers import get_player, photo_ids, team_id, valid_choice
 
 bp = Blueprint("players", __name__, url_prefix="/players")
-FIELDS = ["name", "birth_date", "shirt_no", *model.POSITION_FIELDS, "foot", "start_date", "focus1", "focus2", "notes"]
+FIELDS = ["name", "birth_date", "shirt_no", *model.POSITION_FIELDS, "level", "foot", "start_date", "focus1", "focus2", "notes"]
 
 
 def _read_form():
@@ -30,6 +30,7 @@ def _read_form():
     for i, k in enumerate(model.POSITION_FIELDS):
         f[k] = chosen[i] if i < len(chosen) else ""
     f["foot"] = valid_choice(f["foot"], model.FEET) or ""
+    f["level"] = valid_choice(f["level"], model.LEVELS) or ""
     f["active"] = 1 if request.form.get("active") else 0
     return f, errors
 

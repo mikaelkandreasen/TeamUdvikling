@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import activity, auth, charts, club, db, helpers, model, photos, remember, teams
+from . import activity, features, auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -110,6 +110,7 @@ def create_app(config=None):
                 "auth.view_as_stop", "auth.logout", "main.switch_team"):
             abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
         activity.touch()
+        features.guard()
         return None
 
     @app.after_request
@@ -139,16 +140,16 @@ def create_app(config=None):
             if "csrf" not in session:
                 session["csrf"] = secrets.token_urlsafe(32)
             return session["csrf"]
-        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
+        return dict(csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 
     from . import filters
     filters.register(app)
 
-    from . import admin, devdata, evaluation, invites, lineup, motivation, players, reports, reset
+    from . import admin, devdata, evaluation, invites, lineup, motivation, players, reports, reset, team
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp, team.bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")

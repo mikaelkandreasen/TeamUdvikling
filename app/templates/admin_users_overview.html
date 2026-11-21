@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Alle brugere{% endblock %}
+{% block content %}
+<h1>Alle brugere ({{ rows|length }})</h1>
+<p class="muted small">Oprettet (dato/tid), senest logget ind og senest aktiv. «Senest logget ind» registreres fra og med denne version; ældre brugere vises tomme, til de logger ind igen.</p>
+<div class="scroll"><table class="responsive">
+  <thead><tr><th>Bruger</th><th>Rolle</th><th>Klub</th><th>Hold</th><th>Oprettet</th><th>Senest logget ind</th><th>Senest aktiv</th></tr></thead><tbody>
+  {% for r in rows %}<tr>
+    <td class="name">{{ r['u']['display_name'] }} <span class="muted small">({{ r['u']['username'] }})</span></td>
+    <td data-label="Rolle">{{ r['role'] }}</td><td data-label="Klub">{{ r['u']['club_name'] or '–' }}</td>
+    <td data-label="Hold">{{ r['teams']|join(', ') or '–' }}</td><td data-label="Oprettet">{{ r['u']['created_at'] }}</td>
+    <td data-label="Senest logget ind">{{ r['login'] or '–' }}</td><td data-label="Senest aktiv">{{ r['seen'] or '–' }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

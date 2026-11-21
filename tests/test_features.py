@@ -60,9 +60,9 @@ def test_add_and_remove_rounds(app, admin):
 def test_round_limits_and_team_isolation(app, admin):
     make_team(admin, "A"); make_team(admin, "B")
     switch(admin, team_id(app, "A"))
-    for _ in range(10):
+    for _ in range(20):
         admin.post("/admin/evaluations", {"action": "add_round"}, page="/admin/evaluations")
-    assert admin.get("/eval/8").status_code == 200 and admin.get("/eval/9").status_code == 404
+    assert admin.get("/eval/20").status_code == 200 and admin.get("/eval/21").status_code == 404
     switch(admin, team_id(app, "B"))
     assert admin.get("/eval/5").status_code == 404                        # hold B er upåvirket
     for _ in range(5):

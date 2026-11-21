@@ -31,10 +31,10 @@
 </header>
 {% if authed %}
 <nav class="side" aria-label="Hovedmenu">
-  {% for e, label in [('main.home','Hjem'),('players.index','Spillere'),('evaluation.eval_home','Evaluering'),('evaluation.team','Teamoversigt'),
-      ('evaluation.development','Udvikling'),('evaluation.position_view','Position &amp; bane'),('lineup.index','Holdsætning'),('evaluation.areas','Områder'),
-      ('motivation.matrix','Motivation'),('devdata.matrix','Udviklingsdata'),('reports.index','Rapporter'),('main.criteria','Skala &amp; kriterier'),
-      ('auth.account','Min konto')] %}
+  {% for e, label, f in [('main.home','Hjem',''),('players.index','Spillere',''),('evaluation.eval_home','Evaluering',''),('evaluation.team','Teamoversigt',''),
+      ('evaluation.development','Udvikling',''),('evaluation.position_view','Position &amp; bane',''),('lineup.index','Holdsætning','lineup'),('team.index','Hold',''),('evaluation.areas','Områder',''),
+      ('motivation.matrix','Motivation','motivation'),('devdata.matrix','Udviklingsdata','devdata'),('reports.index','Rapporter',''),('main.criteria','Skala &amp; kriterier',''),
+      ('auth.account','Min konto','')] if not f or features.get(f, True) %}
     <a href="{{ url_for(e) }}" class="{{ 'on' if ep == e }}">{{ label|safe }}</a>
   {% endfor %}
   {% if user['role'] == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin.') }}">Administration</a>{% endif %}

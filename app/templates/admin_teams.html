@@ -12,6 +12,10 @@
   <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='rename') }}">{{ csrf() }}
     <div class="row"><div><input type="text" name="name" value="{{ t['name'] }}" aria-label="Holdnavn" maxlength="80"></div><div><input type="text" name="season" value="{{ t['season'] or '' }}" aria-label="Sæson" maxlength="20"></div></div>
     <div class="actions"><button class="btn sec">Gem navn</button></div></form>
+  <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='head') }}">{{ csrf() }}
+    <label>Chef-trænere (kan ændre holdindstillinger og evalueringsrunder og invitere trænere)</label>
+    {% for m in members.get(t['id'], []) %}<label class="check"><input type="checkbox" name="head_user" value="{{ m['id'] }}" {{ 'checked' if m['id'] in heads.get(t['id'], []) }}> {{ m['display_name'] }}</label>{% else %}<p class="muted small">Tilknyt først en træner til holdet.</p>{% endfor %}
+    <div class="actions"><button class="btn sec">Gem chef-træner</button></div></form>
   <details><summary>Slet hold</summary>
     <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='delete') }}">{{ csrf() }}
       <p class="muted small">Sletter holdet og alle dets spillere, evalueringer, svar og udviklingsdata permanent. Skriv holdets navn for at bekræfte.</p>

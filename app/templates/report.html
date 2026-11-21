@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block title %}Spillerrapport{% endblock %}
 {% block content %}
 <div class="actions noprint"><button class="btn" data-print>Udskriv / gem som PDF</button>
-  {% if bundles|length == 1 %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=bundles[0]['p']['id']) }}">Handleplan</a>{% endif %}</div>
+  {% if bundles|length == 1 and features['devdata'] %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=bundles[0]['p']['id']) }}">Handleplan</a>{% endif %}</div>
 {% for b in bundles %}{% set p = b['p'] %}
 <section class="report">
   {% include "_club_header.html" %}

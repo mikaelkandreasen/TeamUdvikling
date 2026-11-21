@@ -76,3 +76,8 @@ Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug
 5. Opret administrator med det samme efter første start (opsætningskoden står i loggen), og sæt 2FA op.
 6. Tag backup af volumen `u11-data` krypteret, og test gendannelse (B-004).
 7. Hold afhængigheder opdateret (Dependabot) og redeploy ved sikkerhedsopdateringer.
+
+## Chef-trænere og invitationer (v0.10.0)
+- Chef-trænere (tabellen `team_heads`) kan kun ændre indstillinger/runder og invitere til **egne hold** i egen klub; de kan ikke invitere klubadministratorer, se andres invitationer eller åbne bruger-/klubsider. Afsendelse kræver stadig egen 2FA-kode.
+- Brugernavn-tjekket (`/invitation/<token>/brugernavn`) kræver et gyldigt invitationslink og er IP-begrænset, så det ikke kan bruges til at opregne brugernavne. Ledigt-tjek gentages ved oprettelsen.
+- «Alle brugere» (oprettet, senest logget ind) er kun for systemadministratorer.

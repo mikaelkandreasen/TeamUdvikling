@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Holdindstillinger** (chef-træner, klubadministrator, systemadministrator): kamptype (3/5/8/11 på banen) + antal udskiftere, slogan, mascot-navn og valg af hvilke funktioner holdet bruger (udviklingsdata, motivation, holdsætning, niveau, noter, mascot). Slåede-fra funktioner skjules og svarer 404; data bevares.
+- **Chef-træner** pr. hold (flere mulige): må ændre holdindstillinger, oprette/fjerne evalueringsrunder (nu op til 20) og invitere trænere til eget hold. Vælges af klubadministrator under Hold – eller via invitation.
+- **Invitation til chef-træner:** klubadministrator og chef-træner kan invitere en træner eller en chef-træner (chef-trænere kun til egne hold; kun klubadministrator kan invitere via alle klubbens hold).
+- **Spillerniveau** A+, A, B, C, Ny – i spillerformularen og på en samlet side.
+- **Del truppen i op til 9 hold** (3 × A, 3 × B, 3 × C; 1–3 pr. niveau) efter holdprofilen: A-holdene får A+/A og B, B-holdene B, C-holdene resten; mangler der spillere, fyldes A-holdene først. De bedste efter samlet score spiller; advarsel hvis et hold ikke kan stilles. Kan gemmes som opstillinger.
+- **Holdnoter**, **slogan** (vises på forsiden) og **mascot med log og rapport** (hvem, hvor mange gange, hvorfor, hvem der ikke har haft den; periodefilter; udskrivning).
+- **Brugernavn-tjek:** ved oprettelse via invitation vises live, om brugernavnet er ledigt (kontrolleres også ved oprettelse).
+- **Systemadministrator: Alle brugere** – klub, hold, oprettet (dato/tid), senest logget ind og senest aktiv.
+
+### Ændret
+- Skema v9 (idempotent migration): `players.level`, `teams.slogan/mascot_name`, `team_heads`, `team_notes`, `mascot_log`, `invitations.as_head`, `users.last_login`. Maks. evalueringsrunder 8 → 20.
+
 ## [0.9.0] - 2026-11-21
 
 ### Tilføjet

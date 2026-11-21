@@ -11,6 +11,6 @@
   <tbody>{% for cr in crit_rows %}<tr><td class="name">{{ cr['c']['role'] }} – {{ cr['c']['skill'] }}</td><td data-label="Færdighed">{{ cr['c']['skill'] }}</td>
     {% for v in cr['vals'] %}{{ heatcell(v, infos[loop.index0]['label']) }}{% endfor %}</tr>{% endfor %}</tbody></table></div>
 <div class="actions"><a class="btn" href="{{ url_for('reports.report', pid=p['id'], runde=rnd) }}">Åbn rapport</a>
-  <a class="btn sec" href="{{ url_for('devdata.plan', pid=p['id']) }}">Handleplan</a>
+  {% if features['devdata'] %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=p['id']) }}">Handleplan</a>{% endif %}
   <a class="btn sec" href="{{ url_for('players.edit', pid=p['id']) }}">Ret spiller</a></div>
 {% endblock %}

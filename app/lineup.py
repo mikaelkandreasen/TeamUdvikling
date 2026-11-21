@@ -2,7 +2,7 @@
 Alle opstillinger hører til det aktive hold (team_id); spillere kan kun sættes på pladser, hvis de er aktive spillere på samme hold."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import charts, formations, model
+from . import charts, formations, model, split as splitter
 from .db import audit, get_db
 from .helpers import active_players, default_round, int_in, photo_ids, positions_of, team_id
 
@@ -52,6 +52,54 @@ def new():
     audit(db, g.user["username"], "opstilling_oprettet", f"id={cur.lastrowid}")
     db.commit()
     return redirect(url_for("lineup.edit", lid=cur.lastrowid))
+
+
+def _split_plan(db):
+    """Deler truppen i A/B/C-hold efter holdprofilen (kamptype + udskiftere) og spillerniveau. Starterne placeres på standardopstillingen."""
+    from .team import profile
+    prof = profile(db, team_id())
+    per = int_in(request.values.get("per_tier"), 1, 3) or 3
+    scores = _latest_scores(db)
+    players = active_players(db)
+    plist = [dict(id=p["id"], name=p["name"], level=p["level"], score=scores.get(p["id"]), positions=positions_of(p)) for p in players]
+    teams, left = splitter.split(plist, prof["size"], prof["subs"], per)
+    fm = formations.DEFAULT_FORMATION[prof["game_type"]]
+    sl = formations.slots(prof["game_type"], fm)
+    byid = {p["id"]: p for p in plist}
+    for t in teams:
+        starters = t["players"][:prof["size"]]
+        assign = formations.suggest(sl, starters, scores)
+        t["slots"] = [dict(tag=s["tag"], player=byid.get(assign.get(s["i"]))) for s in sl]
+        t["assign"] = assign
+        t["subs"] = t["players"][prof["size"]:]
+    return prof, fm, per, teams, [byid[p["id"]] for p in left]
+
+
+@bp.route("/split", methods=["GET", "POST"])
+def split_view():
+    db = get_db()
+    prof, fm, per, teams, left = _split_plan(db)
+    if request.method == "POST" and request.form.get("action") == "save":
+        gt = prof["game_type"]
+        used = [t for t in teams if t["players"]]
+        existing = db.execute("SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=?", (team_id(), gt)).fetchone()[0]
+        names = [t["name"] for t in used]
+        replaced = db.execute(f"SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=? AND name IN ({','.join('?' * len(names))})", [team_id(), gt, *names]).fetchone()[0] if names else 0
+        if existing - replaced + len(used) > MAX_PER_TYPE:
+            flash(f"Der kan højst gemmes {MAX_PER_TYPE} opstillinger pr. kamptype. Slet gamle først.", "error")
+            return redirect(url_for("lineup.split_view", per_tier=per))
+        for t in used:
+            db.execute("DELETE FROM lineups WHERE team_id=? AND game_type=? AND name=?", (team_id(), gt, t["name"]))
+            cur = db.execute("INSERT INTO lineups(team_id,name,game_type,formation,created_by,created_at,updated_at) VALUES(?,?,?,?,?,datetime('now'),datetime('now'))",
+                             (team_id(), t["name"], gt, fm, g.user["username"]))
+            for slot, pid in t["assign"].items():
+                db.execute("INSERT INTO lineup_slots(lineup_id,slot,player_id) VALUES(?,?,?)", (cur.lastrowid, slot, pid))
+        audit(db, g.user["username"], "holddeling_gemt", f"{len(used)} hold")
+        db.commit()
+        flash(f"{len(used)} opstillinger er gemt under Holdsætning ({prof['game_type']}).", "ok")
+        return redirect(url_for("lineup.index", type=gt))
+    return render_template("lineup_split.html", prof=prof, formation=fm, per=per, teams=teams, left=left,
+                           no_levels=sum(1 for t in teams for p in t["players"] if not p.get("level")) + sum(1 for p in left if not p.get("level")))
 
 
 def _view(db, L, assign, players, scores, matched_note=None):

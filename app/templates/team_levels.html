@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Spillerniveau{% endblock %}
+{% block content %}
+<h1>Spillerniveau – {{ team['name'] }}</h1>
+<p class="muted">{% for lv in LEVELS %}{{ lv }}: <b>{{ counts[lv] }}</b> · {% endfor %}uden niveau: <b>{{ counts['uden'] }}</b></p>
+<form method="post">{{ csrf() }}
+{% for p in players %}
+<div class="card"><div class="row"><div class="name"><b>{{ p['name'] }}</b></div>
+  <div><select name="level_{{ p['id'] }}" aria-label="Niveau for {{ p['name'] }}"><option value="">–</option>{% for lv in LEVELS %}<option value="{{ lv }}" {{ 'selected' if p['level'] == lv }}>{{ lv }}{{ ' (ny spiller)' if lv == 'Ny' }}</option>{% endfor %}</select></div></div></div>
+{% else %}<div class="card muted">Ingen aktive spillere.</div>{% endfor %}
+<div class="actions"><button class="btn">Gem niveauer</button></div></form>
+<p class="muted small">Niveauet bruges til at dele truppen i A-, B- og C-hold under <a href="{{ url_for('lineup.split_view') }}">Del i hold</a>.</p>
+{% endblock %}

@@ -25,7 +25,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 ## Arkitektur i korte træk
 `app/__init__.py` (create_app, CSRF, sikkerhedsheadere) · `auth.py` (login/2FA/lockout/gate) · `teams.py` (hold-adgang) ·
 `db.py` (skema, backup, indstillinger) · `model.py` (roller, kriterier, ALLE beregninger – rene funktioner) ·
-`evaluation.py`, `motivation.py`, `devdata.py`, `reports.py`, `players.py`, `admin.py`, `views.py` (blueprints) ·
+`features.py` (funktionsvalg pr. hold), `team.py` (holdindstillinger, noter, niveau, mascot), `split.py` (deling i A/B/C-hold), `evaluation.py`, `motivation.py`, `devdata.py`, `reports.py`, `players.py`, `admin.py`, `views.py` (blueprints) ·
 `scope.py` (roller/klub-afgrænsning) · `invites.py` (invitationer) · `activity.py` (aktive nu, brugsstatistik) · `formations.py` (opstillinger, positionsmatch, holdforslag) · `lineup.py` (holdsætning) · `photos.py` (billedbehandling) · `charts.py` (server-SVG) · `templates/` · `static/` · `tests/`.
 
 ## Regler der IKKE må brydes

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Holdindstillinger{% endblock %}
+{% block content %}
+<h1>Holdindstillinger – {{ team['name'] }}</h1>
+<p class="muted">Chef-træner{% if heads %}: <b>{{ heads|join(', ') }}</b>{% else %}: <i>ikke valgt (vælges af klubadministratoren under Administration → Hold)</i>{% endif %}. Chef-træneren og administratorer kan ændre disse indstillinger.</p>
+<form method="post" class="card">{{ csrf() }}
+  <h2>Holdprofil</h2>
+  <div class="row"><div><label for="gt">Kamptype (spillere på banen)</label><select id="gt" name="game_type">{% for k, n in types.items() %}<option value="{{ k }}" {{ 'selected' if k == prof['game_type'] }}>{{ k }} ({{ n }} på banen)</option>{% endfor %}</select></div>
+  <div><label for="sb">Antal udskiftere</label><input id="sb" type="number" name="subs" min="0" max="10" value="{{ prof['subs'] }}"></div></div>
+  <p class="muted small">Bruges til at dele truppen i A/B/C-hold: holdstørrelse = spillere på banen + udskiftere.</p>
+  <label for="sl">Slogan</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="fx Sammen er vi stærkest">
+  <label for="mn">Mascot (navn)</label><input id="mn" type="text" name="mascot_name" maxlength="40" value="{{ team['mascot_name'] or '' }}" placeholder="fx Bamse">
+  <h2>Funktioner</h2>
+  <p class="muted small">Vælg hvad holdet vil bruge. Slåede-fra funktioner skjules, og data bevares.</p>
+  {% for k, label, d in FEATURES %}<label class="check"><input type="checkbox" name="feat_{{ k }}" value="1" {{ 'checked' if feats[k] }}> {{ label }}</label>{% endfor %}
+  <p class="muted small">Evalueringsrunder ({{ n_rounds }} nu) tilføjes og fjernes under <a href="{{ url_for('admin.evaluations') }}">Evalueringsrunder</a>.</p>
+  <div class="actions"><button class="btn">Gem</button></div></form>
+{% endblock %}

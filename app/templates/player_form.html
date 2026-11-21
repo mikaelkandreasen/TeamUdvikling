@@ -11,6 +11,7 @@
   <div class="row">{{ posselect(1, 'position') }}{{ posselect(2, 'position2') }}</div>
   <div class="row">{{ posselect(3, 'position3') }}{{ posselect(4, 'position4') }}</div>
   <p class="muted small">Op til 4 positioner i prioriteret rækkefølge. «Kant» passer begge sider; vælg «Højre kant» eller «Venstre kant» for en bestemt side.</p>
+  {% if features['levels'] %}<label for="lv">Niveau</label><select id="lv" name="level"><option value=""></option>{% for x in model.LEVELS %}<option {{ 'selected' if p.get('level') == x }}>{{ x }}</option>{% endfor %}</select>{% endif %}
   <label for="foot">Fod</label><select id="foot" name="foot"><option value=""></option>{% for x in model.FEET %}<option {{ 'selected' if p.get('foot') == x }}>{{ x }}</option>{% endfor %}</select>
   <label for="sd">Startdato i klub</label><input id="sd" type="date" name="start_date" value="{{ p.get('start_date') or '' }}">
   <label for="f1">Primært fokus</label><input id="f1" type="text" name="focus1" value="{{ p.get('focus1') or '' }}">

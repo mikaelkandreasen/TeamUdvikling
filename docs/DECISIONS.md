@@ -38,3 +38,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Flere klubber skal kunne bruge samme installation med eget udseende, egne hold og egne administratorer; nye trænere skal kunne oprette sig selv uden at administratoren kender deres adgangskode.
 **Valg:** Tabel `clubs` (profil + logo som BLOB); `teams.club_id` og `users.club_id`; rollerne `admin` (system), `clubadmin`, `trainer`. Holdnavne unikke pr. klub (tabellen `teams` genopbygges ved migration). Invitation = engangslink (7 dage), sendt af administrator efter 2FA-bekræftelse; den inviterede vælger selv brugernavn/adgangskode og sætter 2FA op. Loginsiden bruger standardklubbens (ældste) udseende.
 **Konsekvens:** Alle admin-visninger skal afgrænses til klubben; logoer er offentlige pr. klub-id (som før); backup rummer alle klubber.
+
+## D-013 · Holdindstillinger, chef-trænere og holddeling (2026-11-21)
+**Kontekst:** Hold har forskellige behov (kamptype, hvilke data der spores), og en chef-træner skal selv kunne styre sit hold og invitere trænere uden klubadministrator.
+**Valg:** Funktionsvalg som holdindstillinger (`feat_*`) med 404-guard pr. blueprint; chef-trænere i tabellen `team_heads` (flere pr. hold); de får adgang til holdindstillinger, evalueringsrunder og invitationer til egne hold, men ikke brugere, klubber eller eksport. Holddeling er en ren funktion (`split.py`): rang efter niveau (A+, A, B; uvurderede = C), derefter samlet score; A-holdene fyldes først, overskydende A-vurderede flyttes til B-holdene før B-spillere.
+**Konsekvens:** Nye hold-sider skal afgrænses til `g.team` og have isolationstest; mascot-log og noter er personoplysninger (se GDPR).

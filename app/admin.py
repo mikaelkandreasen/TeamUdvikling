@@ -8,17 +8,27 @@ from werkzeug.security import generate_password_hash
 
 from . import activity, club, importer, mailer, model, remember, reset, reset_tokens, scope
 from . import lockout
-from .auth import _too_many, admin_required, manager_required, revoke_session, throttled, verify_admin_code
+from .auth import _fresh_login, _too_many, admin_required, manager_required, revoke_session, throttled, verify_admin_code
 from .db import audit, backup, club_get, club_set, create_club, create_team, default_club_id, get_db, set_setting
 from .helpers import int_in, round_info, team_id
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+HEAD_OK = {"admin.evaluations", "admin.settings"}      # runder og rundenavne må holdets chef-træner også bruge
+
+
+def _head_check():
+    from .team import can_configure
+    if not can_configure():
+        abort(403)
+
+
 @bp.before_request
-@manager_required
 def _guard():
-    return None
+    if request.endpoint in HEAD_OK:
+        return _fresh_login(_head_check, ("admin", "clubadmin", "trainer"))()
+    return manager_required(lambda: None)()
 
 
 @bp.route("/")
@@ -116,7 +126,13 @@ def teams():
             db.commit()
             flash(f"Holdet '{name}' er oprettet.", "ok")
             return redirect(url_for("admin.teams"))
-    return render_template("admin_teams.html", teams=_team_rows(db), clubs=_visible_clubs(db))
+    members = {}
+    for r in db.execute("SELECT ut.team_id, u.id, u.display_name FROM user_teams ut JOIN users u ON u.id=ut.user_id ORDER BY u.display_name COLLATE NOCASE"):
+        members.setdefault(r["team_id"], []).append(r)
+    heads = {}
+    for r in db.execute("SELECT team_id, user_id FROM team_heads"):
+        heads.setdefault(r["team_id"], []).append(r["user_id"])
+    return render_template("admin_teams.html", teams=_team_rows(db), clubs=_visible_clubs(db), members=members, heads=heads)
 
 
 @bp.route("/teams/<int:tid>/<action>", methods=["POST"])
@@ -142,6 +158,14 @@ def team_action(tid, action):
             db.execute("DELETE FROM teams WHERE id=?", (tid,))  # CASCADE: spillere, evalueringer, svar, udviklingsdata
             audit(db, g.user["username"], "hold_slettet", t["name"])
             flash(f"Holdet '{t['name']}' og alle dets data er slettet.", "ok")
+    elif action == "head":
+        valid = {r["user_id"] for r in db.execute("SELECT ut.user_id FROM user_teams ut JOIN users u ON u.id=ut.user_id WHERE ut.team_id=? AND u.club_id IS ? AND u.role='trainer'", (tid, t["club_id"]))}
+        chosen = {int(x) for x in request.form.getlist("head_user") if x.isdigit()} & valid
+        db.execute("DELETE FROM team_heads WHERE team_id=?", (tid,))
+        for uid in chosen:
+            db.execute("INSERT INTO team_heads(team_id,user_id) VALUES(?,?)", (tid, uid))
+        audit(db, g.user["username"], "cheftraenere_sat", f"{t['name']}: {len(chosen)}")
+        flash("Chef-trænere gemt.", "ok")
     else:
         abort(404)
     db.commit()
@@ -171,6 +195,26 @@ def _set_user_teams(db, uid, team_ids, club_id):
     db.execute("DELETE FROM user_teams WHERE user_id=?", (uid,))
     for t in {int(x) for x in team_ids if str(x).isdigit()} & valid:
         db.execute("INSERT INTO user_teams(user_id,team_id) VALUES(?,?)", (uid, t))
+
+
+@bp.route("/users/overview")
+@admin_required
+def users_overview():
+    """Systemadministrator: alle brugere med klub, hold, oprettet og senest logget ind."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    db = get_db()
+    zone = ZoneInfo(current_app.config.get("TIMEZONE") or "UTC")
+    teams = {}
+    for r in db.execute("SELECT ut.user_id, t.name, EXISTS(SELECT 1 FROM team_heads h WHERE h.team_id=t.id AND h.user_id=ut.user_id) AS head "
+                        "FROM user_teams ut JOIN teams t ON t.id=ut.team_id ORDER BY t.name COLLATE NOCASE"):
+        teams.setdefault(r["user_id"], []).append(r["name"] + (" (chef)" if r["head"] else ""))
+    rows = []
+    for u in db.execute("SELECT u.*, c.name AS club_name, p.last_seen FROM users u LEFT JOIN clubs c ON c.id=u.club_id "
+                        "LEFT JOIN presence p ON p.user_id=u.id ORDER BY u.created_at DESC, u.id DESC"):
+        fmt = lambda ts: datetime.fromtimestamp(ts, zone).strftime("%d-%m-%Y %H:%M") if ts else ""
+        rows.append(dict(u=u, teams=teams.get(u["id"], []), login=fmt(u["last_login"]), seen=fmt(u["last_seen"]), role=scope.ROLE_LABEL.get(u["role"], u["role"])))
+    return render_template("admin_users_overview.html", rows=rows)
 
 
 @bp.route("/users", methods=["GET", "POST"])

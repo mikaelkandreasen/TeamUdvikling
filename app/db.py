@@ -86,6 +86,18 @@ CREATE TABLE IF NOT EXISTS invitations(
   created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, used_at INTEGER, revoked INTEGER NOT NULL DEFAULT 0,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL);
 CREATE INDEX IF NOT EXISTS ix_invitations_club ON invitations(club_id, created_at);
+CREATE TABLE IF NOT EXISTS team_heads(
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY(team_id, user_id));
+CREATE TABLE IF NOT EXISTS team_notes(
+  id INTEGER PRIMARY KEY, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  author TEXT NOT NULL, created_at TEXT NOT NULL, body TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_team_notes ON team_notes(team_id, created_at);
+CREATE TABLE IF NOT EXISTS mascot_log(
+  id INTEGER PRIMARY KEY, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, taken_on TEXT NOT NULL, returned_on TEXT,
+  reason TEXT NOT NULL, note TEXT, created_by TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_mascot_team ON mascot_log(team_id, taken_on);
 CREATE TABLE IF NOT EXISTS login_attempts(ip TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts(ip, ts);
 """
@@ -98,7 +110,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 8   # v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 9   # v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -150,12 +162,30 @@ def _migrate_clubs(con):
     con.execute("UPDATE users SET club_id=? WHERE club_id IS NULL AND role<>'admin'", (first,))
 
 
+def _migrate_team_features(con):
+    """v9: spillerniveau, slogan, mascot og chef-træner (ADD COLUMN, idempotent)."""
+    pcols = {r["name"] for r in con.execute("PRAGMA table_info(players)")}
+    if "level" not in pcols:
+        con.execute("ALTER TABLE players ADD COLUMN level TEXT")
+    tcols = {r["name"] for r in con.execute("PRAGMA table_info(teams)")}
+    for col, ddl in (("slogan", "TEXT"), ("mascot_name", "TEXT")):
+        if col not in tcols:
+            con.execute(f"ALTER TABLE teams ADD COLUMN {col} {ddl}")
+    ucols = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
+    if "last_login" not in ucols:
+        con.execute("ALTER TABLE users ADD COLUMN last_login INTEGER")
+    icols = {r["name"] for r in con.execute("PRAGMA table_info(invitations)")}
+    if "as_head" not in icols:
+        con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
+
+
 def init_db(path):
     con = connect(path)
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(SCHEMA)
     _migrate(con)
     _migrate_clubs(con)
+    _migrate_team_features(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

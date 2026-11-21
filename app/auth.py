@@ -25,7 +25,7 @@ _DUMMY_HASH = generate_password_hash("dummy-password-for-timing")
 
 IP_MAX_FAILS = 20          # fejlede forsøg pr. IP pr. IP_WINDOW (beskytter mod password spraying og låse-DoS)
 IP_WINDOW = 600
-PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy", "reset.link", "invites.accept"}
+PUBLIC = {"auth.login", "auth.login_2fa", "auth.setup", "static", "healthz", "main.club_logo", "main.privacy", "reset.link", "invites.accept", "invites.check_username"}
 PRE_2FA = {"auth.login_2fa", "auth.twofa_setup", "auth.logout", "auth.force_password"}
 
 
@@ -233,6 +233,7 @@ def _finish_login(db, user, remember_device=False):
     session["stage"] = "ok"
     session["seen"] = int(time.time())
     session["auth_at"] = int(time.time())
+    db.execute("UPDATE users SET last_login=? WHERE id=?", (int(time.time()), user["id"]))
     if remember_device:
         remember.issue(db, user)
     audit(db, user["username"], "login")

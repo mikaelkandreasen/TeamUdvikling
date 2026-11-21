@@ -31,6 +31,13 @@ def can_manage_club(user, club_id):
     return is_sysadmin(user) or (is_clubadmin(user) and club_id is not None and user["club_id"] == club_id)
 
 
+def head_team_ids(db, user):
+    """Hold hvor brugeren er chef-træner (kun inden for egen klub)."""
+    if not user or user["role"] != "trainer":
+        return set()
+    return {r["team_id"] for r in db.execute("SELECT h.team_id FROM team_heads h JOIN teams t ON t.id=h.team_id WHERE h.user_id=? AND t.club_id IS ?", (user["id"], user["club_id"]))}
+
+
 def can_manage_team(db, user, team_id):
     row = db.execute("SELECT club_id FROM teams WHERE id=?", (team_id,)).fetchone()
     return bool(row) and can_manage_club(user, row["club_id"])

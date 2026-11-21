@@ -4,7 +4,7 @@
 <div class="actions"><a class="btn" href="{{ url_for('players.new') }}">+ Ny spiller</a>
   <a class="btn sec" href="{{ url_for('players.index', alle=(0 if show_all else 1)) }}">{{ 'Kun aktive' if show_all else 'Vis alle' }}</a></div>
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Navn</th><th>Fødselsdato</th><th class="num">Kvartal</th><th>Positioner</th><th>Fod</th><th>Trøje</th><th></th></tr></thead>
+  <thead><tr><th>Navn</th><th>Fødselsdato</th><th class="num">Kvartal</th><th>Positioner</th>{% if features['levels'] %}<th>Niveau</th>{% endif %}<th>Fod</th><th>Trøje</th><th></th></tr></thead>
   <tbody>
   {% for p in players %}
   <tr>
@@ -12,6 +12,7 @@
     <td data-label="Fødselsdato">{{ p['birth_date']|date_dk }}</td>
     <td class="num" data-label="Kvartal">{{ 'Q%d'|format(ages[p['id']]) if ages[p['id']] else '' }}</td>
     <td data-label="Positioner">{{ positions_of(p)|join(' / ') }}</td>
+    {% if features['levels'] %}<td data-label="Niveau">{{ p['level'] or '' }}</td>{% endif %}
     <td data-label="Fod">{{ p['foot'] or '' }}</td><td data-label="Trøje">{{ p['shirt_no'] or '' }}</td>
     <td><a href="{{ url_for('players.edit', pid=p['id']) }}">Ret</a> · <a href="{{ url_for('evaluation.profile', pid=p['id']) }}">Profil</a></td>
   </tr>
