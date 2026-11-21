@@ -63,3 +63,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Niveau (A/B/C) var kun sat manuelt. Trænerne ønskede selv at vurdere spillerens samlede niveau, og at niveauet beregnes efter en fast fordeling.
 **Valg:** Egen tabel `level_ratings` (ikke et 25. kriterie, så eksisterende beregninger og fremdriftstællere er uændrede). Fordeling 25/50/25 i `model.distribute_levels`; reserve er samlet score. Det beregnede niveau overskriver aldrig et fastsat niveau uden at en træner trykker på knappen.
 **Konsekvens:** Fordelingen er relativ til holdet – en lille trup (under 4 spillere) giver få eller ingen A/C. Niveau vises som et oplæg til trænergruppen, ikke som rangering af børn.
+
+## D-018 · Niveauer efter DBU (2026-11-21)
+**Kontekst:** Niveau skal altid måles som DBU beskriver det (A, B, C, D), ikke med egne trin.
+**Valg:** `model.LEVELS = A, B, C, D` og `LEVEL_INFO` med sammenfattede beskrivelser + kildelink; A+ og «Ny» udgår (migration til A og D). Beskrivelserne er omskrevet, ikke kopieret ordret (DBU Fyn ejer teksten); boksen linker til originalen. Beregnet niveau (D-017) giver kun A/B/C – D vælges manuelt.
+**Konsekvens:** Ændrer DBU kriterierne, rettes teksten i `model.LEVEL_INFO`.

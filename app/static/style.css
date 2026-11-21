@@ -112,3 +112,10 @@ footer{color:var(--mut);font-size:.78rem;text-align:center;padding:1rem}
  .scroll{border:0;overflow:visible}th{position:static}
 }
 @page{size:A4;margin:14mm}
+
+.help{display:inline-block;margin-left:.35rem;vertical-align:middle}
+.helpbtn{width:2rem;height:2rem;min-width:44px;min-height:44px;border-radius:50%;border:1px solid #9aa5b1;background:#fff;color:var(--navy,#1f3a5f);font-weight:700;cursor:help;padding:0}
+.helpbox{display:none;position:fixed;z-index:9999;left:50%;top:10vh;transform:translateX(-50%);width:min(36rem,94vw);max-height:80vh;overflow:auto;
+  background:#fff;color:#1c2733;border:2px solid var(--navy,#1f3a5f);border-radius:12px;padding:1rem;box-shadow:0 12px 40px rgba(0,0,0,.35);font-weight:400;text-align:left}
+.help:hover .helpbox,.help:focus-within .helpbox{display:block}
+@media print{.help{display:none}}

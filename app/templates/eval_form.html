@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf, scale with context %}{% block title %}{{ p['name'] }} – {{ info['label'] }}{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf, scale, levelhelp with context %}{% block title %}{{ p['name'] }} – {{ info['label'] }}{% endblock %}
 {% block content %}
 <h1>{{ p['name'] }}</h1>
 <p class="muted">{{ info['label'] }} · {{ p['position'] or 'ingen position' }} · {{ model.EVAL_SCALE }}. Lad et felt stå tomt, hvis du ikke kan vurdere det.</p>
@@ -12,8 +12,8 @@
   {% endfor %}
 </details>
 {% endfor %}
-{% if features['levels'] %}<div class="card"><b>Samlet niveau for spilleren</b>
-  <div class="muted small">Din samlede vurdering af spillerens niveau i forhold til holdet. Bruges til det beregnede niveau (25 % A, 50 % B, 25 % C). Lad stå tomt, hvis du ikke kan vurdere det.</div>{{ scale('level', mylevel) }}</div>{% endif %}
+{% if features['levels'] %}<div class="card"><b>Samlet niveau for spilleren</b>{{ levelhelp() }}
+  <div class="muted small">Din samlede vurdering af spillerens niveau efter DBU's niveauer (A, B, C, D – se ?), fra 1 (laveste) til 5 (højeste). Bruges til det beregnede niveau (25 % A, 50 % B, 25 % C). Lad stå tomt, hvis du ikke kan vurdere det.</div>{{ scale('level', mylevel) }}</div>{% endif %}
 <div class="stickybar">
   <button class="btn" name="go" value="stay">Gem</button>
   {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}

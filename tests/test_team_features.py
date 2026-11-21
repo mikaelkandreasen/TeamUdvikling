@@ -15,10 +15,10 @@ def P(i, level, score=None):
 
 # ----------------------------------------------------------------------------- split (rene funktioner)
 def test_split_fills_by_level_and_capacity():
-    players = [P(1, "A+", 4), P(2, "A", 3), P(3, "B", 3), P(4, "B", 2), P(5, "C", 3), P(6, "Ny"), P(7, None, 1)]
+    players = [P(1, "A", 4), P(2, "A", 3), P(3, "B", 3), P(4, "B", 2), P(5, "C", 3), P(6, "D"), P(7, None, 1)]
     teams, left = split.split(players, 2, 0, 1)
     byname = {t["name"]: [p["id"] for p in t["players"]] for t in teams}
-    assert byname["A-hold"] == [1, 2]                       # A+/A først
+    assert byname["A-hold"] == [1, 2]                       # A først
     assert byname["B-hold"] == [3, 4]
     assert byname["C-hold"] == [5, 7] and [p["id"] for p in left] == [6]       # bedste score først; Ny uden score sidst
 
@@ -30,7 +30,7 @@ def test_split_shortage_fills_a_teams_first_and_warns():
 
 
 def test_split_overflow_of_a_goes_to_b_tier_and_unrated_is_c():
-    ps = [P(i, "A", 10 - i) for i in range(1, 7)] + [P(7, None), P(8, "Ny")]
+    ps = [P(i, "A", 10 - i) for i in range(1, 7)] + [P(7, None), P(8, "D")]
     teams, left = split.split(ps, 2, 0, 1)          # kapacitet 2 pr. hold
     t = {x["tier"]: [p["id"] for p in x["players"]] for x in teams}
     assert t["A"] == [1, 2] and t["B"] == [3, 4] and sorted(t["C"]) == [5, 6]
@@ -56,8 +56,8 @@ def test_levels_notes_mascot_and_report(app, admin):
     switch(admin, team_id(app, "A"))
     add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta")
     pa, pb = player_id(app, "Anna Alfa"), player_id(app, "Bella Beta")
-    admin.post("/team/levels", {f"level_{pa}": "A+", f"level_{pb}": "Ugyldig"}, page="/team/levels")
-    assert sql(app, "SELECT level FROM players WHERE id=?", pa)[0]["level"] == "A+" and sql(app, "SELECT level FROM players WHERE id=?", pb)[0]["level"] is None
+    admin.post("/team/levels", {f"level_{pa}": "A", f"level_{pb}": "Ugyldig"}, page="/team/levels")
+    assert sql(app, "SELECT level FROM players WHERE id=?", pa)[0]["level"] == "A" and sql(app, "SELECT level FROM players WHERE id=?", pb)[0]["level"] is None
     admin.post("/team/notes/add", {"body": "Husk bolde"}, page="/team/notes")
     assert "Husk bolde" in admin.get("/team/notes").get_data(as_text=True)
     admin.post("/team/settings", {"game_type": "5v5", "subs": "1", "feat_mascot": "1", "feat_notes": "1", "feat_levels": "1"}, page="/team/settings")
@@ -76,7 +76,7 @@ def test_split_page_and_save(app, admin):
         add_player(admin, f"Spiller {n}")
     admin.post("/team/settings", {"game_type": "3v3", "subs": "0", "feat_lineup": "1", "feat_levels": "1"}, page="/team/settings")
     ids = [player_id(app, f"Spiller {n}") for n in "ABCDEFGH"]
-    admin.post("/team/levels", {f"level_{i}": lv for i, lv in zip(ids, ["A+", "A", "A", "B", "B", "C", "Ny", ""])}, page="/team/levels")
+    admin.post("/team/levels", {f"level_{i}": lv for i, lv in zip(ids, ["A", "A", "A", "B", "B", "C", "D", ""])}, page="/team/levels")
     r = admin.get("/lineup/split?per_tier=1")
     assert r.status_code == 200 and "A-hold" in r.get_data(as_text=True)
     admin.post("/lineup/split", {"action": "save", "per_tier": "1"}, page="/lineup/split?per_tier=1")
@@ -541,3 +541,20 @@ def test_calculated_level_is_used_by_split_when_no_manual_level(app, admin):
     assert "har ikke noget niveau" not in page                       # beregnet niveau bruges som reserve
     assert "har ikke noget niveau" in (lambda c: (c.post("/players/new", {"name": "Ny Uden", "birth_date": "2016-01-01", "active": "1"}, page="/players/new"),
                                                   c.get("/lineup/split").get_data(as_text=True))[1])(admin)
+
+
+def test_levels_follow_dbu_with_help_box_and_migration(app, admin):
+    from app import model
+    assert model.LEVELS == ("A", "B", "C", "D") and len(model.LEVEL_INFO) == 4 and "dbufyn.dk" in model.LEVEL_SOURCE
+    make_team(admin, "A")
+    switch(admin, team_id(app, "A"))
+    add_player(admin, "Anna Alfa"); add_player(admin, "Bella Beta")
+    sql(app, "UPDATE players SET level='A+' WHERE name='Anna Alfa'")
+    sql(app, "UPDATE players SET level='Ny' WHERE name='Bella Beta'")
+    con = appdb.connect(app.config["DATABASE"])
+    appdb._migrate_dbu_levels(con); appdb._migrate_dbu_levels(con); con.commit(); con.close()          # idempotent
+    assert {r["name"]: r["level"] for r in sql(app, "SELECT name, level FROM players")} == {"Anna Alfa": "A", "Bella Beta": "D"}
+    page = admin.get("/team/levels").get_data(as_text=True)
+    assert 'class="helpbox"' in page and "D-niveau" in page and "dbufyn.dk" in page and "A+" not in page
+    pid = player_id(app, "Anna Alfa")
+    assert 'class="helpbox"' in admin.get(f"/eval/1/{pid}").get_data(as_text=True)

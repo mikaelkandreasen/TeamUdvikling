@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Niveauer følger DBU's niveaudeling til stævner: A, B, C og D** (før A+, A, B, C, Ny). Eksisterende data flyttes automatisk (A+ → A, Ny → D). Skema v12.
+
+### Tilføjet
+- **?-knap med forklaring** ved Samlet niveau i evalueringen, på Spillerniveau og på Del i hold: en boks over siden med DBU's beskrivelse af A-, B-, C- og D-niveau (samt blandet niveau og begynder) og link til kilden. Virker med mus (hover) og tryk/tastatur på mobil. Beskrivelserne er sammenfattet med egne ord.
+
 ## [0.13.0] - 2026-11-21
 
 ### Tilføjet

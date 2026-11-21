@@ -220,8 +220,23 @@ def ratio(num, den):
     return num / den
 
 
-# Spillerniveau (trænerens vurdering) – fra bedst til nyeste; «Ny» = ny spiller, endnu ikke vurderet
-LEVELS = ("A+", "A", "B", "C", "Ny")
+# Spillerniveau efter DBU's niveaudeling til stævner (A, B, C, D) – beskrivelserne er omskrevet med egne ord; se LEVEL_SOURCE
+LEVELS = ("A", "B", "C", "D")
+LEVEL_SOURCE = "https://www.dbufyn.dk/boern-u5-12/generelt-om-boernefodbold/niveaudeling-til-staevner/#Niveauer"
+LEVEL_INFO = (
+    ("A", "A-niveau", "Børn der elsker fodbold og spiller meget, både hjemme og i skolen. De løber hurtigt, sparker godt og har styr på bolden i fart. "
+          "De forstår som regel spillet, læser situationerne og er i gang, før tingene sker. Et A-hold består af A- og B-spillere – ikke C-spillere. "
+          "Niveauet er for helt almindelige børn, ikke for talentakademier."),
+    ("B", "B-niveau", "Spillere der ligger mellem A og C. Et B-hold består mest af B-spillere, gerne med et par C-spillere og højst én A-spiller."),
+    ("C", "C-niveau", "Børn der er nye i fodbold eller endnu ikke har fanget, hvad spillet går ud på. De har ofte ikke spillet længe og skal bruge længere tid på at styre bolden – "
+          "typisk sent fødte, forsigtige eller nystartede børn. Et C-hold består udelukkende af C-spillere; kommer der en A-spiller eller to-tre B-spillere på, er det ikke længere et C-hold."),
+    ("D", "D-niveau (nystartet)", "Børn der er helt nye i både bevægelse og fodbold, ofte taget med af forældrene eller på prøve for at se, om det er noget for dem. "
+          "De sparker tit forbi bolden, er bange for den, når den kommer flyvende, og lader sig let aflede. Et D-hold har ingen A- eller B-spillere og højst et par C-spillere. "
+          "Når holdet fører med 3 mål, tages en spiller af banen, og ved 6 mål endnu en. «Nystartet» bruger samme beskrivelse."),
+)
+LEVEL_NOTES = ("Blandet niveau: alle spiller med og mod hinanden uanset niveau, og klubben bør blande sine spillere på tværs af hold i stedet for et rent A-hold mod et rent C-hold. "
+               "Begynder: de mindst erfarne C-spillere samt D-spillere.",
+               "Børn udvikler sig forskelligt og skifter niveau over tid. Placér spillerne efter deres faktiske niveau, og flyt ikke A- og B-spillere ned på C-hold.")
 # Hvorfor har spilleren fået mascotten med hjem?
 MASCOT_REASONS = {"indsats": "Flot indsats", "fremgang": "Stor fremgang", "kammerat": "God kammerat", "hjaelp": "Hjælpsom",
                   "foerste": "Første gang / tur", "fodselsdag": "Fødselsdag", "andet": "Andet"}
