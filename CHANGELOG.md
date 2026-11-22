@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 ## [0.26.0] - 2026-11-22
 
 ### Tilføjet
+- **Delvise opdateringer uden sideskift (B-043):** indbakken (læst, svar, send, slet, tælleren i topbjælken) og kampopstillingen (forslag, kopiér, gem) opdaterer kun de dele, der ændres. Virker uden JavaScript som før.
 - **Opstillingsforslag (Kampe):** *Foreslå opstilling* fordeler spilletiden jævnt og giver først spillerne de positioner, de aldrig har prøvet (hvide pletter). Vælg hvem der ikke er med, og om målmandspladsen indgår. Forslaget gemmes først, når du trykker Gem kamp.
 - **Kampforslag fra iCal-link:** bruger holdets eksisterende kalenderlink (Holdindstillinger). Knappen *Hent kampforslag* under Kampe viser kommende aftaler (dato, tid, sted, gættet modstander), som kan rettes og oprettes som kamp med ét tryk. Kampe der ligner en kamp er forvalgt; allerede oprettede (samme UID) springes over. Migration 012 (skema 23).
 - **E-mail-kø (B-044):** invitationer og indbakkebeskeder lægges i en kø og sendes af en baggrundstråd med op til 6 genforsøg; brugeren venter ikke på SMTP. Ny side Administration → E-mail-kø (sendt/i kø/mislykket, uden indhold; mislykkede kan sættes i kø igen). Indholdet slettes efter udsendelse/opgivelse. Migration 011 (skema 22).

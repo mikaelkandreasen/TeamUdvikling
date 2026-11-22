@@ -287,3 +287,15 @@ def test_suggest_route_does_not_save_until_gem(world):
     assert sql(app, "SELECT COUNT(*) n FROM match_slots WHERE match_id=?", mid)[0]["n"] == 0
     other = sql(app, "SELECT id FROM players WHERE team_id=? LIMIT 1", tid)[0]["id"]
     assert tb.post(f"/kampe/{mid}", {"action": "suggest"}, page="/kampe/").status_code in (302, 403, 404)
+
+
+def test_partial_update_hooks_exist_and_pages_still_work_without_js(world):
+    app, admin, ca, cb, ta, tb = world
+    ca.post("/inbox/send", {"to": "club", "title": "Hej", "body": "Tekst"}, page="/inbox/")
+    page = ca.get("/inbox/").get_data(as_text=True)
+    assert 'id="inbox-main"' in page and 'id="inbox-badge"' in page and 'data-swap="#inbox-main,#inbox-badge"' in page
+    assert "onsubmit" not in page and "<script>" not in page                                  # CSP: ingen indlejret JS
+    js = ca.get("/static/app.js").get_data(as_text=True)
+    assert "form[data-swap]" in js
+    # almindelig POST (uden JS) virker som før: redirect tilbage til indbakken
+    assert ta.post("/inbox/read", {}, page="/inbox/").status_code == 302

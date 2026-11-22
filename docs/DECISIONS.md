@@ -117,3 +117,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Kampe blev tastet både i kampprogrammet og her.
 **Valg:** Genbruger holdets eksisterende kalenderlink og den SSRF-låste hentning/parser i `ical.py` (hentes kun ved knaptryk). Trænerne vælger og kan rette modstanderen (gættes ud fra titlen). Dubletter undgås med `matches.ical_uid` (migration 012).
 **Konsekvens:** Flyttede/aflyste kampe opdaterer ikke allerede oprettede kampe. Klokkeslæt vises som feedet angiver dem (ingen tidszoneomregning).
+
+## D-028 · Delvise opdateringer med eget lille script i stedet for HTMX (2026-11-22)
+**Kontekst:** B-043 foreslog HTMX fra `static/`. Byggemiljøet har ingen adgang til at hente biblioteket, og en ikke-verificeret kopi må ikke ligge i en sikkerhedsfølsom app.
+**Valg:** ~35 linjer i `static/app.js`: `<form data-swap="#a,#b">` sendes med fetch, og de angivne elementer samt beskeder udskiftes med svarsiden. Serveren er uændret (returnerer hele sider), så alt virker uden JS; ved netværksfejl sendes formularen almindeligt, og efter et gennemført svar sendes den aldrig igen.
+**Konsekvens:** Samme effekt og CSP-sikkerhed uden afhængighed. Skal flere HTMX-funktioner bruges senere (polling, indsætning), kan HTMX lægges i `static/` med kontrolleret hash; markeringerne ligner hinanden.

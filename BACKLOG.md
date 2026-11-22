@@ -21,7 +21,6 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 ## Teknisk gæld og forbedringer (P1)
 - **B-041b · Fast adgangslag i koden** · M – restpunkt: selve laget (repository), så rå SQL på spillerdata samles ét sted. Den automatiske rutetest (v0.26.0) fanger allerede glemte afgrænsninger.
 - **B-042 · Evalueringskriterier som tabeller** · L – roller, nøglefærdigheder og kriterier (i dag 24 faste indeks i `model.py`) flyttes til tabeller pr. hold med standardsæt som udgangspunkt. Accept: eksisterende hold ser præcis de samme kriterier og tal; et hold kan omdøbe/skjule et kriterium uden kodeændring; beregninger og rapporter bruger tabellerne; migration uden tab af scores.
-- **B-043 · HTMX-frontend** · M – serverrenderede dele opdateres uden fuld sideindlæsning (evalueringsskema, indbakke, kampopstilling, noter). Accept: HTMX leveres fra `static/` (ingen CDN) og virker med den stramme CSP; alt virker stadig uden JavaScript; ingen indlejret JS/`on*=`; mobiltest på 360–430 px.
 
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
@@ -39,6 +38,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **B-043 · Delvise opdateringer** – færdig (v0.27.0) som eget `data-swap`-script (D-028). Idé: udvid til evalueringsskema og noter.
+- **Opstillingsforslag med prioritet på hvide pletter** – færdig (v0.27.0).
 - **Kampforslag fra iCal-link** – færdig (v0.26.0). Idé: vis ændringer (flyttet/aflyst) for allerede oprettede kampe ved næste hentning.
 - **B-044 · E-mail-kø** – færdig (v0.26.0). Nulstillingsmail og prøvemail sendes stadig direkte, så brugeren får fejl med det samme (D-026).
 - **v0.26.0** – B-041 automatisk isolationstest af alle id-ruter (andet hold og anden klub, positiv kontrol, fejler ved ny ubeskyttet rute).
