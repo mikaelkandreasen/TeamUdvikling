@@ -11,7 +11,7 @@
   <div class="row"><div><label for="la">Øverste andel = A (%)</label><input id="la" type="number" name="level_share_a" min="0" max="45" value="{{ shares[0] }}"></div>
   <div><label for="lc">Nederste andel = C (%)</label><input id="lc" type="number" name="level_share_c" min="0" max="45" value="{{ shares[1] }}"></div></div>
   <p class="muted small">Trænernes niveauvurderinger fordeles automatisk efter score: de øverste {{ shares[0] }} % bliver A, de nederste {{ shares[1] }} % C, og resten ({{ 100 - shares[0] - shares[1] }} %) B. Standard er 25 / 50 / 25.</p>
-  <label for="sl">Slogan</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="fx Sammen er vi stærkest">
+  <label for="sl">Holdets slogan</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="fx Sammen er vi stærkest">
   <label for="mn">Mascot (navn)</label><input id="mn" type="text" name="mascot_name" maxlength="40" value="{{ team['mascot_name'] or '' }}" placeholder="fx Bamse">
   <label for="ic">Kalenderadresse (iCal, valgfri)</label><input id="ic" type="url" name="ical_url" maxlength="500" value="{{ ical_url }}" placeholder="https://…/kalender.ics">
   <p class="muted small">Fx holdets kalender-link fra KampKlar eller klubbens kalender. Kun https; hentes kun når en træner trykker «Hent» under Kalender.</p>

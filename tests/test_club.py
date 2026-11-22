@@ -104,3 +104,12 @@ def test_app_name_defaults_and_is_configurable(app, team):
     assert "Team Udvikling" in team.get("/").get_data(as_text=True)
     save(team, app_name="<b>x</b>")
     assert "<b>x</b>" not in team.get("/").get_data(as_text=True)
+
+
+def test_club_motto_and_team_slogan_both_on_parent_report(app, team):
+    add_player(team, "Anna Alfa")
+    save(team, name="Virring Fodbold", motto="Sammen om fodbold")
+    team.post("/team/settings", {"game_type": "8v8", "subs": "3", "slogan": "Hold sammen"}, page="/team/settings")
+    html = team.get("/report/%d/foraeldre" % player_id(app, "Anna Alfa")).get_data(as_text=True)
+    assert "Sammen om fodbold" in html and "Hold sammen" in html
+    assert "Sammen om fodbold" in team.get("/admin/club").get_data(as_text=True)

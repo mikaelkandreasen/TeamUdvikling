@@ -590,7 +590,7 @@ def club_profile():
         if problem:
             flash(problem, "error")
         else:
-            limits = dict(name=80, app_name=60, address=160, email=120, phone=40, website=120, footer=300)
+            limits = dict(name=80, app_name=60, address=160, email=120, phone=40, website=120, footer=300, motto=100)
             for k, n in limits.items():
                 club_set(db, cid, k, (request.form.get(k) or "").strip()[:n])
             club_set(db, cid, "color", request.form.get("color", "").strip())

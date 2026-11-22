@@ -92,7 +92,7 @@ def _public_info():
         row = get_db().execute("SELECT * FROM clubs WHERE id=?", (int(raw),)).fetchone()
     if row is None:
         g.club_info = dict(name="", app_name=DEFAULT_APP_NAME, color="", dark="", has_logo=False, logo_url="", id=None,
-                           address="", email="", phone="", website="", footer="", logo_mime="", logo_v="")
+                           address="", email="", phone="", website="", footer="", motto="", logo_mime="", logo_v="")
         return g.club_info
     c = club_get(get_db(), row["id"])
     color = c["color"] if HEX.match(c["color"] or "") else ""
