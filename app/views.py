@@ -3,7 +3,7 @@ import io
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, session, url_for
 
-from . import activity, club, model, teams
+from . import activity, club, i18n, model, teams
 from .db import get_db
 from .team import team_criteria, team_focus
 from .helpers import active_players, default_round, round_info, round_window, team_id
@@ -114,3 +114,22 @@ def club_logo(cid):
 def privacy():
     """Offentlig privatlivsinformation (GDPR art. 13). Skabelon – tilpasses af klubben."""
     return render_template("privacy.html")
+
+
+@bp.route("/sprog", methods=["POST"])
+def set_lang():
+    """Vælg sprog: gemmes i en cookie (virker også på login-siden) og på brugeren, hvis man er logget ind."""
+    lang = request.form.get("lang", "")
+    if lang not in i18n.LANGS:
+        abort(400)
+    nxt = request.form.get("next", "/")
+    if not nxt.startswith("/") or nxt.startswith("//") or "\\" in nxt:
+        nxt = "/"
+    real = g.get("real_user") or g.get("user")
+    if real is not None and session.get("stage") == "ok":
+        db = get_db()
+        db.execute("UPDATE users SET lang=? WHERE id=?", (lang, real["id"]))
+        db.commit()
+    resp = redirect(nxt)
+    resp.set_cookie(i18n.COOKIE, lang, max_age=365 * 86400, samesite="Lax", secure=request.is_secure, httponly=True)
+    return resp

@@ -1,19 +1,19 @@
-{% extends "base.html" %}{% block title %}Menu{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _('Menu') }}{% endblock %}
 {% block content %}
-<h1>Menu</h1>
+<h1>{{ _('Menu') }}</h1>
 <div class="tiles">
-  <a class="tile alt" href="{{ url_for('evaluation.team') }}">Teamoversigt</a>
-  <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling</a>
-  <a class="tile alt" href="{{ url_for('evaluation.position_view') }}">Position &amp; bane</a>
-  {% if features['lineup'] %}<a class="tile alt" href="{{ url_for('lineup.index') }}">Holdsætning</a>{% endif %}
-  {% if features['matches'] %}<a class="tile alt" href="{{ url_for('matches.index') }}">Kampe og spilletid</a>{% endif %}
-  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder</a>
-  {% if features['motivation'] %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">Motivation</a>{% endif %}
-  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>
-  <a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde</a>{% endif %}
-  <a class="tile alt" href="{{ url_for('main.criteria') }}">Skala &amp; kriterier</a>
-  <a class="tile alt" href="{{ url_for('inbox.index') }}">Beskeder{% if inbox_unread %} ({{ inbox_unread|length }}){% endif %}</a>
-  <a class="tile alt" href="{{ url_for('auth.account') }}">Min konto</a>
-  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">Administration</a>{% endif %}
+  <a class="tile alt" href="{{ url_for('evaluation.team') }}">{{ _('Teamoversigt') }}</a>
+  <a class="tile alt" href="{{ url_for('evaluation.development') }}">{{ _('Udvikling') }}</a>
+  <a class="tile alt" href="{{ url_for('evaluation.position_view') }}">{{ _('Position & bane') }}</a>
+  {% if features['lineup'] %}<a class="tile alt" href="{{ url_for('lineup.index') }}">{{ _('Holdsætning') }}</a>{% endif %}
+  {% if features['matches'] %}<a class="tile alt" href="{{ url_for('matches.index') }}">{{ _('Kampe og spilletid') }}</a>{% endif %}
+  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">{{ _('Områder') }}</a>
+  {% if features['motivation'] %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">{{ _('Motivation') }}</a>{% endif %}
+  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">{{ _('Udviklingsdata') }}</a>
+  <a class="tile alt" href="{{ url_for('devdata.attendance') }}">{{ _('Fremmøde') }}</a>{% endif %}
+  <a class="tile alt" href="{{ url_for('main.criteria') }}">{{ _('Skala & kriterier') }}</a>
+  <a class="tile alt" href="{{ url_for('inbox.index') }}">{{ _('Beskeder') }}{% if inbox_unread %} ({{ inbox_unread|length }}){% endif %}</a>
+  <a class="tile alt" href="{{ url_for('auth.account') }}">{{ _('Min konto') }}</a>
+  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">{{ _('Administration') }}</a>{% endif %}
 </div>
 {% endblock %}

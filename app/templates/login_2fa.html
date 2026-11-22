@@ -1,16 +1,16 @@
 {% extends "base.html" %}{% block title %}2FA{% endblock %}
 {% block content %}
 <div class="login card">
-  <h1>To-faktor-kode</h1>
-  <p>Skriv den 6-cifrede kode fra din autentificeringsapp, eller en gendannelseskode.</p>
+  <h1>{{ _('To-faktor-kode') }}</h1>
+  <p>{{ _('Skriv den 6-cifrede kode fra din autentificeringsapp, eller en gendannelseskode.') }}</p>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="c">Kode</label>
+    <label for="c">{{ _('Kode') }}</label>
     <input id="c" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" required autofocus>
     {% if remember_days %}<label class="check"><input type="checkbox" name="remember" value="1"> Husk denne enhed i {{ remember_days }} dage (ingen kode eller 2FA)</label>
     <p class="muted small">Brug kun på din egen telefon eller computer. Mister du enheden, så skift adgangskode eller vælg “Glem alle enheder” under Min konto.{% if is_admin %} Administration kræver altid et nyt login med kode.{% endif %}</p>{% endif %}
-    <div class="actions"><button class="btn block">Log ind</button></div>
+    <div class="actions"><button class="btn block">{{ _('Log ind') }}</button></div>
   </form>
-  <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec block">Annullér</button></form>
+  <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec block">{{ _('Annullér') }}</button></form>
 </div>
 {% endblock %}

@@ -1,14 +1,14 @@
-{% extends "base.html" %}{% block title %}Log ind{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _('Log ind') }}{% endblock %}
 {% block content %}
 {% if club['has_logo'] or club['motto'] %}<div class="login" style="text-align:center">{% if club['has_logo'] %}<img src="{{ club['logo_url'] }}" alt="" style="max-height:90px;max-width:60%">{% endif %}{% if club['motto'] %}<div class="muted"><i>{{ club['motto'] }}</i></div>{% endif %}</div>{% endif %}
 <div class="login card" style="{{ 'margin-top:1rem' if club['has_logo'] or club['motto'] }}">
-  <h1>{{ club['name'] or 'Log ind' }}</h1>
+  <h1>{{ club['name'] or _('Log ind') }}</h1>
   <form method="post" autocomplete="on">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="u">Brugernavn</label><input id="u" type="text" name="username" autocomplete="username" autocapitalize="none" required autofocus>
-    <label for="p">Adgangskode</label><input id="p" type="password" name="password" autocomplete="current-password" required>
-    <div class="actions"><button class="btn block">Fortsæt</button></div>
+    <label for="u">{{ _('Brugernavn') }}</label><input id="u" type="text" name="username" autocomplete="username" autocapitalize="none" required autofocus>
+    <label for="p">{{ _('Adgangskode') }}</label><input id="p" type="password" name="password" autocomplete="current-password" required>
+    <div class="actions"><button class="btn block">{{ _('Fortsæt') }}</button></div>
   </form>
-  <p class="muted small">Efter adgangskoden skal du angive en engangskode fra din autentificeringsapp (2FA).</p>
+  <p class="muted small">{{ _('Efter adgangskoden skal du angive en engangskode fra din autentificeringsapp (2FA).') }}</p>
 </div>
 {% endblock %}

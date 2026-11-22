@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users(
   pw_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'trainer', totp_secret TEXT,
   totp_enabled INTEGER NOT NULL DEFAULT 0, last_totp_step INTEGER NOT NULL DEFAULT 0,
   failed_logins INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0,
-  must_change_pw INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, email TEXT);
+  must_change_pw INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, email TEXT, lang TEXT NOT NULL DEFAULT 'da');
 CREATE TABLE IF NOT EXISTS recovery_codes(
   id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   code_hash TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0);
@@ -176,7 +176,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 24   # v24: team_criteria (holdets kriterietekster i tabel; migration 013); v23: matches.ical_uid (migration 012); v22: mail_queue (e-mail-kø; via migration 011); v21: matches + match_slots (kampe: spillere på positioner pr. periode → spilletid; IF NOT EXISTS); v20: messages.to_user_id/reply_to (svar), conversations (forældresamtaler), motivation_log + triggers (motivation over tid; IF NOT EXISTS/ADD COLUMN); v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 25   # v25: users.lang (sprogvalg; migration 014); v24: team_criteria (holdets kriterietekster i tabel; migration 013); v23: matches.ical_uid (migration 012); v22: mail_queue (e-mail-kø; via migration 011); v21: matches + match_slots (kampe: spillere på positioner pr. periode → spilletid; IF NOT EXISTS); v20: messages.to_user_id/reply_to (svar), conversations (forældresamtaler), motivation_log + triggers (motivation over tid; IF NOT EXISTS/ADD COLUMN); v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -321,6 +321,13 @@ def _m011_mail_queue(con):
     con.execute("CREATE INDEX IF NOT EXISTS ix_mail_queue ON mail_queue(sent_at, failed, next_try)")
 
 
+def _m014_user_lang(con):
+    """v25: users.lang (valgt sprog: da/en/de/sv/no)."""
+    cols = [r[1] for r in con.execute("PRAGMA table_info(users)")]
+    if "lang" not in cols:
+        con.execute("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'da'")
+
+
 def _m013_team_criteria(con):
     """v24: team_criteria (holdets egne kriterietekster flyttes fra settings 't<id>:crit_desc_<n>' til en tabel). Kopierer først, rydder derefter."""
     con.execute("""CREATE TABLE IF NOT EXISTS team_criteria(
@@ -353,6 +360,7 @@ MIGRATIONS = [
     ("011_mail_koe", _m011_mail_queue),
     ("012_kamp_ical_uid", _m012_match_uid),
     ("013_team_kriterier", _m013_team_criteria),
+    ("014_bruger_sprog", _m014_user_lang),
 ]
 
 

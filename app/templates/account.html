@@ -1,21 +1,21 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Min konto{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _('Min konto') }}{% endblock %}
 {% block content %}
-<h1>Min konto</h1>
-<div class="card"><b>{{ user['display_name'] }}</b> ({{ user['username'] }}) · {{ 'Administrator' if user['role'] == 'admin' else 'Træner' }}
-  <div class="muted small">E-mail: {{ user['email'] or 'ikke angivet' }} (kun en administrator kan ændre den)</div>
-  <div class="muted small">Hold: {% for t in teams %}{{ t['name'] }}{{ ', ' if not loop.last }}{% else %}ingen{% endfor %}</div></div>
-<div class="card"><h2>Skift adgangskode</h2>
+<h1>{{ _('Min konto') }}</h1>
+<div class="card"><b>{{ user['display_name'] }}</b> ({{ user['username'] }}) · {{ _('Administrator') if user['role'] == 'admin' else _('Træner') }}
+  <div class="muted small">{{ _('E-mail') }}: {{ user['email'] or _('ikke angivet') }} {{ _('(kun en administrator kan ændre den)') }}</div>
+  <div class="muted small">{{ _('Hold') }}: {% for t in teams %}{{ t['name'] }}{{ ', ' if not loop.last }}{% else %}{{ _('ingen') }}{% endfor %}</div></div>
+<div class="card"><h2>{{ _('Skift adgangskode') }}</h2>
   <form method="post">{{ csrf() }}<input type="hidden" name="action" value="password">
-    <label>Nuværende adgangskode</label><input type="password" name="old" autocomplete="current-password" required>
-    <label>Ny adgangskode (mindst 12 tegn)</label><input type="password" name="new" autocomplete="new-password" required>
-    <label>Gentag ny adgangskode</label><input type="password" name="new2" autocomplete="new-password" required>
-    <div class="actions"><button class="btn">Skift</button></div></form></div>
-<div class="card"><h2>Husk-enheder</h2>
+    <label>{{ _('Nuværende adgangskode') }}</label><input type="password" name="old" autocomplete="current-password" required>
+    <label>{{ _('Ny adgangskode (mindst 12 tegn)') }}</label><input type="password" name="new" autocomplete="new-password" required>
+    <label>{{ _('Gentag ny adgangskode') }}</label><input type="password" name="new2" autocomplete="new-password" required>
+    <div class="actions"><button class="btn">{{ _('Skift') }}</button></div></form></div>
+<div class="card"><h2>{{ _('Husk-enheder') }}</h2>
   <p>{{ devices }} enhed{{ 'er' if devices != 1 }} husket (logger ind uden kode i op til 30 dage).</p>
-  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="forget_devices"><button class="btn sec" {{ 'disabled' if not devices }}>Glem alle enheder</button></form></div>
-<div class="card"><h2>Gendannelseskoder</h2>
+  <form method="post">{{ csrf() }}<input type="hidden" name="action" value="forget_devices"><button class="btn sec" {{ 'disabled' if not devices }}>{{ _('Glem alle enheder') }}</button></form></div>
+<div class="card"><h2>{{ _('Gendannelseskoder') }}</h2>
   <p class="muted">Du har {{ codes_left }} ubrugte gendannelseskoder.</p>
   <form method="post">{{ csrf() }}<input type="hidden" name="action" value="recovery">
-    <label>Adgangskode (bekræftelse)</label><input type="password" name="old" autocomplete="current-password" required>
-    <div class="actions"><button class="btn sec">Opret nye koder (gamle ugyldiggøres)</button></div></form></div>
+    <label>{{ _('Adgangskode (bekræftelse)') }}</label><input type="password" name="old" autocomplete="current-password" required>
+    <div class="actions"><button class="btn sec">{{ _('Opret nye koder (gamle ugyldiggøres)') }}</button></div></form></div>
 {% endblock %}

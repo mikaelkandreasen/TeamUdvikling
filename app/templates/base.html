@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="da">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -21,54 +21,56 @@
     {% if my_profiles %}
     <form method="post" action="{{ url_for('main.switch_profile') }}" class="noprint">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <select name="profile_id" data-autosubmit aria-label="Skift profil" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
+      <select name="profile_id" data-autosubmit aria-label="{{ _('Skift profil') }}" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
         {% for p in my_profiles %}<option value="{{ p['id'] }}" {{ 'selected' if user['profile_id']|default(0) == p['id'] }}>{{ p['label'] }}</option>{% endfor %}
       </select>
-      <noscript><button>Skift</button></noscript>
+      <noscript><button>{{ _('Skift') }}</button></noscript>
     </form>
     {% endif %}
     {% if teams|length > 1 %}
     <form method="post" action="{{ url_for('main.switch_team') }}" class="noprint">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <select name="team_id" data-autosubmit aria-label="Skift hold" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
-        {% for t in teams %}<option value="{{ t['id'] }}" {{ 'selected' if team and t['id'] == team['id'] }}>{{ t['name'] }}{{ ' (arkiveret)' if t['archived'] }}</option>{% endfor %}
+      <select name="team_id" data-autosubmit aria-label="{{ _('Skift hold') }}" style="min-height:36px;width:auto;max-width:9rem;padding:.2rem .4rem">
+        {% for t in teams %}<option value="{{ t['id'] }}" {{ 'selected' if team and t['id'] == team['id'] }}>{{ t['name'] }}{{ ' ' ~ _('(arkiveret)') if t['archived'] }}</option>{% endfor %}
       </select>
-      <noscript><button>Skift</button></noscript>
+      <noscript><button>{{ _('Skift') }}</button></noscript>
     </form>
     {% endif %}
-    <span id="inbox-badge">{% if inbox_unread %}<a class="onl" href="{{ url_for('inbox.index') }}" title="Nye beskeder" aria-label="{{ inbox_unread|length }} nye beskeder" style="text-decoration:none">✉ <b>{{ inbox_unread|length }}</b></a>{% endif %}</span>
+    <span id="inbox-badge">{% if inbox_unread %}<a class="onl" href="{{ url_for('inbox.index') }}" title="{{ _('Nye beskeder') }}" aria-label="{{ inbox_unread|length }} {{ _('Nye beskeder')|lower }}" style="text-decoration:none">✉ <b>{{ inbox_unread|length }}</b></a>{% endif %}</span>
     <span class="who"><span class="hide-sm">{{ user['display_name'] }}</span>{% if online %} <a class="onl" href="{{ url_for('main.activity_now') }}" title="Aktive nu – tryk for detaljer" aria-label="Aktive nu: {{ online['team']|length }} på holdet{% if online['total'] is not none %}, {{ online['total']|length }} i alt{% endif %}">({{ online['team']|length }}{% if online['total'] is not none %}/{{ online['total']|length }}{% endif %} aktive)</a>{% endif %}</span>
-    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>Log ud</button></form>
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>{{ _('Log ud') }}</button></form>
   {% endif %}
 </header>
 {% if authed %}
-<nav class="side" aria-label="Hovedmenu">
-  {% for e, label, f in [('main.home','Hjem',''),('players.index','Spillere',''),('evaluation.eval_home','Evaluering',''),('evaluation.team','Teamoversigt',''),
-      ('evaluation.development','Udvikling',''),('evaluation.position_view','Position &amp; bane',''),('lineup.index','Holdsætning','lineup'),('matches.index','Kampe','matches'),('evaluation.areas','Områder',''),
-      ('motivation.matrix','Motivation','motivation'),('devdata.matrix','Udviklingsdata','devdata'),('reports.index','Rapporter',''),('main.criteria','Skala &amp; kriterier',''),
-      ('inbox.index','Beskeder',''),('auth.account','Min konto','')] if not f or features.get(f, True) %}
-    <a href="{{ url_for(e) }}" class="{{ 'on' if ep == e }}">{{ label|safe }}</a>
+<nav class="side" aria-label="{{ _('Hovedmenu') }}">
+  {% for e, label, f in [('main.home',_('Hjem'),''),('players.index',_('Spillere'),''),('evaluation.eval_home',_('Evaluering'),''),('evaluation.team',_('Teamoversigt'),''),
+      ('evaluation.development',_('Udvikling'),''),('evaluation.position_view',_('Position & bane'),''),('lineup.index',_('Holdsætning'),'lineup'),('matches.index',_('Kampe'),'matches'),('evaluation.areas',_('Områder'),''),
+      ('motivation.matrix',_('Motivation'),'motivation'),('devdata.matrix',_('Udviklingsdata'),'devdata'),('reports.index',_('Rapporter'),''),('main.criteria',_('Skala & kriterier'),''),
+      ('inbox.index',_('Beskeder'),''),('auth.account',_('Min konto'),'')] if not f or features.get(f, True) %}
+    <a href="{{ url_for(e) }}" class="{{ 'on' if ep == e }}">{{ label }}</a>
   {% endfor %}
-  {% if user['role'] == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin.') }}">Administration</a>{% endif %}
+  {% if user['role'] == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin.') }}">{{ _('Administration') }}</a>{% endif %}
 </nav>
-<nav class="tabbar" aria-label="Hovedmenu (mobil)">
-  <a href="{{ url_for('main.mobile') }}" class="{{ 'on' if ep in ('main.mobile','main.home') }}"><b>🏠</b>Hjem</a>
-  <a href="{{ url_for('players.index') }}" class="{{ 'on' if ep.startswith('players.') }}"><b>👧</b>Spillere</a>
-  <a href="{{ url_for('evaluation.eval_home') }}" class="{{ 'on' if ep.startswith('evaluation.eval') }}"><b>✅</b>Evaluér</a>
-  <a href="{{ url_for('reports.index') }}" class="{{ 'on' if ep.startswith('reports.') }}"><b>📄</b>Rapport</a>
-  <a href="{{ url_for('main.menu') }}" class="{{ 'on' if ep == 'main.menu' }}"><b>☰</b>Mere</a>
+<nav class="tabbar" aria-label="{{ _('Hovedmenu (mobil)') }}">
+  <a href="{{ url_for('main.mobile') }}" class="{{ 'on' if ep in ('main.mobile','main.home') }}"><b>🏠</b>{{ _('Hjem') }}</a>
+  <a href="{{ url_for('players.index') }}" class="{{ 'on' if ep.startswith('players.') }}"><b>👧</b>{{ _('Spillere') }}</a>
+  <a href="{{ url_for('evaluation.eval_home') }}" class="{{ 'on' if ep.startswith('evaluation.eval') }}"><b>✅</b>{{ _('Evaluér') }}</a>
+  <a href="{{ url_for('reports.index') }}" class="{{ 'on' if ep.startswith('reports.') }}"><b>📄</b>{{ _('Rapport') }}</a>
+  <a href="{{ url_for('main.menu') }}" class="{{ 'on' if ep == 'main.menu' }}"><b>☰</b>{{ _('Mere') }}</a>
 </nav>
 {% endif %}
-{% if viewing %}<div class="viewas" role="status"><span>Du ser siden som <b>{{ user['display_name'] }}</b> (skrivebeskyttet)</span>
-  <form method="post" action="{{ url_for('auth.view_as_stop') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec">Afslut</button></form></div>{% endif %}
+{% if viewing %}<div class="viewas" role="status"><span>{{ _('Du ser siden som') }} <b>{{ user['display_name'] }}</b> {{ _('(skrivebeskyttet)') }}</span>
+  <form method="post" action="{{ url_for('auth.view_as_stop') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec">{{ _('Afslut') }}</button></form></div>{% endif %}
 <main>
   {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" role="status">{{ m }}</div>{% endfor %}{% endwith %}
-  {% if authed and inbox_unread and ep in ('main.home','main.mobile') %}<div class="card" role="status" style="border-left:4px solid var(--navy2)"><h2>Nye beskeder</h2>
+  {% if authed and inbox_unread and ep in ('main.home','main.mobile') %}<div class="card" role="status" style="border-left:4px solid var(--navy2)"><h2>{{ _('Nye beskeder') }}</h2>
     {% for m in inbox_unread[:3] %}<p><b>{{ m['title'] }}</b><br><span class="muted small">{{ m['sender_name'] }} · {{ m['created_at'][:16] }}</span><br><span style="white-space:pre-wrap">{{ m['body'] }}</span></p>{% endfor %}
-    {% if inbox_unread|length > 3 %}<p class="muted small">+ {{ inbox_unread|length - 3 }} flere i indbakken.</p>{% endif %}
-    <form method="post" action="{{ url_for('inbox.read_all') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ '/m' if ep == 'main.mobile' else '/' }}"><button class="btn sec">Læst</button> <a href="{{ url_for('inbox.index') }}">Åbn indbakken</a></form></div>{% endif %}
+    {% if inbox_unread|length > 3 %}<p class="muted small">+ {{ inbox_unread|length - 3 }} {{ _('flere i indbakken.') }}</p>{% endif %}
+    <form method="post" action="{{ url_for('inbox.read_all') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ '/m' if ep == 'main.mobile' else '/' }}"><button class="btn sec">{{ _('Læst') }}</button> <a href="{{ url_for('inbox.index') }}">Åbn indbakken</a></form></div>{% endif %}
   {% block content %}{% endblock %}
 </main>
-<footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}{{ club['app_name'] }}{% if user %} v{{ version }}{% endif %} · <a href="{{ url_for('main.privacy') }}">Privatliv</a></footer>
+<footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}{{ club['app_name'] }}{% if user %} v{{ version }}{% endif %} · <a href="{{ url_for('main.privacy') }}">{{ _('Privatliv') }}</a>
+  <form method="post" action="{{ url_for('main.set_lang') }}" class="noprint" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}">
+    <select name="lang" data-autosubmit aria-label="{{ _('Sprog') }}" style="min-height:36px;width:auto;padding:.2rem .4rem">{% for k, n in langs.items() %}<option value="{{ k }}" {{ 'selected' if k == lang }}>{{ n }}</option>{% endfor %}</select><noscript> <button>OK</button></noscript></form></footer>
 </body>
 </html>

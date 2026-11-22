@@ -22,6 +22,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-041c · Flyt rå SQL ind i et repository-lag** · M – de 68 gennemgåede forespørgsler på spillerdata samles i få funktioner (`access.py`), så afgrænsningen sker ét sted. Ratchet-testen (B-041b) forhindrer nye huller imens.
 - **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a).
 
+- **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt.
+
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
 - Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.
@@ -35,9 +37,9 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - ~~Import fra den gamle Excel-model~~ – der findes nu et admin-importværktøj (Administration → Import); selve spillerdata lægges stadig aldrig i repoet.
 - Playwright-/UI-tests af mobil-flowet; tilgængelighedstjek (kontrast, skærmlæser).
 - Eksport af rapport som billede til deling med forældre.
-- Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **Sprogvalg (da/en/de/sv/no)** – grundlag færdigt (v0.27.0): menuer, login, menu og Min konto oversat; resten under B-045.
 - **B-041b · SQL-afgrænsning kontrolleres automatisk** – færdig (v0.27.0): `tests/test_sql_scope.py` + `sql_scope_allow.txt`.
 - **B-042a · Kriterietekster i tabel** – færdig (v0.27.0), migration 013.
 - **B-043 · Delvise opdateringer** – færdig (v0.27.0) som eget `data-swap`-script (D-028). Idé: udvid til evalueringsskema og noter.

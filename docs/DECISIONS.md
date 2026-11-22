@@ -122,3 +122,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** B-043 foreslog HTMX fra `static/`. Byggemiljøet har ingen adgang til at hente biblioteket, og en ikke-verificeret kopi må ikke ligge i en sikkerhedsfølsom app.
 **Valg:** ~35 linjer i `static/app.js`: `<form data-swap="#a,#b">` sendes med fetch, og de angivne elementer samt beskeder udskiftes med svarsiden. Serveren er uændret (returnerer hele sider), så alt virker uden JS; ved netværksfejl sendes formularen almindeligt, og efter et gennemført svar sendes den aldrig igen.
 **Konsekvens:** Samme effekt og CSP-sikkerhed uden afhængighed. Skal flere HTMX-funktioner bruges senere (polling, indsætning), kan HTMX lægges i `static/` med kontrolleret hash; markeringerne ligner hinanden.
+
+## D-029 · Sprogvalg (2026-11-22)
+**Kontekst:** Ønske om dansk (standard), engelsk, tysk, svensk og norsk.
+**Valg:** Egen minimal løsning i `app/i18n.py` frem for Babel/gettext (ingen nye pakker): den danske tekst er nøglen, `_("Tekst")` slår op i en tabel og falder tilbage til dansk. Sprog gemmes i cookie `lang` (så login-siden kan skifte) og i `users.lang`. `POST /sprog` er offentlig (kun cookie, valideret mod listen; `next` skal være en lokal sti) og undtaget fra skrivespærrerne for assistenter og «se som».
+**Konsekvens:** Oversættelserne er skrevet uden modersmålskontrol og bør læses igennem af en, der taler sproget. En test sikrer, at alle tekster, der er markeret med `_()`, findes i alle sprog. Resten af skabelonerne og alle beskeder fra Python-koden er endnu ikke markeret.
