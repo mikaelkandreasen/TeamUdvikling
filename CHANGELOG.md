@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-11-22
+
 ### Tilføjet
 - **Klubmotto** (på Klubprofil-siden) ud over holdets slogan (på Holdindstillinger). Mottoet vises i rapporternes klubhoved, sloganet på forældrerapporten. Skema v18.
 
