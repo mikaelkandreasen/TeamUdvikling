@@ -14,10 +14,10 @@
   <tr><td>Fremmøde til træning</td><td class="num">{{ m['att']|pct }}</td><td class="num">{{ a['att']|pct }}</td></tr>
   <tr><td>Deltagelse i kampe</td><td class="num">{{ m['matchp']|pct }}</td><td class="num">{{ a['matchp']|pct }}</td></tr>
   {% for k, label in [('t1', model.TRIVSEL[0]), ('t2', model.TRIVSEL[1]), ('t3', model.TRIVSEL[2])] %}
-  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
+  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }};color:{{ (dev[k] if dev else none)|heat_fg }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
   <tr class="avg"><td>Trivsel (gennemsnit)</td><td class="num">{{ m['trivsel']|dk }}</td><td class="num">{{ a['trivsel']|dk }}</td></tr>
   {% for k, label in [('m1', model.MOTORIK[0]), ('m2', model.MOTORIK[1]), ('m3', model.MOTORIK[2]), ('m4', model.MOTORIK[3])] %}
-  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
+  <tr><td>{{ label }}</td><td class="score" style="background:{{ (dev[k] if dev else none)|heat }};color:{{ (dev[k] if dev else none)|heat_fg }}">{{ (dev[k] if dev and dev[k] is not none else '') }}</td><td class="num">{{ a[k]|dk }}</td></tr>{% endfor %}
   <tr class="avg"><td>Motorik (gennemsnit)</td><td class="num">{{ m['motorik']|dk }}</td><td class="num">{{ a['motorik']|dk }}</td></tr>
   </tbody></table></div>
 {% if d['trend'] %}<h3>Trivsel over tid</h3><div class="card">{{ d["trend"] }}</div>{% endif %}

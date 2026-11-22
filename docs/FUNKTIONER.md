@@ -48,7 +48,7 @@ En bruger kan have flere profiler (fx træner i én klub og klubadministrator i 
 - Holdet kan skrive egne tekster til de 24 kriterier.
 
 ### 3.5 Oversigter og analyse
-- **Teamoversigt**: rolle-gennemsnit og samlet score pr. spiller, enighed mellem trænere, farvekodet (1 rød, 2 gul, 3 grøn = årgangsniveau, 4 mørkegul, 5 lyseblå).
+- **Teamoversigt**: rolle-gennemsnit og samlet score pr. spiller, enighed mellem trænere, farvekodet (standard: 1 rød, 2 gul, 3 grøn = årgangsniveau, 4 mørkegul, 5 lyseblå; holdet kan vælge egne farver).
 - **Udvikling**: roller og færdigheder runde for runde, også pr. position.
 - **Position & bane**: spillerne på en bane efter position og score.
 - **Områder**: holdets stærkeste og svageste kriterier.
@@ -56,6 +56,7 @@ En bruger kan have flere profiler (fx træner i én klub og klubadministrator i 
 
 ### 3.6 Holdside
 - Indstillinger: kamptype (fx 5v5, 8v8), udskiftere, slogan, maskotnavn, kalenderlink, funktionsvalg.
+- **Farver for score 1–5**: egen farve og forklaring pr. tal, glidende eller faste blokke; forklaringen vises nederst på sider med farvede scores.
 - Spillerniveau, holdets fokus (fælles fokuspunkter), holdnoter (wiki-agtige, søgbare), maskot (hvem har den med hjem), kalender.
 - Sæsonskifte: nyt hold ud fra det gamle (uden scores og noter); det gamle kan arkiveres som skrivebeskyttet.
 

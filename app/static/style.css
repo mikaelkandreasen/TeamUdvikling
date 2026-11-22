@@ -121,3 +121,14 @@ footer{color:var(--mut);font-size:.78rem;text-align:center;padding:1rem}
 @media print{.help{display:none}}
 
 .parent-top{display:flex;justify-content:space-between;align-items:center;gap:1rem}.mascot-img{max-height:130px;max-width:40%;object-fit:contain}.parent ul{line-height:1.7}
+
+/* farveforklaring for score 1–5 */
+.legend-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin:.4rem 0}
+.legend-item{display:inline-flex;align-items:center;gap:6px;font-size:.9rem}
+.legend-sw{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:28px;padding:0 6px;border-radius:6px;font-weight:700;border:1px solid rgba(0,0,0,.12)}
+.legend-sw.wide{min-width:44px}
+.colorrow{display:flex;align-items:center;gap:8px;margin:.4rem 0}
+.colorrow input[type=color]{width:52px;height:44px;padding:2px;flex:none}
+.colorrow input:not([type=color]){flex:1;min-width:0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media print{.heat-legend{break-inside:avoid;border:1px solid #ccc}}

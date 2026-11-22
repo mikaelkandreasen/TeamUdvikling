@@ -68,6 +68,7 @@
     {% if inbox_unread|length > 3 %}<p class="muted small">+ {{ inbox_unread|length - 3 }} {{ _('flere i indbakken.') }}</p>{% endif %}
     <form method="post" action="{{ url_for('inbox.read_all') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ '/m' if ep == 'main.mobile' else '/' }}"><button class="btn sec">{{ _('Læst') }}</button> <a href="{{ url_for('inbox.index') }}">Åbn indbakken</a></form></div>{% endif %}
   {% block content %}{% endblock %}
+  {% if authed and g.get('heat_used') and g.get('heat_cfg') and ep not in ('main.home', 'main.mobile', 'team.colors') %}{% include "_heat_legend.html" %}{% endif %}
 </main>
 <footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}{{ club['app_name'] }}{% if user %} v{{ version }}{% endif %} · <a href="{{ url_for('main.privacy') }}">{{ _('Privatliv') }}</a>
   <form method="post" action="{{ url_for('main.set_lang') }}" class="noprint" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}">

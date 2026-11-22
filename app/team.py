@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from . import criteria as criteria_mod, photos, features, formations, ical, levels as levelcalc, model, motivation, scope
+from . import criteria as criteria_mod, heatcfg, photos, features, formations, ical, levels as levelcalc, model, motivation, scope
 from .db import audit, get_db, get_setting, set_setting
 from .helpers import active_players, int_in, round_info, team_id
 
@@ -416,6 +416,32 @@ def season():
     _teams.switch(db, g.user, new)
     flash(f"Nyt hold «{name}» er oprettet med {n} spillere. Evalueringer og scores starter forfra; det gamle hold er bevaret.", "ok")
     return redirect(url_for("team.index"))
+
+
+# ----------------------------------------------------------------------------- farver for score 1–5
+@bp.route("/farver", methods=["GET", "POST"])
+def colors():
+    """Holdets egne farver og forklaringstekster for 1–5 (chef-træner/administrator)."""
+    _need_config()
+    db = get_db()
+    tid = team_id()
+    if request.method == "POST":
+        if request.form.get("action") == "reset":
+            heatcfg.reset(db, tid)
+            msg = "Standardfarverne er sat tilbage."
+        else:
+            err = heatcfg.save(db, tid, [request.form.get(f"color_{n}") for n in range(1, 6)],
+                               [request.form.get(f"label_{n}") for n in range(1, 6)], request.form.get("mode", "glide"))
+            if err:
+                flash(err, "error")
+                return redirect(url_for("team.colors"))
+            msg = "Farverne er gemt."
+        audit(db, g.user["username"], "farver_gemt", g.team["name"])
+        db.commit()
+        flash(msg, "ok")
+        return redirect(url_for("team.colors"))
+    return render_template("team_colors.html", cfg=heatcfg.load(db, tid), modes=heatcfg.MODES, defaults=heatcfg.DEFAULT_COLORS,
+                           preview=[1 + i * 0.5 for i in range(9)])
 
 
 # ----------------------------------------------------------------------------- egne kriterietekster

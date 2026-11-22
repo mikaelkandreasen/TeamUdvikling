@@ -33,6 +33,10 @@ def heat(v):
     return charts.heat(v)
 
 
+def heat_fg(v):
+    return charts.heat_fg(v)
+
+
 def delta_class(v):
     if v is None:
         return ""
@@ -40,5 +44,7 @@ def delta_class(v):
 
 
 def register(app):
-    for f in (dk, pct, signed, date_dk, heat, delta_class):
+    from . import heatcfg
+    app.jinja_env.globals["HEAT_MOT_LABELS"] = heatcfg.MOTIVATION_LABELS
+    for f in (dk, pct, signed, date_dk, heat, heat_fg, delta_class):
         app.jinja_env.filters[f.__name__] = f

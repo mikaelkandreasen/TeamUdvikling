@@ -13,7 +13,7 @@
 <summary>Spillere og score ({{ cards|length }})</summary>
 {% for c in cards %}
 <div class="pcard">
-  <span class="badge" style="background:{{ c['samlet']|heat }}">{{ c['samlet']|dk or '–' }}</span>
+  <span class="badge" style="background:{{ c['samlet']|heat }};color:{{ c['samlet']|heat_fg }}">{{ c['samlet']|dk or '–' }}</span>
   <div class="nm"><a href="{{ url_for('evaluation.profile', pid=c['p']['id']) }}" style="text-decoration:none;color:inherit">{{ c['p']['name'] }}</a>
     <div class="sub">{{ c['p']['position'] or 'ingen position' }}</div></div>
   <div class="acts">

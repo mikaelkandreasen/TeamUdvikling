@@ -14,7 +14,7 @@
 {% macro avatar(p, photos, size='sm') %}{% if p['id'] in photos %}<img class="avatar {{ size }}" src="{{ url_for('players.photo_view', pid=p['id'], s=('full' if size == 'lg' else None)) }}" alt="" loading="lazy">{% else %}<span class="avatar {{ size }} ph" aria-hidden="true">{{ (p['name'] or '?')[:1]|upper }}</span>{% endif %}{% endmacro %}
 
 {% macro heatcell(v, label=None) %}
-<td class="score" {% if label %}data-label="{{ label }}"{% endif %} style="background:{{ v|heat }}">{{ v|dk }}</td>
+<td class="score" {% if label %}data-label="{{ label }}"{% endif %} style="background:{{ v|heat }};color:{{ v|heat_fg }}">{{ v|dk }}</td>
 {% endmacro %}
 
 {% macro rounds_nav(endpoint, current, infos) %}

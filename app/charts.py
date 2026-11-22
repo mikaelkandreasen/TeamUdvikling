@@ -6,23 +6,35 @@ from markupsafe import Markup, escape
 COLORS = ["#1f4e79", "#e07b00", "#2e8b57", "#9b59b6"]
 
 
-HEAT_STOPS = ((1, (0xF8, 0x69, 0x6B)),     # 1 rød
+HEAT_STOPS = ((1, (0xF8, 0x69, 0x6B)),     # standard: 1 rød
               (2, (0xFF, 0xEB, 0x84)),     # 2 gul
               (3, (0x63, 0xBE, 0x7B)),     # 3 grøn = målet (på niveau med årgangen)
               (4, (0xE0, 0xB0, 0x20)),     # 4 mørkere gul
-              (5, (0x9D, 0xC3, 0xE6)))     # 5 lysere blå = bedre end årgangen
+              (5, (0x9D, 0xC3, 0xE6)))     # 5 lysere blå = bedre end årgangen. Holdet kan vælge egne farver (heatcfg.py).
 
 
 def heat(v, lo=1.0, mid=3.0, hi=5.0):
-    """Farve for en score: 1 rød, 2 gul, 3 grøn, 4 mørkere gul, 5 lysere blå (interpoleret)."""
+    """Farve for en score 1–5 efter holdets farver: glidende mellem tallene eller faste blokke (afrundet)."""
     if v is None:
         return "#f2f2f2"
+    from . import heatcfg
+    heatcfg.mark_used()
+    cfg = heatcfg.current()
     x = 1 + 4 * (max(lo, min(hi, v)) - lo) / (hi - lo)
-    for (x0, a), (x1, b) in zip(HEAT_STOPS, HEAT_STOPS[1:]):
+    if cfg["mode"] == "blok":
+        return cfg["colors"][min(4, max(0, int(x + 0.5) - 1))]
+    stops = [(n + 1, heatcfg.rgb(c)) for n, c in enumerate(cfg["colors"])]
+    for (x0, a), (x1, b) in zip(stops, stops[1:]):
         if x <= x1:
             t = (x - x0) / (x1 - x0)
             return "#%02x%02x%02x" % tuple(round(a[k] + (b[k] - a[k]) * t) for k in range(3))
-    return "#%02x%02x%02x" % HEAT_STOPS[-1][1]
+    return cfg["colors"][-1]
+
+
+def heat_fg(v):
+    """Tekstfarve, der kan læses på heat(v)."""
+    from . import heatcfg
+    return "#1b1b1b" if v is None else heatcfg.text_color(heat(v))
 
 
 def _svg(w, h, body, label):

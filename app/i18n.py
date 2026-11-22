@@ -130,6 +130,9 @@ _T = {
     'Vælg en spiller for at score.': ('Choose a player to score.', 'Wähle eine Spielerin zum Bewerten.', 'Välj en spelare att bedöma.', 'Velg en spiller å score.'),
     'Ingen spillere.': ('No players.', 'Keine Spielerinnen.', 'Inga spelare.', 'Ingen spillere.'),
     'Opret spillere først': ('Create players first', 'Zuerst Spielerinnen anlegen', 'Skapa spelare först', 'Opprett spillere først'),
+    'Forklaring': ('Legend', 'Legende', 'Förklaring', 'Forklaring'),
+    'Ret farver': ('Edit colours', 'Farben ändern', 'Ändra färger', 'Endre farger'),
+    'Gennemsnit vises som en blanding af nabofarverne.': ('Averages are shown as a blend of the neighbouring colours.', 'Durchschnitte werden als Mischung der benachbarten Farben angezeigt.', 'Medelvärden visas som en blandning av grannfärgerna.', 'Gjennomsnitt vises som en blanding av nabofargene.'),
 }
 TR = {"en": {}, "de": {}, "sv": {}, "no": {}}
 for _k, _v in _T.items():

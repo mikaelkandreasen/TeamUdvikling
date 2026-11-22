@@ -139,6 +139,7 @@ flowchart TB
 | `importer.py` | Import fra Excel/CSV (to trin: forhåndsvisning → bekræft) | `/admin/import` |
 | `photos.py` | Validering, EXIF-fjernelse, beskæring, miniaturer | – |
 | `activity.py` | «Aktive nu» og brugsstatistik pr. kvarter (uden indhold) | `/aktivitet`, `/admin/usage` |
+| `heatcfg.py` | Holdets farver og forklaringer for score 1–5 (`heat`/`heat_fg`, forklaring i `_heat_legend.html`) | `/team/farver` |
 | `charts.py` · `filters.py` | Radar, linje, søjler, bane, varmekort som SVG; Jinja-filtre (dato, farver) | – |
 | `club.py` · `backlog_seed.py` | Klubprofil, logo, farver, motto; startindhold til appens interne backlog | `/branding/logo/<id>`, `/admin/club` |
 | `i18n.py` | Sprog (da/en/de/sv/no), `_()` i skabeloner | – |

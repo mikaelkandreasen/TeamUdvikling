@@ -6,7 +6,7 @@
   <thead><tr><th>Udsagn</th><th class="num">Spiller</th><th class="num">Holdet</th><th class="num">Forskel</th></tr></thead>
   <tbody>
   {% for r in c['rows'] %}<tr><td>{{ r['text'] }}</td>
-    <td class="score" style="background:{{ r['score']|heat }}">{{ r['score'] if r['score'] is not none else '' }}</td>
+    <td class="score" style="background:{{ r['score']|heat }};color:{{ r['score']|heat_fg }}">{{ r['score'] if r['score'] is not none else '' }}</td>
     <td class="num">{{ r['hold']|dk }}</td><td class="num {{ r['diff']|delta_class }}">{{ r['diff']|signed }}</td></tr>{% endfor %}
   <tr class="avg"><td>Gennemsnit</td><td class="num">{{ c['avg']|dk }}</td><td class="num">{{ c['hold_avg']|dk }}</td><td class="num">{{ c['diff']|signed }}</td></tr>
   </tbody></table></div>

@@ -20,6 +20,7 @@
   {% for k, label, d in FEATURES %}<label class="check"><input type="checkbox" name="feat_{{ k }}" value="1" {{ 'checked' if feats[k] }}> {{ label }}</label>{% endfor %}
   <p class="muted small">Evalueringsrunder ({{ n_rounds }} nu) tilføjes og fjernes under <a href="{{ url_for('admin.evaluations') }}">Evalueringsrunder</a>.</p>
   <div class="actions"><button class="btn">Gem</button></div></form>
+<div class="card"><h2>Farver for score</h2><p class="muted small">Vælg egne farver og forklaringer til tallene 1–5.</p><a class="btn sec" href="{{ url_for('team.colors') }}">Ret farver</a></div>
 <form method="post" class="card" enctype="multipart/form-data" action="{{ url_for('team.mascot_image_save') }}">{{ csrf() }}
   <h2>Maskotbillede</h2>
   <p class="muted small">Vises på forældrerapporten sammen med logo og slogan. Brug en tegning eller et billede uden børn.</p>

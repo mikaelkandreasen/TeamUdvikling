@@ -1,0 +1,6 @@
+{% set hc = g.heat_cfg %}{% set mot = ep.startswith('motivation.') or ep.startswith('devdata.') %}
+<div class="card heat-legend" role="note"><b>{{ _('Forklaring') }}</b>
+  <div class="legend-row">{% for n in range(5) %}<span class="legend-item"><span class="legend-sw" style="background:{{ hc.colors[n] }};color:{{ (n + 1)|heat_fg }}">{{ n + 1 }}</span>{{ HEAT_MOT_LABELS[n] if mot else hc.labels[n] }}</span>{% endfor %}</div>
+  {% if hc.mode == 'glide' %}<p class="muted small">{{ _('Gennemsnit vises som en blanding af nabofarverne.') }}</p>{% endif %}
+  {% if can_configure() %}<a class="small noprint" href="{{ url_for('team.colors') }}">{{ _('Ret farver') }}</a>{% endif %}
+</div>
