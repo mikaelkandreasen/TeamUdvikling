@@ -5,6 +5,7 @@
 {% for p in players %}
 <div class="pcard"><div class="nm">{{ p['name'] }}<div class="sub">{{ p['position'] or '' }}</div></div>
   <div class="acts"><a href="{{ url_for('reports.report', pid=p['id']) }}" aria-label="Rapport">📄</a>
+  <a href="{{ url_for('reports.parent_report', pid=p['id']) }}" aria-label="Forældrerapport">👪</a>
   {% if features['motivation'] %}<a href="{{ url_for('motivation.report', pid=p['id']) }}" aria-label="Motivation">💬</a>{% endif %}</div></div>
 {% else %}<div class="card">Ingen spillere endnu.</div>{% endfor %}
 {% endblock %}

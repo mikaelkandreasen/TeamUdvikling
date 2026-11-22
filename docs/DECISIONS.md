@@ -84,3 +84,10 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** Runder har navn/dato og lukker 30 dage efter første indtastning (`round_opened_<n>`). En træner med evalueringer anonymiseres til «… (stoppet)» (`users.stopped_at`) i stedet for at slettes. Ved holdskifte kopieres evalueringerne til `eval_history` (hold, runde, træner som tekst) og fjernes fra det gamle holds tal; opstillingspladser og spillerlinks ryddes.
 **Konsekvens:** Tidligere hold indgår ikke i det nye holds gennemsnit. Motivationssvar og udviklingsdata følger spilleren uændret.
 
+
+
+## D-022 · Forældrerapport uden tal (2026-11-22)
+**Kontekst:** Forældre og børn sammenligner hurtigt; niveauer og farvede scores kan opleves som en dom.
+**Valg:** En separat rapport (`/report/<id>/foraeldre`) med kun positive/handlingsrettede formuleringer. Styrker = højeste kriterier, «træner på nu» = trænerens fokus (ellers laveste kriterier), fremgang = kun forbedringer. Baseret på færdige runder. Maskotbillede gemmes pr. hold i databasen (ingen filer).
+**Konsekvens:** Den fulde trænerrapport er uændret. Rapporten er hold-afgrænset og kun tilgængelig for trænere, som udleverer den.
+\n

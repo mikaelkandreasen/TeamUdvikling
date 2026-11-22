@@ -56,3 +56,33 @@ def process(data):
         raise
     except Exception:
         raise PhotoError("Billedet kunne ikke behandles.")
+
+
+def process_free(data, max_side=600):
+    """Maskot-/illustrationsbillede: samme kontrol som spillerbilleder, men uden beskæring (bevarer formatet). Returnerer JPEG-bytes (hvid baggrund)."""
+    if not data:
+        raise PhotoError("Vælg en billedfil.")
+    if len(data) > MAX_UPLOAD:
+        raise PhotoError("Billedet er for stort (maks. 12 MB).")
+    try:
+        img = Image.open(io.BytesIO(data))
+        fmt, (w, h) = img.format, img.size
+    except Exception:
+        raise PhotoError("Filen er ikke et billede, der kan læses.")
+    if fmt not in ALLOWED:
+        raise PhotoError("Kun JPEG-, PNG- og WebP-billeder kan bruges.")
+    if w * h > MAX_PIXELS:
+        raise PhotoError("Billedet har for mange pixels.")
+    if min(w, h) < MIN_SIDE:
+        raise PhotoError("Billedet er for lille.")
+    try:
+        img = ImageOps.exif_transpose(img)
+        rgba = img.convert("RGBA")
+        bg = Image.new("RGB", rgba.size, (255, 255, 255))
+        bg.paste(rgba, mask=rgba.split()[3])
+        bg.thumbnail((max_side, max_side), Image.LANCZOS)
+        out = io.BytesIO()
+        bg.save(out, "JPEG", quality=88, optimize=True)
+        return out.getvalue()
+    except Exception:
+        raise PhotoError("Billedet kunne ikke behandles.")

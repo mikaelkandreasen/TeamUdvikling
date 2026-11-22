@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Forældrerapport** (tal-fri): logo, slogan og maskotbillede, derefter «Det er … god til», «Her er … gået frem», «Det træner vi på nu» og hvad barnet er optaget af. Ingen scores, farver, niveauer eller sammenligning. Åbnes fra spillerprofilen og rapportlisten (👪).
+- **Maskotbillede** pr. hold (Holdindstillinger), vises på forældrerapporten. Skema v17.
+
 ## [0.18.1] - 2026-11-22
 
 ### Ændret

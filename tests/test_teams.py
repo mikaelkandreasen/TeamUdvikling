@@ -130,3 +130,25 @@ def test_lineups_and_photos_are_isolated_between_teams(app, two_teams):
     assert con.execute("SELECT COUNT(*) FROM lineups").fetchone()[0] == 1
     assert con.execute("SELECT COUNT(*) FROM player_photos").fetchone()[0] == 1
     con.close()
+
+
+def test_parent_report_and_mascot_image(app, two_teams):
+    import io
+    from PIL import Image
+    admin = two_teams
+    add_player(admin, "Anna Alfa")
+    pid = player_id(app, "Anna Alfa")
+    admin.post("/team/settings", {"game_type": "8v8", "subs": "3", "slogan": "Sammen er vi stærkest", "mascot_name": "Bamse"}, page="/team/settings")
+    r = admin.get(f"/report/{pid}/foraeldre")
+    html = r.get_data(as_text=True)
+    assert r.status_code == 200 and "Sammen er vi stærkest" in html and "Anna Alfas udvikling" in html and "mascot-img" not in html.replace(".mascot-img", "")
+    buf = io.BytesIO(); Image.new("RGB", (200, 120), (200, 30, 30)).save(buf, "PNG"); buf.seek(0)
+    up = admin.c.post("/team/mascot-image/save", data={"csrf_token": admin.token("/team/settings"), "image": (buf, "m.png")}, content_type="multipart/form-data")
+    assert up.status_code == 302 and admin.get("/team/mascot-image").mimetype == "image/jpeg"
+    assert 'class="mascot-img"' in admin.get(f"/report/{pid}/foraeldre").get_data(as_text=True)
+    # isolation: trænere på andet hold ser hverken rapport eller billede
+    t = make_trainer(app, admin, "trainer13", ["U13 drenge"])
+    assert t.get(f"/report/{pid}/foraeldre").status_code == 404
+    assert t.get("/team/mascot-image").status_code == 404
+    assert t.c.post("/team/mascot-image/delete", data={"csrf_token": t.token("/")}).status_code in (302, 403)
+    assert admin.get("/team/mascot-image").status_code == 200

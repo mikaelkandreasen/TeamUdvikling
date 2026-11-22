@@ -119,3 +119,5 @@ footer{color:var(--mut);font-size:.78rem;text-align:center;padding:1rem}
   background:#fff;color:#1c2733;border:2px solid var(--navy,#1f3a5f);border-radius:12px;padding:1rem;box-shadow:0 12px 40px rgba(0,0,0,.35);font-weight:400;text-align:left}
 .help:hover .helpbox,.help:focus-within .helpbox{display:block}
 @media print{.help{display:none}}
+
+.parent-top{display:flex;justify-content:space-between;align-items:center;gap:1rem}.mascot-img{max-height:130px;max-width:40%;object-fit:contain}.parent ul{line-height:1.7}

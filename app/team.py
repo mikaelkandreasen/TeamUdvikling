@@ -2,9 +2,9 @@
 import datetime
 import json
 
-from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from . import features, formations, ical, levels as levelcalc, model, motivation, scope
+from . import photos, features, formations, ical, levels as levelcalc, model, motivation, scope
 from .db import audit, get_db, get_setting, set_setting
 from .helpers import active_players, int_in, round_info, team_id
 
@@ -109,7 +109,46 @@ def settings():
         return redirect(url_for("team.settings"))
     heads = [r["display_name"] for r in db.execute("SELECT u.display_name FROM team_heads h JOIN users u ON u.id=h.user_id WHERE h.team_id=? ORDER BY u.display_name COLLATE NOCASE", (tid,))]
     return render_template("team_settings.html", ical_url=get_setting(db, tid, "ical_url") or "", prof=profile(db, tid), feats=features.load(db, tid), FEATURES=features.FEATURES, types=formations.GAME_TYPES,
-                           heads=heads, n_rounds=len(g.rounds), shares=levelcalc.shares(db, tid))
+                           heads=heads, n_rounds=len(g.rounds), shares=levelcalc.shares(db, tid),
+                           has_mascot_img=bool(db.execute("SELECT 1 FROM team_mascot_img WHERE team_id=?", (tid,)).fetchone()))
+
+
+# ----------------------------------------------------------------------------- maskotbillede (vises på forældrerapporten)
+@bp.route("/mascot-image")
+def mascot_image():
+    row = get_db().execute("SELECT img FROM team_mascot_img WHERE team_id=?", (team_id(),)).fetchone()
+    if not row:
+        abort(404)
+    return Response(row["img"], mimetype="image/jpeg", headers={"Cache-Control": "private, max-age=300"})
+
+
+@bp.route("/mascot-image/save", methods=["POST"])
+def mascot_image_save():
+    _need_config()
+    db = get_db()
+    f = request.files.get("image")
+    try:
+        img = photos.process_free(f.read(photos.MAX_UPLOAD + 1) if f else b"")
+    except photos.PhotoError as e:
+        flash(str(e), "error")
+        return redirect(url_for("team.settings"))
+    db.execute("INSERT INTO team_mascot_img(team_id,img,updated_at) VALUES(?,?,datetime('now')) "
+               "ON CONFLICT(team_id) DO UPDATE SET img=excluded.img, updated_at=excluded.updated_at", (team_id(), img))
+    audit(db, g.user["username"], "maskotbillede_gemt", g.team["name"])
+    db.commit()
+    flash("Maskotbilledet er gemt.", "ok")
+    return redirect(url_for("team.settings"))
+
+
+@bp.route("/mascot-image/delete", methods=["POST"])
+def mascot_image_delete():
+    _need_config()
+    db = get_db()
+    db.execute("DELETE FROM team_mascot_img WHERE team_id=?", (team_id(),))
+    audit(db, g.user["username"], "maskotbillede_fjernet", g.team["name"])
+    db.commit()
+    flash("Maskotbilledet er fjernet.", "ok")
+    return redirect(url_for("team.settings"))
 
 
 # ----------------------------------------------------------------------------- noter (delt wiki for trænerne på holdet)

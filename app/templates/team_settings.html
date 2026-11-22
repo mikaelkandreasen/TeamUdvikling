@@ -20,4 +20,11 @@
   {% for k, label, d in FEATURES %}<label class="check"><input type="checkbox" name="feat_{{ k }}" value="1" {{ 'checked' if feats[k] }}> {{ label }}</label>{% endfor %}
   <p class="muted small">Evalueringsrunder ({{ n_rounds }} nu) tilføjes og fjernes under <a href="{{ url_for('admin.evaluations') }}">Evalueringsrunder</a>.</p>
   <div class="actions"><button class="btn">Gem</button></div></form>
+<form method="post" class="card" enctype="multipart/form-data" action="{{ url_for('team.mascot_image_save') }}">{{ csrf() }}
+  <h2>Maskotbillede</h2>
+  <p class="muted small">Vises på forældrerapporten sammen med logo og slogan. Brug en tegning eller et billede uden børn.</p>
+  {% if has_mascot_img %}<img src="{{ url_for('team.mascot_image') }}" alt="" style="max-width:160px;max-height:160px;object-fit:contain">{% endif %}
+  <label for="mi">Vælg billede (JPEG, PNG eller WebP)</label><input id="mi" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+  <div class="actions"><button class="btn">Gem billede</button></div></form>
+{% if has_mascot_img %}<form method="post" action="{{ url_for('team.mascot_image_delete') }}">{{ csrf() }}<button class="btn sec">Fjern maskotbillede</button></form>{% endif %}
 {% endblock %}
