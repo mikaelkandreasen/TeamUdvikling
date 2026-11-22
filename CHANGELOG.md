@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-22
+
 ### Tilføjet
 - **Forældrerapporter for hele holdet** (Rapporter → «Forældrerapporter – hele holdet»): én side pr. spiller til print/PDF.
 - **Indbakke:** private svar til afsenderen, og afsenderen ser «Læst af x af y».
