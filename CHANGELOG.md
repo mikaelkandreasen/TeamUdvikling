@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-22
+
 ### Tilføjet
 - **Holdets træningsfokus kan vælges:** under Hold → Træningsfokus vælger trænerne op til fire punkter (blandt forslagene eller eget). Fokus vises på Hjem (web og mobil) og som «Hele holdet træner på» på forældrerapporterne. Gemmes pr. hold; assistenter kan ikke ændre.
 
