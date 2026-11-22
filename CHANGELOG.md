@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-11-22
+
 ### Tilføjet
 - **Kampe og spilletid** (Hold → Kampe og spilletid): opret en kamp (dato, modstander, kamptype, opstilling, antal perioder og minutter), og sæt spillerne på positioner periode for periode. Spilletid pr. spiller i kampen beregnes automatisk, og «Kopiér periode 1 til alle» sparer tid.
 - **Spilletid og hvide pletter:** oversigt pr. spiller med minutter på Målmand, Forsvar, Midtbane, Kant og Angreb over alle eller de seneste 3/5/10 kampe. Positioner en spiller endnu ikke har prøvet (men holdet har brugt) markeres rødt og listes; spillere med under 70 % af gennemsnitlig spilletid får «lidt tid». Kan slås fra under Holdindstillinger. Skema v21.
