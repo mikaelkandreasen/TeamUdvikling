@@ -39,7 +39,7 @@ def _read_form():
 def index():
     db = get_db()
     show_all = request.args.get("alle") == "1"
-    sql = "SELECT * FROM players WHERE team_id=?" + ("" if show_all else " AND active=1") + " ORDER BY name COLLATE NOCASE"
+    sql = "SELECT * FROM players WHERE team_id=?" + ("" if show_all else " AND active=1") + " ORDER BY name COLLATE NOCASE"  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     rows = db.execute(sql, (team_id(),)).fetchall()
     ages = {r["id"]: (model.quarter(model.parse_date(r["birth_date"])) if model.parse_date(r["birth_date"]) else None) for r in rows}
     return render_template("players_list.html", players=rows, ages=ages, show_all=show_all, photos=photo_ids(db))
@@ -54,7 +54,7 @@ def new():
                 flash(e, "error")
             return render_template("player_form.html", p=f, new=True)
         db = get_db()
-        cur = db.execute(f"INSERT INTO players({','.join(FIELDS)},active,team_id) VALUES({','.join('?' * (len(FIELDS) + 2))})",
+        cur = db.execute(f"INSERT INTO players({','.join(FIELDS)},active,team_id) VALUES({','.join('?' * (len(FIELDS) + 2))})",  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                          [f[k] or None for k in FIELDS] + [f["active"], team_id()])
         _stamp_deactivation(db, cur.lastrowid)
         audit(db, g.user["username"], "spiller_oprettet", str(cur.lastrowid))
@@ -80,7 +80,7 @@ def edit(pid):
                 flash(e, "error")
             f["id"] = pid
             return render_template("player_form.html", p=f, new=False, photo=_photo_info(db, pid), move_targets=_move_targets())
-        db.execute(f"UPDATE players SET {','.join(k + '=?' for k in FIELDS)},active=? WHERE id=? AND team_id=?",
+        db.execute(f"UPDATE players SET {','.join(k + '=?' for k in FIELDS)},active=? WHERE id=? AND team_id=?",  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                    [f[k] or None for k in FIELDS] + [f["active"], pid, team_id()])
         _stamp_deactivation(db, pid)
         audit(db, g.user["username"], "spiller_rettet", str(pid))
@@ -99,7 +99,7 @@ def photo_view(pid):
     """Billedet (hold-afgrænset: andre holds spillere giver 404). ?s=full giver det store billede, ellers miniaturen."""
     db = get_db()
     col = "full" if request.args.get("s") == "full" else "thumb"
-    row = db.execute(f"SELECT pp.{col} AS img FROM player_photos pp JOIN players p ON p.id=pp.player_id WHERE pp.player_id=? AND p.team_id=?",
+    row = db.execute(f"SELECT pp.{col} AS img FROM player_photos pp JOIN players p ON p.id=pp.player_id WHERE pp.player_id=? AND p.team_id=?",  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                      (pid, team_id())).fetchone()
     if not row:
         abort(404)

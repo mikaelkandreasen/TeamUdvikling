@@ -395,8 +395,8 @@ def season():
     cols = ",".join(SEASON_PLAYER_COLS)
     n = 0
     if request.form.get("players"):
-        for p in db.execute(f"SELECT {cols} FROM players WHERE team_id=? AND active=1 ORDER BY id", (old["id"],)):
-            db.execute(f"INSERT INTO players(team_id,{cols},active) VALUES(?,{','.join('?' * len(SEASON_PLAYER_COLS))},1)", (new, *[p[c] for c in SEASON_PLAYER_COLS]))
+        for p in db.execute(f"SELECT {cols} FROM players WHERE team_id=? AND active=1 ORDER BY id", (old["id"],)):  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
+            db.execute(f"INSERT INTO players(team_id,{cols},active) VALUES(?,{','.join('?' * len(SEASON_PLAYER_COLS))},1)", (new, *[p[c] for c in SEASON_PLAYER_COLS]))  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
             n += 1
     if request.form.get("trainers"):
         db.execute("INSERT OR IGNORE INTO user_teams(user_id,team_id) SELECT user_id, ? FROM user_teams WHERE team_id=?", (new, old["id"]))

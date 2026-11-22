@@ -131,7 +131,7 @@ def matrix():
                 if auto and f in ("trainings", "matches"):
                     continue
                 v = int_in(request.form.get(f"{f}_{p['id']}"), lo, hi)
-                db.execute(f"UPDATE devdata SET {f}=? WHERE player_id=?", (v, p["id"]))
+                db.execute(f"UPDATE devdata SET {f}=? WHERE player_id=?", (v, p["id"]))  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
         audit(db, g.user["username"], "udviklingsdata_gemt")
         db.commit()
         flash("Udviklingsdata gemt.", "ok")

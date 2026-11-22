@@ -198,11 +198,11 @@ def apply(db, parsed):
         cols = ["shirt_no", *model.POSITION_FIELDS, "foot", "start_date", "focus1", "focus2", "notes"]
         if hit:                                                 # opdatér kun felter, der er udfyldt i filen
             sets = [c for c in cols if r[c]]
-            db.execute(f"UPDATE players SET {','.join(c + '=?' for c in sets + ['active'])} WHERE id=?",
+            db.execute(f"UPDATE players SET {','.join(c + '=?' for c in sets + ['active'])} WHERE id=?",  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                        [r[c] for c in sets] + [r["active"], hit["id"]])
             upd_n += 1
         else:
-            db.execute(f"INSERT INTO players(team_id,name,birth_date,{','.join(cols)},active) VALUES({','.join('?' * (len(cols) + 4))})",
+            db.execute(f"INSERT INTO players(team_id,name,birth_date,{','.join(cols)},active) VALUES({','.join('?' * (len(cols) + 4))})",  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                        [tid, r["name"], r["birth_date"] or None] + [r[c] or None for c in cols] + [r["active"]])
             new_n += 1
     return new_n, upd_n, team_n

@@ -12,7 +12,7 @@ def team_id():
 
 
 def active_players(db, include_inactive=False):
-    sql = "SELECT * FROM players WHERE team_id=?" + ("" if include_inactive else " AND active=1") + " ORDER BY name COLLATE NOCASE"
+    sql = "SELECT * FROM players WHERE team_id=?" + ("" if include_inactive else " AND active=1") + " ORDER BY name COLLATE NOCASE"  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     return db.execute(sql, (team_id(),)).fetchall()
 
 

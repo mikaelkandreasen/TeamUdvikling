@@ -672,14 +672,14 @@ def retention():
             flash("Sletning kræver bekræftelse.", "error")
         else:
             where = overdue_sql if action == "delete_overdue" else "p.active=0"
-            ids = [r["id"] for r in db.execute(f"SELECT p.id FROM players p JOIN teams t ON t.id=p.team_id WHERE {where}{club_sql}", args if action == "delete_overdue" else ())]
+            ids = [r["id"] for r in db.execute(f"SELECT p.id FROM players p JOIN teams t ON t.id=p.team_id WHERE {where}{club_sql}", args if action == "delete_overdue" else ())]  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
             for pid in ids:
                 db.execute("DELETE FROM players WHERE id=?", (pid,))
             audit(db, g.user["username"], "inaktive_spillere_slettet" if action == "delete_all" else "forfaldne_spillere_slettet", f"antal={len(ids)}")
             db.commit()
             flash(f"{len(ids)} spillere og alle deres data er slettet (kopier i automatiske backups forsvinder inden for 14 dage).", "ok")
         return redirect(url_for("admin.retention"))
-    rows = db.execute(f"SELECT t.name tn, COUNT(*) n, SUM(CASE WHEN {overdue_sql} THEN 1 ELSE 0 END) due FROM players p JOIN teams t ON t.id=p.team_id "
+    rows = db.execute(f"SELECT t.name tn, COUNT(*) n, SUM(CASE WHEN {overdue_sql} THEN 1 ELSE 0 END) due FROM players p JOIN teams t ON t.id=p.team_id "  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
                       f"WHERE p.active=0{club_sql} GROUP BY t.id ORDER BY t.name", args).fetchall()
     return render_template("admin_retention.html", rows=rows, months=months, auto=get_global(db, "retention_auto", 0), sysadmin=scope.is_sysadmin(g.user),
                            due_total=sum((r["due"] or 0) for r in rows))

@@ -218,10 +218,10 @@ def _migrate_clubs(con):
         con.executescript("""BEGIN;
             CREATE TABLE teams_new(id INTEGER PRIMARY KEY, name TEXT NOT NULL COLLATE NOCASE, season TEXT, created_at TEXT NOT NULL,
               club_id INTEGER REFERENCES clubs(id) ON DELETE CASCADE, UNIQUE(club_id, name));
-            INSERT INTO teams_new(id,name,season,created_at,club_id) SELECT id,name,season,created_at,%d FROM teams;
+            INSERT INTO teams_new(id,name,season,created_at,club_id) SELECT id,name,season,created_at,(SELECT MIN(id) FROM clubs) FROM teams;
             DROP TABLE teams;
             ALTER TABLE teams_new RENAME TO teams;
-            COMMIT;""" % first)
+            COMMIT;""")
         con.execute("PRAGMA foreign_keys=ON")
         assert not con.execute("PRAGMA foreign_key_check").fetchall()
     con.execute("UPDATE teams SET club_id=? WHERE club_id IS NULL", (first,))
@@ -407,6 +407,10 @@ def run_migrations(con, migrations=None):
         try:
             if tx:
                 con.execute("BEGIN IMMEDIATE")
+            if con.execute("SELECT 1 FROM schema_migrations WHERE id=?", (mid,)).fetchone():   # en anden proces nåede det først
+                if tx:
+                    con.rollback()
+                continue
             fn(con)
             con.execute("INSERT INTO schema_migrations(id, applied_at) VALUES(?, datetime('now'))", (mid,))
             con.commit()
@@ -572,7 +576,7 @@ def verify_backup(path):
         if ver > SCHEMA_VERSION:
             msgs.append(f"Backup er fra en nyere version (skema {ver} > {SCHEMA_VERSION}).")
         for t in ("users", "teams", "players"):
-            con.execute(f"SELECT COUNT(*) FROM {t}")
+            con.execute(f"SELECT COUNT(*) FROM {t}")  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     except sqlite3.Error as exc:
         msgs.append(f"Ikke en gyldig Team Udvikling-database: {exc}")
     finally:
@@ -611,4 +615,4 @@ def club_get(db, club_id=None):
 def club_set(db, club_id, key, value):
     if key not in CLUB_FIELDS + ("logo_mime", "logo_v"):
         raise ValueError(key)
-    db.execute(f"UPDATE clubs SET {key}=? WHERE id=?", (value, club_id))
+    db.execute(f"UPDATE clubs SET {key}=? WHERE id=?", (value, club_id))  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere

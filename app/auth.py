@@ -209,10 +209,10 @@ def pwned_count(pw):
     if not current_app.config.get("PWNED_CHECK"):
         return 0
     import urllib.request
-    h = hashlib.sha1(pw.encode()).hexdigest().upper()
+    h = hashlib.sha1(pw.encode(), usedforsecurity=False).hexdigest().upper()   # HIBP-API'et kræver SHA-1 (k-anonymitet)
     try:
         req = urllib.request.Request("https://api.pwnedpasswords.com/range/" + h[:5], headers={"User-Agent": "TeamUdvikling", "Add-Padding": "true"})
-        with urllib.request.urlopen(req, timeout=3) as r:
+        with urllib.request.urlopen(req, timeout=3) as r:  # nosec B310 – fast https-adresse
             for line in r.read(1_000_000).decode().splitlines():
                 suffix, _, n = line.partition(":")
                 if suffix.strip() == h[5:]:
@@ -376,7 +376,7 @@ def _qr_svg(uri):
         buf = io.BytesIO()
         img.save(buf)
         svg = buf.getvalue().decode()
-        return Markup(svg[svg.index("<svg"):])
+        return Markup(svg[svg.index("<svg"):])  # nosec B704 – server-genereret SVG/QR, værdier escapet
     except Exception:  # qrcode ikke installeret → vis kun hemmelig nøgle
         return None
 

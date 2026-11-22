@@ -1,6 +1,8 @@
 """Team Udvikling – Flask-app til spillerudvikling (DBU-roller x nøglefærdigheder)."""
 import hmac
+import fcntl
 import os
+from contextlib import contextmanager
 import secrets
 from datetime import timedelta
 from pathlib import Path
@@ -18,6 +20,18 @@ def read_version():
         return (ROOT / "VERSION").read_text().strip()
     except OSError:
         return "0.0.0"
+
+
+@contextmanager
+def _init_lock(data_dir):
+    """Eksklusiv fillås (fcntl) omkring opstart: skema/migrationer, secret_key, totp_key og opsætningskode."""
+    fd = os.open(os.path.join(data_dir, ".init.lock"), os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
 
 
 def _secret_key(data_dir):
@@ -70,28 +84,30 @@ def create_app(config=None):
     if config:
         app.config.update(config)
     os.makedirs(app.config["U11_DATA_DIR"], exist_ok=True)
-    app.config.setdefault("SECRET_KEY", _secret_key(app.config["U11_DATA_DIR"]))
-    if not app.config.get("SECRET_KEY"):
-        app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
-    db.init_db(app.config["DATABASE"], backup_dir=app.config["BACKUP_DIR"])
-    mail_queue.start_worker(app)
-    if not app.config.get("TESTING"):
-        from . import selfcheck
-        for lvl, txt in selfcheck.run(app.config):
-            app.logger.warning("DRIFTSTJEK (%s): %s", lvl, txt)
-    app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
-    _con = db.connect(app.config["DATABASE"])
-    secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
-    _con.close()
-    if app.config["TRUSTED_PROXIES"]:      # kun bag en reverse proxy du styrer: giver ægte klient-IP og https-skema
-        n = app.config["TRUSTED_PROXIES"]
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=n, x_proto=n, x_host=0)
-    con = db.connect(app.config["DATABASE"])
-    no_users = con.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
-    con.close()
-    if no_users and not app.config.get("SETUP_TOKEN"):
-        app.config["SETUP_TOKEN"] = _setup_token(app.config["U11_DATA_DIR"])
-        app.logger.warning("FØRSTE OPSÆTNING: opsætningskoden står i %s/setup_token (og vises ikke igen).", app.config["U11_DATA_DIR"])
+    # Én proces ad gangen: gunicorns workers starter samtidig og må ikke køre migrationer eller oprette nøglefiler parallelt
+    with _init_lock(app.config["U11_DATA_DIR"]):
+        app.config.setdefault("SECRET_KEY", _secret_key(app.config["U11_DATA_DIR"]))
+        if not app.config.get("SECRET_KEY"):
+            app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
+        db.init_db(app.config["DATABASE"], backup_dir=app.config["BACKUP_DIR"])
+        mail_queue.start_worker(app)
+        if not app.config.get("TESTING"):
+            from . import selfcheck
+            for lvl, txt in selfcheck.run(app.config):
+                app.logger.warning("DRIFTSTJEK (%s): %s", lvl, txt)
+        app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
+        _con = db.connect(app.config["DATABASE"])
+        secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
+        _con.close()
+        if app.config["TRUSTED_PROXIES"]:      # kun bag en reverse proxy du styrer: giver ægte klient-IP og https-skema
+            n = app.config["TRUSTED_PROXIES"]
+            app.wsgi_app = ProxyFix(app.wsgi_app, x_for=n, x_proto=n, x_host=0)
+        con = db.connect(app.config["DATABASE"])
+        no_users = con.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+        con.close()
+        if no_users and not app.config.get("SETUP_TOKEN"):
+            app.config["SETUP_TOKEN"] = _setup_token(app.config["U11_DATA_DIR"])
+            app.logger.warning("FØRSTE OPSÆTNING: opsætningskoden står i %s/setup_token (og vises ikke igen).", app.config["U11_DATA_DIR"])
 
     if app.config["SESSION_COOKIE_SECURE"] and not app.config["TRUSTED_PROXIES"]:
         app.logger.warning("COOKIE_SECURE=1 men TRUSTED_PROXIES=0: appen ser kun proxyens IP, så alle brugere deler én IP-spærre. "

@@ -36,14 +36,14 @@ def read_stats(db, msgs, uid):
     for m in msgs:
         if m["sender_id"] == uid:
             ids = audience(db, m)
-            n = db.execute(f"SELECT COUNT(*) FROM message_reads WHERE message_id=? AND user_id IN ({','.join('?' * len(ids)) or 'NULL'})", (m["id"], *ids)).fetchone()[0] if ids else 0
+            n = db.execute(f"SELECT COUNT(*) FROM message_reads WHERE message_id=? AND user_id IN ({','.join('?' * len(ids)) or 'NULL'})", (m["id"], *ids)).fetchone()[0] if ids else 0  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
             out[m["id"]] = (n, len(ids))
     return out
 
 
 def for_user(db, user, only_unread=False, limit=200):
     where, args = _visible_sql(user)
-    sql = ("SELECT m.*, t.name AS team_name, (r.user_id IS NOT NULL OR m.sender_id = ?) AS is_read FROM messages m LEFT JOIN teams t ON t.id=m.team_id "
+    sql = ("SELECT m.*, t.name AS team_name, (r.user_id IS NOT NULL OR m.sender_id = ?) AS is_read FROM messages m LEFT JOIN teams t ON t.id=m.team_id "  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
            "LEFT JOIN message_reads r ON r.message_id=m.id AND r.user_id=? WHERE " + where)
     if only_unread:
         sql += " AND r.user_id IS NULL AND COALESCE(m.sender_id,0) <> ?"
@@ -131,7 +131,7 @@ def _email(db, kind, team_id, title, body):
 
 def _own(db, mid):
     where, args = _visible_sql(g.user)
-    m = db.execute("SELECT m.* FROM messages m WHERE m.id=? AND " + where, (mid, *args)).fetchone()
+    m = db.execute("SELECT m.* FROM messages m WHERE m.id=? AND " + where, (mid, *args)).fetchone()  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     if not m:
         abort(404)
     return m

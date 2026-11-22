@@ -26,7 +26,7 @@ def heat(v, lo=1.0, mid=3.0, hi=5.0):
 
 
 def _svg(w, h, body, label):
-    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="{escape(label)}" '
+    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="{escape(label)}" '  # nosec B704 – server-genereret SVG/QR, værdier escapet
                   f'xmlns="http://www.w3.org/2000/svg">{body}</svg>')
 
 

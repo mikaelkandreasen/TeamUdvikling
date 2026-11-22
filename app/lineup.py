@@ -86,7 +86,7 @@ def split_view():
         used = [t for t in teams if t["players"]]
         existing = db.execute("SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=?", (team_id(), gt)).fetchone()[0]
         names = [t["name"] for t in used]
-        replaced = db.execute(f"SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=? AND name IN ({','.join('?' * len(names))})", [team_id(), gt, *names]).fetchone()[0] if names else 0
+        replaced = db.execute(f"SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=? AND name IN ({','.join('?' * len(names))})", [team_id(), gt, *names]).fetchone()[0] if names else 0  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
         if existing - replaced + len(used) > MAX_PER_TYPE:
             flash(f"Der kan højst gemmes {MAX_PER_TYPE} opstillinger pr. kamptype. Slet gamle først.", "error")
             return redirect(url_for("lineup.split_view", per_tier=per))

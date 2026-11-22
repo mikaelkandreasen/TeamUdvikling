@@ -116,7 +116,7 @@ def _clubs(db):
 def _teams(db):
     if not scope.is_manager(g.user):
         ids = sorted(_heads())
-        return db.execute(f"SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id WHERE t.id IN ({','.join('?' * len(ids))}) ORDER BY t.name COLLATE NOCASE", ids).fetchall()
+        return db.execute(f"SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id WHERE t.id IN ({','.join('?' * len(ids))}) ORDER BY t.name COLLATE NOCASE", ids).fetchall()  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     if scope.is_sysadmin(g.user):
         return db.execute("SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id ORDER BY c.name COLLATE NOCASE, t.name COLLATE NOCASE").fetchall()
     return db.execute("SELECT t.*, c.name AS club_name FROM teams t JOIN clubs c ON c.id=t.club_id WHERE t.club_id=? ORDER BY t.name COLLATE NOCASE", (g.user["club_id"],)).fetchall()

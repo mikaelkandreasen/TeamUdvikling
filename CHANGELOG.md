@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Rettet
+- **Opstart med flere workers:** gunicorns to workers kunne køre migrationerne samtidig, så den ene fejlede (`UNIQUE constraint failed: schema_migrations.id`), og containeren startede ikke. Det kunne også give to forskellige `secret_key`/`totp_key` ved første start. Opstarten er nu beskyttet af en fillås (`/data/.init.lock`), og migrationsrunneren springer over, hvis en anden proces allerede har kørt migrationen. Test med seks samtidige processer.
+- Bandit-fund gennemgået: alle 29 var falske positiver (faste tabel-/kolonnenavne, `?`-pladsholdere, server-genereret SVG) og er markeret med begrundelse; SHA-1 til HIBP markeret `usedforsecurity=False`.
+
 ## [0.30.0] - 2026-11-22
 
 ### Sikkerhed

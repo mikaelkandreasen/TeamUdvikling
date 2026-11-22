@@ -11,7 +11,7 @@ def stop_user(db, u):
     uid = u["id"]
     name = u["display_name"] if u["display_name"].endswith("(stoppet)") else f"{u['display_name']} (stoppet)"
     for tbl in ("user_teams", "team_heads", "user_profiles", "recovery_codes", "remember_tokens", "reset_tokens", "presence", "activity", "login_fails"):
-        db.execute(f"DELETE FROM {tbl} WHERE user_id=?", (uid,))
+        db.execute(f"DELETE FROM {tbl} WHERE user_id=?", (uid,))  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     db.execute("UPDATE users SET username=?, display_name=?, pw_hash='!stoppet', totp_secret=NULL, totp_enabled=0, email=NULL, must_change_pw=0, "
                "role='trainer', stopped_at=? WHERE id=?", (f"stoppet-{uid}", name, int(time.time()), uid))
 
@@ -44,7 +44,7 @@ def move_player(db, p, to_team, actor):
     for r in db.execute("SELECT d.round, u.display_name n, u.id uid, d.item FROM dbu_checks d JOIN users u ON u.id=d.trainer_id WHERE d.player_id=?", (pid,)).fetchall():
         put(r["uid"], r["round"], r["n"], "dbu", r["item"], 1)
     for tbl in ("evaluations", "level_ratings", "dbu_checks"):
-        db.execute(f"DELETE FROM {tbl} WHERE player_id=?", (pid,))
+        db.execute(f"DELETE FROM {tbl} WHERE player_id=?", (pid,))  # nosec B608 – identifikatorer fra faste lister / kun ?-pladsholdere
     db.execute("DELETE FROM lineup_slots WHERE player_id=?", (pid,))
     db.execute("DELETE FROM match_slots WHERE player_id=?", (pid,))
     db.execute("DELETE FROM player_links WHERE player_id=?", (pid,))

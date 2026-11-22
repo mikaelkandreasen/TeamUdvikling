@@ -137,3 +137,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Arkitekturgennemgangen fandt, at de største risici ligger i driften (backup, nøgler, proxy-indstillinger) og i container-loggen.
 **Valg:** `selfcheck.py` vurderer konfigurationen ved start og i Administration (kun systemadministrator) uden at stoppe appen. `gunicorn.conf.py` fjerner engangstokens fra adgangsloggen. Daglig backup flyttes til baggrundstråden.
 **Konsekvens:** Forkerte indstillinger bliver synlige, men appen starter stadig (så en fejlkonfiguration ikke låser brugerne ude). Driftsforslag uden kode står i `docs/ARKITEKTURGENNEMGANG.md`.
+
+## D-032 · Fillås omkring opstart (2026-11-22)
+**Kontekst:** CI's røgtest af v0.30.0 viste, at gunicorns workers kørte migrationer parallelt og fejlede; de kunne også oprette forskellige nøglefiler ved første start.
+**Valg:** `fcntl.flock` på `/data/.init.lock` omkring hele initialiseringen i `create_app` + gentjek af `schema_migrations` inde i transaktionen. Ikke `--preload`, fordi baggrundstråden (mail/backup) så ikke ville overleve fork.
+**Konsekvens:** Workers starter efter hinanden (få millisekunder). Låsen kræver et lokalt filsystem (Docker-volumen er det).

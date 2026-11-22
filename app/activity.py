@@ -131,7 +131,7 @@ def bar_chart(values):
         x = left + hr * 4 * bw
         body.append(f'<text x="{x:.1f}" y="{h - 7}" font-size="9" fill="#555" text-anchor="middle">{hr:02d}</text>')
     body.append(f'<text x="2" y="10" font-size="9" fill="#555">{mx}</text>')
-    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="Brug pr. kvarter" xmlns="http://www.w3.org/2000/svg">{"".join(body)}</svg>')
+    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="Brug pr. kvarter" xmlns="http://www.w3.org/2000/svg">{"".join(body)}</svg>')  # nosec B704 – server-genereret SVG/QR, værdier escapet
 
 
 def heatmap(grid):
@@ -150,4 +150,4 @@ def heatmap(grid):
                             f'<title>{DAYS[d]} {label(k)}: {v}</title></rect>')
     for hr in range(0, 24, 3):
         body.append(f'<text x="{left + hr * 4 * cw:.1f}" y="{h - 3}" font-size="9" fill="#555" text-anchor="middle">{hr:02d}</text>')
-    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="Brug pr. ugedag og kvarter" xmlns="http://www.w3.org/2000/svg">{"".join(body)}</svg>')
+    return Markup(f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="Brug pr. ugedag og kvarter" xmlns="http://www.w3.org/2000/svg">{"".join(body)}</svg>')  # nosec B704 – server-genereret SVG/QR, værdier escapet
