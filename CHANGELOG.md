@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-22
+
 ### Tilføjet
 - **Indbakke (Beskeder):** klubadministrator kan sende en besked til hele klubben, og chef-træner til holdet. Beskeden vises som «Nye beskeder» på forsiden ved næste login, indtil modtageren trykker «Læst», og gemmes i indbakken. Ulæste vises som ✉ med antal i topbjælken; indbakken kan altid nås fra menuen (Beskeder / Mere). Afsender (og klubadministrator) kan slette.
 - **Send også som e-mail** (afkrydsning): hver modtager med e-mailadresse får sin egen mail (afsenderen springes over). Kræver SMTP/PUBLIC_URL; ellers gemmes beskeden og der vises en forklaring. Skema v19.
