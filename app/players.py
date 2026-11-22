@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from . import model, photos
+from . import model, photos, transfer
 from .auth import admin_required
 from .db import audit, get_db
 from .helpers import get_player, photo_ids, team_id, valid_choice
@@ -79,7 +79,7 @@ def edit(pid):
             for e in errors:
                 flash(e, "error")
             f["id"] = pid
-            return render_template("player_form.html", p=f, new=False, photo=_photo_info(db, pid))
+            return render_template("player_form.html", p=f, new=False, photo=_photo_info(db, pid), move_targets=_move_targets())
         db.execute(f"UPDATE players SET {','.join(k + '=?' for k in FIELDS)},active=? WHERE id=? AND team_id=?",
                    [f[k] or None for k in FIELDS] + [f["active"], pid, team_id()])
         _stamp_deactivation(db, pid)
@@ -87,7 +87,7 @@ def edit(pid):
         db.commit()
         flash("Gemt.", "ok")
         return redirect(url_for("players.index"))
-    return render_template("player_form.html", p=dict(p), new=False, photo=_photo_info(db, pid))
+    return render_template("player_form.html", p=dict(p), new=False, photo=_photo_info(db, pid), move_targets=_move_targets())
 
 
 def _photo_info(db, pid):
@@ -138,6 +138,28 @@ def photo_delete(pid):
     db.commit()
     flash("Billedet er slettet.", "ok")
     return redirect(url_for("players.edit", pid=pid))
+
+
+def _move_targets():
+    """Hold spilleren kan flyttes til: andre aktive hold i samme klub, som brugeren har adgang til (kun administratorer)."""
+    if g.user["role"] not in ("admin", "clubadmin") or g.get("viewing"):
+        return []
+    return [t for t in g.teams if t["id"] != g.team["id"] and not t["archived"] and t["club_id"] == g.team["club_id"]]
+
+
+@bp.route("/<int:pid>/move", methods=["POST"])
+@admin_required
+def move(pid):
+    db = get_db()
+    p = get_player(db, pid)
+    to = next((t for t in _move_targets() if t["id"] == request.form.get("team", type=int)), None)
+    if not to or request.form.get("confirm") != "ja":
+        flash("Vælg et hold og bekræft flytningen.", "error")
+        return redirect(url_for("players.edit", pid=pid))
+    transfer.move_player(db, p, to, g.user["username"])
+    db.commit()
+    flash(f"{p['name']} er flyttet til {to['name']}. Evalueringerne følger med som historik i profilen.", "ok")
+    return redirect(url_for("players.index"))
 
 
 @bp.route("/<int:pid>/delete", methods=["POST"])

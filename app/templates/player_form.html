@@ -39,4 +39,9 @@
     <label class="check"><input type="checkbox" name="confirm" value="ja"> Ja, slet spilleren og alle data permanent</label>
     <div class="actions"><button class="btn danger">Slet spiller</button></div></form></div>
 {% endif %}
+{% if not new and move_targets %}<form method="post" class="card" action="{{ url_for('players.move', pid=p['id']) }}">{{ csrf() }}
+  <h3>Skift hold</h3><p class="muted small">Spilleren flyttes med alle data. Tidligere evalueringer gemmes som historik i profilen og indgår ikke i det nye holds gennemsnit.</p>
+  <label for="mt">Nyt hold</label><select id="mt" name="team">{% for t in move_targets %}<option value="{{ t['id'] }}">{{ t['name'] }}</option>{% endfor %}</select>
+  <label><input type="checkbox" name="confirm" value="ja"> Ja, flyt spilleren</label>
+  <div class="actions"><button class="btn sec">Flyt spiller</button></div></form>{% endif %}
 {% endblock %}

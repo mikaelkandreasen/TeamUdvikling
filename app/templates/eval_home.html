@@ -1,10 +1,13 @@
-{% extends "base.html" %}{% block title %}Evaluering{% endblock %}
+{% extends "base.html" %}{% block title %}Evaluering{% if not show_all and total > prog|length %}<div class="actions"><a class="btn sec" href="{{ url_for('evaluation.eval_home', alle=1) }}">Vis alle evalueringer ({{ total }})</a></div>
+{% elif show_all and total > 3 %}<div class="actions"><a class="btn sec" href="{{ url_for('evaluation.eval_home') }}">Vis kun de seneste</a></div>{% endif %}
+{% endblock %}
 {% block content %}
 <h1>Evaluering</h1>
 <p class="muted">Du scorer spillerne som {{ user['display_name'] }}. Hver træner scorer for sig; teamoversigten samler alle trænere.</p>
+{% macro status(r) %}{% if r['closed'] %}<span class="badge">lukket</span>{% elif r['closes'] %}<span class="muted small">åben til {{ r['closes']|date_dk }}</span>{% endif %}{% endmacro %}
 {% for r in prog %}
 <a class="pcard" href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">
-  <div class="nm">{{ r['label'] }}<div class="sub">{{ r['date']|date_dk or 'ingen dato' }} · {{ r['done'] }} færdige{% if r['started'] %}, {{ r['started'] }} påbegyndt{% endif %} af {{ r['total'] }}</div>
+  <div class="nm">{{ r['label'] }} {{ status(r) }}<div class="sub">{{ r['date']|date_dk or 'ingen dato' }} · {{ r['done'] }} færdige{% if r['started'] %}, {{ r['started'] }} påbegyndt{% endif %} af {{ r['total'] }}</div>
     <div class="bar" style="margin-top:.4rem"><i style="width:{{ (100 * r['done'] / r['total']) if r['total'] else 0 }}%"></i></div></div>
   <span>›</span>
 </a>

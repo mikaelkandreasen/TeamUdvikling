@@ -104,11 +104,12 @@ def users_table(db, days=30, team_id=None, now=None):
     since = now // SLOT - days * 96
     sql = ("SELECT u.display_name, u.username, u.role, p.last_seen, COUNT(a.slot) AS slots FROM users u "
            "LEFT JOIN presence p ON p.user_id=u.id LEFT JOIN activity a ON a.user_id=u.id AND a.slot >= ? ")
+    sql_where = "WHERE u.stopped_at IS NULL "
     args = [since]
     if team_id:
         sql += "AND a.team_id = ? "
         args.append(team_id)
-    rows = db.execute(sql + "GROUP BY u.id ORDER BY p.last_seen DESC, u.display_name COLLATE NOCASE", args).fetchall()
+    rows = db.execute(sql + sql_where + "GROUP BY u.id ORDER BY p.last_seen DESC, u.display_name COLLATE NOCASE", args).fetchall()
     zone = tz()
     return [dict(r, seen=datetime.fromtimestamp(r["last_seen"], zone).strftime("%d-%m-%Y %H:%M") if r["last_seen"] else "")
             for r in rows]

@@ -16,3 +16,9 @@
   <div class="card"><h3>Udviklingsområder</h3>{% for c, v in weakest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
 </div>
 {% endif %}
+
+{% if history %}<div class="card"><h3>Tidligere hold</h3><p class="muted small">Evalueringer fra før spilleren skiftede hold. De indgår ikke i det nuværende holds tal.</p>
+{% for h in history %}<details class="role"><summary>{{ h['team'] }} <span class="muted small">(flyttet {{ h['moved']|date_dk }})</span></summary>
+<div class="scroll"><table><thead><tr><th>Evaluering</th><th class="num">Samlet</th>{% for r in ['Bold','Med','Press','Støtte'] %}<th class="num">{{ r }}</th>{% endfor %}</tr></thead><tbody>
+{% for r in h['rounds'] %}<tr><td>{{ r['label'] }}{% if r['date'] %}<div class="muted small">{{ r['date']|date_dk }}</div>{% endif %}<div class="muted small">{{ r['trainers']|join(', ') }}</div></td><td class="num">{{ r['samlet']|dk }}</td>{% for v in r['roles'] %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div></details>{% endfor %}</div>{% endif %}

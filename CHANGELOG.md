@@ -4,6 +4,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Evalueringer har navn og dato** (i stedet for «Evaluering 1»). Ny runde kræver begge dele. Hjem og Evaluering viser de 2 seneste og den næste; «Vis alle» åbner resten.
+- **Runder lukker 30 dage efter første indtastning.** Lukkede runder kan ses men ikke rettes; en holdansvarlig kan genåbne (30 dage). Eksisterende runder lukker 30 dage efter opdateringen.
+- **Stoppede trænere:** sletning af en træner med evalueringer fjerner loginet, men evalueringerne bevares som «Navn (stoppet)».
+- **Spillere kan flyttes til et andet hold** (administrator). Evalueringer følger med som historik under «Tidligere hold» i profilen; øvrige data følger spilleren.
+- Skema v16 (eval_history, users.stopped_at).
+
+### Ændret
+- **Spillerprofilen viser kun de 2 seneste færdige evalueringer** (alle aktive spillere evalueret); «Vis flere» åbner resten. Delvise og tomme runder skjules.
+- **Scorefarver:** 1 rød, 2 gul, 3 grøn (målet), 4 mørkere gul, 5 lysere blå.
+- Teamoversigt: holdets gennemsnit står øverst. Spillerliste på mobil-hjem er sammenklappet.
+
 ## [0.17.0] - 2026-11-22
 
 ### Ændret

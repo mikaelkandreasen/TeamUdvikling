@@ -79,3 +79,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** Ét valg pr. kompetence. Alle ti A → A+; ellers det niveau der er flest af, ved lighed det højeste (DBU: start altid ved A). Hurtighed har ingen D-tekst i arket; D kan vælges med en tydeligt mærket tekst. Udsagnene er omskrevet tæt på arket (DBU ejer teksten), kilde linkes.
 **Konsekvens:** Afviger bevidst fra DBU's «4 udsagn»-regel. Ønskes den, ligger logikken i `model.dbu_result`.
 
+## D-021 · Runder, stoppede trænere og holdskifte (2026-11-22)
+**Kontekst:** Evalueringer skal kunne følges over tid, også når trænere stopper eller børn skifter hold.
+**Valg:** Runder har navn/dato og lukker 30 dage efter første indtastning (`round_opened_<n>`). En træner med evalueringer anonymiseres til «… (stoppet)» (`users.stopped_at`) i stedet for at slettes. Ved holdskifte kopieres evalueringerne til `eval_history` (hold, runde, træner som tekst) og fjernes fra det gamle holds tal; opstillingspladser og spillerlinks ryddes.
+**Konsekvens:** Tidligere hold indgår ikke i det nye holds gennemsnit. Motivationssvar og udviklingsdata følger spilleren uændret.
+

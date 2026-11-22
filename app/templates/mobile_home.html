@@ -8,7 +8,8 @@
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">Overblik<small>hele holdet</small></a>
   {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde<small>afkryds træning/kamp</small></a>{% endif %}
 </div>
-<h2>Spillere ({{ cards|length }})</h2>
+<details class="role">
+<summary>Spillere og score ({{ cards|length }})</summary>
 {% for c in cards %}
 <div class="pcard">
   <span class="badge" style="background:{{ c['samlet']|heat }}">{{ c['samlet']|dk or '–' }}</span>
@@ -22,5 +23,6 @@
 {% else %}
 <div class="card">Ingen spillere endnu. <a href="{{ url_for('players.new') }}">Opret den første</a>.</div>
 {% endfor %}
+</details>
 <div class="actions"><a class="btn sec block" href="{{ url_for('main.home', desktop=1) }}">Vis fuld version</a></div>
 {% endblock %}

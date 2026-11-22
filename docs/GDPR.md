@@ -64,3 +64,5 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 - **Spillerlink, fremmøde, trivsel, mascot-log og noter** er personoplysninger om børn og følger samme sletning som spilleren.
 - **Niveauvurderinger** (trænernes samlede vurdering pr. spiller og runde) følger samme sletning som evalueringer og indgår i indsigtsudtrækket.
 - **DBU-niveauvalg** (trænerens A–D pr. kompetence, pr. spiller og runde) følger samme sletning som evalueringer og indgår i indsigtsudtrækket.
+
+- **Stoppede trænere og holdskifte:** en stoppet træners login, e-mail og 2FA fjernes; kun navn + «(stoppet)» og evalueringerne bevares som historik. Ved holdskifte gemmes tidligere evalueringer som historik på spilleren og slettes med spilleren.

@@ -202,9 +202,9 @@ def team_action(tid, action):
 # --------------------------------------------------------------------------- brugere
 def _user_rows(db):
     if scope.is_sysadmin(g.user):
-        return db.execute("SELECT u.*, c.name AS club_name FROM users u LEFT JOIN clubs c ON c.id=u.club_id ORDER BY u.username").fetchall()
+        return db.execute("SELECT u.*, c.name AS club_name FROM users u LEFT JOIN clubs c ON c.id=u.club_id WHERE u.stopped_at IS NULL ORDER BY u.username").fetchall()
     return db.execute("SELECT u.*, c.name AS club_name FROM users u LEFT JOIN clubs c ON c.id=u.club_id "
-                      "WHERE u.club_id=? AND u.role<>'admin' ORDER BY u.username", (g.user["club_id"],)).fetchall()
+                      "WHERE u.club_id=? AND u.role<>'admin' AND u.stopped_at IS NULL ORDER BY u.username", (g.user["club_id"],)).fetchall()
 
 
 def _render_users(db):
@@ -248,7 +248,7 @@ def _fmt_ts(ts):
 def user_detail(uid):
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-    if not u or not scope.can_manage_user(g.user, u):
+    if not u or u["stopped_at"] or not scope.can_manage_user(g.user, u):
         abort(404)
     return _render_user_detail(db, u)
 
@@ -275,7 +275,7 @@ def users_overview():
         teams.setdefault(r["user_id"], []).append(r["name"] + (" (chef)" if r["head"] else ""))
     rows = []
     for u in db.execute("SELECT u.*, c.name AS club_name, p.last_seen FROM users u LEFT JOIN clubs c ON c.id=u.club_id "
-                        "LEFT JOIN presence p ON p.user_id=u.id ORDER BY u.created_at DESC, u.id DESC"):
+                        "LEFT JOIN presence p ON p.user_id=u.id WHERE u.stopped_at IS NULL ORDER BY u.created_at DESC, u.id DESC"):
         fmt = lambda ts: datetime.fromtimestamp(ts, zone).strftime("%d-%m-%Y %H:%M") if ts else ""
         rows.append(dict(u=u, teams=teams.get(u["id"], []), login=fmt(u["last_login"]), seen=fmt(u["last_seen"]), role=scope.ROLE_LABEL.get(u["role"], u["role"])))
     return render_template("admin_users_overview.html", rows=rows)
@@ -330,7 +330,7 @@ def _code_gate(db):
 def user_action(uid, action):
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-    if not u or not scope.can_manage_user(g.user, u):
+    if not u or u["stopped_at"] or not scope.can_manage_user(g.user, u):
         abort(404)
     temp = None
     if action == "teams":
@@ -450,8 +450,13 @@ def user_action(uid, action):
         if u["role"] == "admin" and db.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
             flash("Der skal altid være mindst én systemadministrator.", "error")
             return redirect(url_for("admin.user_detail", uid=uid))
-        db.execute("DELETE FROM users WHERE id=?", (uid,))
-        flash("Bruger slettet (træners egne evalueringer slettes også).", "ok")
+        from . import transfer
+        if transfer.has_evaluations(db, uid):
+            transfer.stop_user(db, u)
+            flash("Træneren er stoppet: loginet er fjernet, men evalueringerne er bevaret i historikken under «… (stoppet)».", "ok")
+        else:
+            db.execute("DELETE FROM users WHERE id=?", (uid,))
+            flash("Bruger slettet.", "ok")
     else:
         abort(404)
     audit(db, g.user["username"], f"bruger_{action}", u["username"])
@@ -711,7 +716,7 @@ def import_template(fmt):
 def view_as(uid):
     from flask import session
     db = get_db()
-    u = db.execute("SELECT * FROM users WHERE id=? AND role='trainer'", (uid,)).fetchone()
+    u = db.execute("SELECT * FROM users WHERE id=? AND role='trainer' AND stopped_at IS NULL", (uid,)).fetchone()
     if not u or not scope.can_manage_user(g.user, u):
         abort(404)
     session["view_as"] = uid
@@ -733,7 +738,14 @@ def evaluations():
             if n >= model.MAX_ROUNDS:
                 flash(f"Der kan højst være {model.MAX_ROUNDS} runder.", "error")
             else:
+                label = (request.form.get("label") or "").strip()[:60]
+                day = (request.form.get("date") or "").strip()
+                if not label or not model.parse_date(day):
+                    flash("Giv runden et navn og en dato.", "error")
+                    return redirect(url_for("admin.evaluations"))
                 set_setting(db, tid, "rounds_n", str(n + 1))
+                set_setting(db, tid, f"round_label_{n + 1}", label)
+                set_setting(db, tid, f"round_date_{n + 1}", day)
                 audit(db, g.user["username"], "runde_tilfoejet", f"{g.team['name']}: {n + 1}")
                 flash(f"Runde {n + 1} er tilføjet.", "ok")
         elif action == "remove_round":
@@ -745,10 +757,18 @@ def evaluations():
                 db.execute("DELETE FROM evaluations WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
                 db.execute("DELETE FROM level_ratings WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
                 db.execute("DELETE FROM dbu_checks WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
-                db.execute("DELETE FROM settings WHERE key IN (?,?)", (f"t{tid}:round_label_{n}", f"t{tid}:round_date_{n}"))
+                db.execute("DELETE FROM settings WHERE key IN (?,?,?)", (f"t{tid}:round_label_{n}", f"t{tid}:round_date_{n}", f"t{tid}:round_opened_{n}"))
                 set_setting(db, tid, "rounds_n", str(n - 1))
                 audit(db, g.user["username"], "runde_fjernet", f"{g.team['name']}: runde {n}")
                 flash(f"Runde {n} og dens evalueringer er slettet.", "ok")
+        elif action == "reopen_round":
+            rnd = request.form.get("round", type=int)
+            if rnd not in g.rounds:
+                abort(404)
+            from datetime import date
+            set_setting(db, tid, f"round_opened_{rnd}", date.today().isoformat())
+            audit(db, g.user["username"], "runde_genaabnet", f"{g.team['name']}: runde {rnd}")
+            flash("Runden er genåbnet i 30 dage.", "ok")
         elif action == "delete_evals":
             rnd = request.form.get("round", type=int)
             trainer = request.form.get("trainer", type=int)

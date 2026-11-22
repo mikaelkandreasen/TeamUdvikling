@@ -6,7 +6,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 from . import activity, club, model, teams
 from .db import get_db
 from .team import team_criteria
-from .helpers import active_players, default_round, round_info, team_id
+from .helpers import active_players, default_round, round_info, round_window, team_id
 
 bp = Blueprint("main", __name__)
 
@@ -22,7 +22,8 @@ def _dashboard_data(db):
     for info in round_info(db):
         done = sum(1 for p in players if mine[info["no"]].get(p["id"]) == model.N_CRIT)
         prog.append(dict(info, done=done, total=len(players)))
-    return players, rounds, prog
+    shown = round_window(prog)
+    return players, rounds, [dict(r, shown=r["no"] in shown) for r in prog]
 
 
 @bp.route("/")

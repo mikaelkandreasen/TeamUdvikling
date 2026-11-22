@@ -131,7 +131,7 @@ def _too_many():
 def _valid_session_user(db):
     row = db.execute("SELECT * FROM users WHERE id=?", (session["uid"],)).fetchone() if session.get("uid") else None
     sid = session.get("sid")
-    ok = (row and sid and time.time() - session.get("seen", 0) < IDLE_SECONDS
+    ok = (row and not row["stopped_at"] and sid and time.time() - session.get("seen", 0) < IDLE_SECONDS
           and hmac.compare_digest(session.get("pwv", ""), _pwv(row["pw_hash"]))
           and not db.execute("SELECT 1 FROM revoked_sessions WHERE sid_hash=?", (_sid_hash(sid),)).fetchone()
           and not (session.get("stage") == "ok" and not row["totp_enabled"]))   # 2FA nulstillet → ud

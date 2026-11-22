@@ -2,7 +2,8 @@
 {% block content %}
 <h1>{{ p['name'] }}</h1>
 <p class="muted">{{ info['label'] }} · {{ p['position'] or 'ingen position' }} · {{ model.EVAL_SCALE }}. Lad et felt stå tomt, hvis du ikke kan vurdere det.</p>
-<form method="post">{{ csrf() }}<input type="hidden" name="open" value="" data-open-roles>
+{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>{{ info['label'] }} er lukket</b> (lukkede {{ info['closes']|date_dk }}). Du kan se scorerne, men ikke rette dem.</div>{% endif %}
+<form method="post"><fieldset {{ 'disabled' if info['closed'] }} style="border:0;padding:0;margin:0;min-width:0">{{ csrf() }}<input type="hidden" name="open" value="" data-open-roles>
 {% for role in ROLES %}
 <details class="role" data-role="{{ loop.index0 }}" {{ 'open' if (open_roles is none and loop.first) or (open_roles is not none and loop.index0 in open_roles) }}>
   <summary>{{ role }}</summary>
@@ -32,7 +33,7 @@
   <button class="btn" name="go" value="stay">Gem</button>
   {% if next_id %}<button class="btn sec" name="go" value="next">Gem &amp; næste ›</button>{% endif %}
 </div>
-</form>
+</fieldset></form>
 <div class="actions">{% if prev_id %}<a class="btn sec" data-keep-open href="{{ url_for('evaluation.eval_form', rnd=rnd, pid=prev_id) }}">‹ Forrige</a>{% endif %}
   <a class="btn sec" href="{{ url_for('evaluation.eval_round', rnd=rnd) }}">Til listen</a></div>
 {% endblock %}

@@ -45,7 +45,7 @@ def test_add_and_remove_rounds(app, admin):
     make_team(admin, "A"); add_player(admin, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
     assert admin.get("/eval/5").status_code == 404
-    admin.post("/admin/evaluations", {"action": "add_round"}, page="/admin/evaluations")
+    admin.post("/admin/evaluations", {"action": "add_round", "label": "Runde X", "date": "2026-12-01"}, page="/admin/evaluations")
     assert admin.get("/eval/5").status_code == 200
     score_all(admin, 5, pid, 4)
     assert rows(app, "SELECT COUNT(*) c FROM evaluations WHERE round=5")[0]["c"] == 24
@@ -61,7 +61,7 @@ def test_round_limits_and_team_isolation(app, admin):
     make_team(admin, "A"); make_team(admin, "B")
     switch(admin, team_id(app, "A"))
     for _ in range(20):
-        admin.post("/admin/evaluations", {"action": "add_round"}, page="/admin/evaluations")
+        admin.post("/admin/evaluations", {"action": "add_round", "label": "Runde X", "date": "2026-12-01"}, page="/admin/evaluations")
     assert admin.get("/eval/20").status_code == 200 and admin.get("/eval/21").status_code == 404
     switch(admin, team_id(app, "B"))
     assert admin.get("/eval/5").status_code == 404                        # hold B er upåvirket
@@ -96,7 +96,7 @@ def test_trainer_cannot_touch_round_admin(app, admin):
     make_team(admin, "A")
     t = make_trainer(app, admin, "tr", ["A"])
     assert t.get("/admin/evaluations").status_code == 403
-    assert t.post("/admin/evaluations", {"action": "add_round"}, page="/").status_code == 403
+    assert t.post("/admin/evaluations", {"action": "add_round", "label": "Runde X", "date": "2026-12-01"}, page="/").status_code == 403
 
 
 # ------------------------------------------------------------------ se som træner

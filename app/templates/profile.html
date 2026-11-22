@@ -2,7 +2,7 @@
 {% block content %}
 <h1>{{ avatar(p, photos, 'md') }}{{ p['name'] }}</h1>
 <p class="muted">{{ positions_of(p)|join(' / ') or 'ingen position' }}{% if p['foot'] %} · {{ p['foot'] }} fod{% endif %}</p>
-<div class="filters">{% for i in infos %}<a href="{{ url_for('evaluation.profile', pid=p['id'], runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}</div>
+<div class="filters">{% for i in infos %}<a href="{{ url_for('evaluation.profile', pid=p['id'], runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}{% if more %}<a href="{{ url_for('evaluation.profile', pid=p['id'], alle=1) }}">Vis flere ({{ more }})</a>{% elif show_all %}<a href="{{ url_for('evaluation.profile', pid=p['id']) }}">Kun seneste 2</a>{% endif %}</div>
 {% include "_profile_body.html" %}
 {% if age_note %}<div class="card"><b>Relativ alder:</b> {{ age_note }}</div>{% endif %}
 {% if p['focus1'] or p['focus2'] %}<div class="card"><b>Fokus:</b> {{ p['focus1'] or '' }}{% if p['focus2'] %} · {{ p['focus2'] }}{% endif %}</div>{% endif %}

@@ -51,12 +51,42 @@ def int_in(value, lo, hi):
     return v if lo <= v <= hi else None
 
 
+ROUND_OPEN_DAYS = 30            # en runde lukkes 30 dage efter første indtastning
+
+
 def round_info(db):
+    """Runderne med navn, dato og status: åbnet (første indtastning), lukkedato og om runden er lukket for indtastning."""
+    from datetime import date, timedelta
+    today = date.today()
+    with_data = {r["round"] for r in db.execute("SELECT DISTINCT e.round FROM evaluations e JOIN players p ON p.id=e.player_id WHERE p.team_id=?", (team_id(),))}
     out = []
     for r in g.rounds:
         label = get_setting(db, team_id(), f"round_label_{r}") or f"Evaluering {r}"
-        out.append(dict(no=r, label=label, date=get_setting(db, team_id(), f"round_date_{r}")))
+        opened = get_setting(db, team_id(), f"round_opened_{r}")
+        try:
+            closes = date.fromisoformat(opened) + timedelta(days=ROUND_OPEN_DAYS) if opened else None
+        except ValueError:
+            closes = None
+        out.append(dict(no=r, label=label, date=get_setting(db, team_id(), f"round_date_{r}"), opened=opened, closes=closes.isoformat() if closes else "",
+                        closed=bool(closes and today > closes), has_data=r in with_data))
     return out
+
+
+def round_window(infos):
+    """De to seneste runder med data og den næste (første runde uden data efter dem). Resten vises kun, når man går ind på siden."""
+    data = [i["no"] for i in infos if i["has_data"]]
+    last2 = data[-2:]
+    after = [i["no"] for i in infos if i["no"] > (data[-1] if data else 0) and not i["has_data"]]
+    nxt = after[:1]
+    return sorted(set(last2 + nxt))
+
+
+def touch_round_opened(db, rnd):
+    """Registrerer dagen for første indtastning i runden (starter de 30 dage)."""
+    from datetime import date
+    from .db import set_setting
+    if not get_setting(db, team_id(), f"round_opened_{rnd}"):
+        set_setting(db, team_id(), f"round_opened_{rnd}", date.today().isoformat())
 
 
 def default_round(rounds, preferred=None):

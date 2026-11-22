@@ -2,10 +2,14 @@
 {% block content %}
 <h1>Evalueringer – {{ team['name'] }}</h1>
 <div class="card"><h2>Runder</h2>
-  <p>Holdet har <b>{{ infos|length }}</b> evalueringsrunder: {% for i in infos %}{{ i['label'] }}{{ ', ' if not loop.last }}{% endfor %}.</p>
-  <div class="actions">
-    <form method="post">{{ csrf() }}<input type="hidden" name="action" value="add_round"><button class="btn" {{ 'disabled' if not can_add }}>Tilføj runde</button></form>
-  </div>
+  <p>Holdet har <b>{{ infos|length }}</b> evalueringsrunder. Hver runde lukkes 30 dage efter første indtastning.</p>
+  {% for i in infos %}<div class="pcard"><div class="nm"><b>{{ i['label'] }}</b>{% if i['date'] %} <span class="muted small">{{ i['date']|date_dk }}</span>{% endif %}
+    <div class="sub">{% if i['closed'] %}Lukket {{ i['closes']|date_dk }}{% elif i['closes'] %}Åben til {{ i['closes']|date_dk }}{% elif i['has_data'] %}Åben{% else %}Ikke startet{% endif %}</div></div>
+    {% if i['closed'] %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="reopen_round"><input type="hidden" name="round" value="{{ i['no'] }}"><button class="btn sec">Genåbn i 30 dage</button></form>{% endif %}</div>{% endfor %}
+  <form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="add_round"><h3>Ny runde</h3>
+    <label for="nl">Navn</label><input id="nl" name="label" maxlength="60" required placeholder="fx Efterårsevaluering 2026">
+    <label for="nd">Dato</label><input id="nd" type="date" name="date" required>
+    <div class="actions"><button class="btn" {{ 'disabled' if not can_add }}>Tilføj runde</button></div></form>
   {% if can_remove %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="remove_round">
     <p class="muted small">Fjerner den sidste runde ({{ infos[-1]['label'] }}) og sletter alle dens evalueringer for dette hold.</p>
     <label><input type="checkbox" name="confirm" value="ja"> Ja, fjern sidste runde og slet dens evalueringer</label>

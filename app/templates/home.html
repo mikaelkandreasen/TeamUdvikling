@@ -16,11 +16,12 @@
 {% endif %}
 <div class="card">
   <h2>Min evaluering</h2>
-  {% for r in prog %}
-  <p><a href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">{{ r['label'] }}</a>
+  {% for r in prog if r['shown'] %}
+  <p><a href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">{{ r['label'] }}</a>{% if r['date'] %} <span class="muted small">{{ r['date']|date_dk }}</span>{% endif %}{% if r['closed'] %} <span class="badge">lukket</span>{% endif %}
      <span class="muted">{{ r['done'] }} af {{ r['total'] }} spillere færdige</span></p>
   <div class="bar"><i style="width:{{ (100 * r['done'] / r['total']) if r['total'] else 0 }}%"></i></div>
   {% endfor %}
+  {% if prog|length > prog|selectattr('shown')|list|length %}<a href="{{ url_for('evaluation.eval_home', alle=1) }}">Vis alle evalueringer ({{ prog|length }})</a>{% endif %}
 </div>
 <div class="tiles">
   <a class="tile" href="{{ url_for('players.index') }}">Spillere<small>{{ players|length }} aktive</small></a>

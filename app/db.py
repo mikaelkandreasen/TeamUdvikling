@@ -90,6 +90,10 @@ CREATE TABLE IF NOT EXISTS level_ratings(
   round INTEGER NOT NULL, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   trainer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   level TEXT NOT NULL, PRIMARY KEY(round, player_id, trainer_id));
+CREATE TABLE IF NOT EXISTS eval_history(
+  id INTEGER PRIMARY KEY, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, team_name TEXT NOT NULL, moved_at TEXT NOT NULL,
+  round_no INTEGER NOT NULL, round_label TEXT NOT NULL, round_date TEXT, trainer_name TEXT NOT NULL, kind TEXT NOT NULL, k TEXT NOT NULL, v TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_eval_history ON eval_history(player_id);
 CREATE TABLE IF NOT EXISTS dbu_checks(
   round INTEGER NOT NULL, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   trainer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, item TEXT NOT NULL, PRIMARY KEY(round, player_id, trainer_id, item));
@@ -139,7 +143,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 15   # v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 16   # v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -215,6 +219,19 @@ def _migrate_team_features(con):
         con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
 
 
+def _migrate_stopped_users(con):
+    """v16: users.stopped_at (idempotent)."""
+    if "stopped_at" not in {r["name"] for r in con.execute("PRAGMA table_info(users)")}:
+        con.execute("ALTER TABLE users ADD COLUMN stopped_at INTEGER")
+
+
+def _migrate_round_opening(con):
+    """v16: runder lukkes 30 dage efter første indtastning. Eksisterende runder med data får åbningsdato = i dag (idempotent)."""
+    from datetime import date
+    for r in con.execute("SELECT DISTINCT p.team_id AS t, e.round AS r FROM evaluations e JOIN players p ON p.id=e.player_id").fetchall():
+        con.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)", (f"t{r['t']}:round_opened_{r['r']}", date.today().isoformat()))
+
+
 def _migrate_team_notes(con):
     """v15: holdnoter får titel, dato, og «sidst redigeret» (idempotent)."""
     cols = {r["name"] for r in con.execute("PRAGMA table_info(team_notes)")}
@@ -247,6 +264,8 @@ def init_db(path):
     _migrate_team_features(con)
     _migrate_dbu_levels(con)
     _migrate_team_notes(con)
+    _migrate_round_opening(con)
+    _migrate_stopped_users(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

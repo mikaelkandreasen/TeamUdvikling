@@ -1,7 +1,8 @@
 {% extends "base.html" %}{% block title %}{{ info['label'] }}{% endblock %}
 {% block content %}
 <h1>{{ info['label'] }}</h1>
-<p class="muted">Vælg en spiller for at score. {{ model.EVAL_SCALE }}.</p>
+{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>Evalueringen er lukket</b> – den lukkede {{ info['closes']|date_dk }} (30 dage efter første indtastning). Du kan se scorerne, men ikke rette dem.{% if can_configure() %} Under Evalueringsrunder kan du genåbne den.{% endif %}</div>{% endif %}
+<p class="muted">{% if info['date'] %}{{ info['date']|date_dk }} · {% endif %}Vælg en spiller for at score. {{ model.EVAL_SCALE }}.</p>
 {% for p in players %}
 {% set n = mine.get(p['id'], 0) %}
 <a class="pcard" href="{{ url_for('evaluation.eval_form', rnd=rnd, pid=p['id']) }}">
