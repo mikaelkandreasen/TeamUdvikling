@@ -249,6 +249,8 @@ def note_edit(nid):
                    (title, day, body, g.user["display_name"], nid, team_id()))
         db.commit()
         flash("Noten er opdateret.", "ok")
+        if request.headers.get("X-Requested-With") == "fetch":      # «Gem» med JavaScript: bliv i redigeringen (I-09)
+            return redirect(url_for("team.note_edit", nid=nid))
         return redirect(url_for("team.note_view", nid=nid))
     return render_template("team_note_form.html", n=n, today=_today())
 

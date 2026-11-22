@@ -1,16 +1,16 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Farver for score{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Farver for score") }}{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('team.settings') }}">‹ Holdindstillinger</a></p>
-<h1>Farver for score 1–5 – {{ team['name'] }}</h1>
-<p class="muted small">Vælg en farve og en kort forklaring til hvert tal. Farverne bruges i alle tabeller, på banen og i diagrammerne for holdet, og forklaringen vises nederst på siderne.</p>
+<p><a href="{{ url_for('team.settings') }}">{{ _("‹ Holdindstillinger") }}</a></p>
+<h1>{{ _("Farver for score 1–5 – {team}", team=team['name']) }}</h1>
+<p class="muted small">{{ _("Vælg en farve og en kort forklaring til hvert tal. Farverne bruges i alle tabeller, på banen og i diagrammerne for holdet, og forklaringen vises nederst på siderne.") }}</p>
 <form method="post" class="card">{{ csrf() }}
 {% for n in range(1, 6) %}<div class="colorrow">
   <span class="legend-sw" style="background:{{ cfg.colors[n-1] }};color:{{ n|heat_fg }}">{{ n }}</span>
-  <label for="c{{ n }}" class="sr-only">Farve for {{ n }}</label><input id="c{{ n }}" type="color" name="color_{{ n }}" value="{{ cfg.colors[n-1] }}">
-  <label for="l{{ n }}" class="sr-only">Forklaring for {{ n }}</label><input id="l{{ n }}" name="label_{{ n }}" value="{{ cfg.labels[n-1] }}" maxlength="60" placeholder="Forklaring">
+  <label for="c{{ n }}" class="sr-only">{{ _("Farve for {n}", n=n) }}</label><input id="c{{ n }}" type="color" name="color_{{ n }}" value="{{ cfg.colors[n-1] }}">
+  <label for="l{{ n }}" class="sr-only">{{ _("Forklaring for {n}", n=n) }}</label><input id="l{{ n }}" name="label_{{ n }}" value="{{ cfg.labels[n-1] }}" maxlength="60" placeholder="{{ _("Forklaring") }}">
 </div>{% endfor %}
-<label for="mo">Visning af gennemsnit</label><select id="mo" name="mode">{% for k, t in modes.items() %}<option value="{{ k }}" {{ 'selected' if cfg.mode == k }}>{{ t }}</option>{% endfor %}</select>
-<div class="actions"><button class="btn">Gem farver</button> <button class="btn sec" name="action" value="reset">Tilbage til standard</button></div></form>
-<div class="card"><h2>Eksempel</h2><div class="legend-row">{% for v in preview %}<span class="legend-sw wide" style="background:{{ v|heat }};color:{{ v|heat_fg }}">{{ v|dk }}</span>{% endfor %}</div>
-<p class="muted small">Sådan ser gennemsnit mellem 1 og 5 ud med de gemte farver. Tekstfarven skifter automatisk mellem sort og hvid, så tallet kan læses.</p></div>
+<label for="mo">{{ _("Visning af gennemsnit") }}</label><select id="mo" name="mode">{% for k, t in modes.items() %}<option value="{{ k }}" {{ 'selected' if cfg.mode == k }}>{{ t }}</option>{% endfor %}</select>
+<div class="actions"><button class="btn">{{ _("Gem farver") }}</button> <button class="btn sec" name="action" value="reset">{{ _("Tilbage til standard") }}</button></div></form>
+<div class="card"><h2>{{ _("Eksempel") }}</h2><div class="legend-row">{% for v in preview %}<span class="legend-sw wide" style="background:{{ v|heat }};color:{{ v|heat_fg }}">{{ v|dk }}</span>{% endfor %}</div>
+<p class="muted small">{{ _("Sådan ser gennemsnit mellem 1 og 5 ud med de gemte farver. Tekstfarven skifter automatisk mellem sort og hvid, så tallet kan læses.") }}</p></div>
 {% endblock %}

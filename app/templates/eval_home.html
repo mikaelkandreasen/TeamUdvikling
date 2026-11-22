@@ -1,9 +1,9 @@
-{% extends "base.html" %}{% block title %}Evaluering{% if not show_all and total > prog|length %}<div class="actions"><a class="btn sec" href="{{ url_for('evaluation.eval_home', alle=1) }}">Vis alle evalueringer ({{ total }})</a></div>
+{% extends "base.html" %}{% block title %}{{ _("Evaluering") }}{% if not show_all and total > prog|length %}<div class="actions"><a class="btn sec" href="{{ url_for('evaluation.eval_home', alle=1) }}">{{ _("Vis alle evalueringer ({total})", total=total) }}</a></div>
 {% elif show_all and total > 3 %}<div class="actions"><a class="btn sec" href="{{ url_for('evaluation.eval_home') }}">{{ _('Vis kun de seneste') }}</a></div>{% endif %}
 {% endblock %}
 {% block content %}
-<h1>Evaluering</h1>
-<p class="muted">Du scorer spillerne som {{ user['display_name'] }}. Hver træner scorer for sig; teamoversigten samler alle trænere.</p>
+<h1>{{ _("Evaluering") }}</h1>
+<p class="muted">{{ _("Du scorer spillerne som {user}. Hver træner scorer for sig; teamoversigten samler alle trænere.", user=user['display_name']) }}</p>
 {% macro status(r) %}{% if r['closed'] %}<span class="badge">{{ _('lukket') }}</span>{% elif r['closes'] %}<span class="muted small">{{ _('åben til') }} {{ r['closes']|date_dk }}</span>{% endif %}{% endmacro %}
 {% for r in prog %}
 <a class="pcard" href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">

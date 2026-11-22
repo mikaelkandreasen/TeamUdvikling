@@ -1,15 +1,15 @@
-{% extends "base.html" %}{% block title %}Mascot-rapport{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Mascot-rapport") }}{% endblock %}
 {% block content %}
-<h1>Mascot-rapport{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %} – {{ team['name'] }}</h1>
-<form method="get" class="card noprint"><label for="f">Fra dato (valgfri)</label><input id="f" type="date" name="fra" value="{{ since }}"><div class="actions"><button class="btn sec">Vis</button></div></form>
-<p class="muted">{{ total }} gange i alt{% if since %} siden {{ since }}{% endif %}.</p>
-<div class="card"><h2>Hvem og hvor mange gange</h2>
-  <div class="scroll"><table class="responsive"><thead><tr><th>Spiller</th><th>Gange</th><th>Seneste</th><th>Hvorfor</th></tr></thead><tbody>
+<h1>{{ _("Mascot-rapport") }}{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %} – {{ team['name'] }}</h1>
+<form method="get" class="card noprint"><label for="f">{{ _("Fra dato (valgfri)") }}</label><input id="f" type="date" name="fra" value="{{ since }}"><div class="actions"><button class="btn sec">{{ _("Vis") }}</button></div></form>
+<p class="muted">{{ _("{total} gange i alt", total=total) }}{% if since %} {{ _("siden {since}", since=since) }}{% endif %}.</p>
+<div class="card"><h2>{{ _("Hvem og hvor mange gange") }}</h2>
+  <div class="scroll"><table class="responsive"><thead><tr><th>{{ _("Spiller") }}</th><th>{{ _("Gange") }}</th><th>{{ _("Seneste") }}</th><th>{{ _("Hvorfor") }}</th></tr></thead><tbody>
   {% for r in rows %}<tr><td class="name">{{ r['name'] }}</td><td data-label="Gange">{{ r['n'] }}</td><td data-label="Seneste">{{ r['last'] }}</td>
     <td data-label="Hvorfor">{% for k, n in r['reasons'].items() %}{{ reasons.get(k, k) }} ({{ n }}){{ ', ' if not loop.last }}{% endfor %}</td></tr>
-  {% else %}<tr><td class="name">Ingen registreringer.</td></tr>{% endfor %}</tbody></table></div></div>
-<div class="card"><h2>Årsager i alt</h2>{% for k, n in totals.items() %}<div>{{ reasons.get(k, k) }}: <b>{{ n }}</b></div>{% else %}<span class="muted">–</span>{% endfor %}</div>
-{% if never %}<div class="card"><h2>Har ikke haft den endnu</h2>{{ never|join(', ') }}</div>{% endif %}
-<div class="card"><h2>Alle registreringer</h2>{% for r in log %}<div>{{ r['taken_on'] }} · {{ r['name'] }} · {{ reasons.get(r['reason'], r['reason']) }}{% if r['note'] %} – {{ r['note'] }}{% endif %}</div>{% else %}<span class="muted">–</span>{% endfor %}</div>
-<div class="actions noprint"><button class="btn sec" data-print>Udskriv</button></div>
+  {% else %}<tr><td class="name">{{ _("Ingen registreringer.") }}</td></tr>{% endfor %}</tbody></table></div></div>
+<div class="card"><h2>{{ _("Årsager i alt") }}</h2>{% for k, n in totals.items() %}<div>{{ reasons.get(k, k) }}: <b>{{ n }}</b></div>{% else %}<span class="muted">–</span>{% endfor %}</div>
+{% if never %}<div class="card"><h2>{{ _("Har ikke haft den endnu") }}</h2>{{ never|join(', ') }}</div>{% endif %}
+<div class="card"><h2>{{ _("Alle registreringer") }}</h2>{% for r in log %}<div>{{ r['taken_on'] }} · {{ r['name'] }} · {{ reasons.get(r['reason'], r['reason']) }}{% if r['note'] %} – {{ r['note'] }}{% endif %}</div>{% else %}<span class="muted">–</span>{% endfor %}</div>
+<div class="actions noprint"><button class="btn sec" data-print>{{ _("Udskriv") }}</button></div>
 {% endblock %}

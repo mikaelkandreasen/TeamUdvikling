@@ -1,16 +1,16 @@
-{% extends "base.html" %}{% block title %}Opret bruger{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Opret bruger") }}{% endblock %}
 {% block content %}
 <div class="login card">
-  <h1>Velkommen til {{ club_name }}</h1>
-  <p>Du er inviteret som {{ 'klubadministrator' if role == 'clubadmin' else 'træner' }} med e-mailadressen <b>{{ email }}</b>. Vælg brugernavn og adgangskode. Bagefter sætter du 2FA op med en autentificeringsapp.</p>
+  <h1>{{ _("Velkommen til {club_name}", club_name=club_name) }}</h1>
+  <p>{{ _("Du er inviteret som {else} med e-mailadressen", else='klubadministrator' if role == 'clubadmin' else 'træner') }} <b>{{ email }}</b>{{ _(". Vælg brugernavn og adgangskode. Bagefter sætter du 2FA op med en autentificeringsapp.") }}</p>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="u">Brugernavn</label><input id="u" type="text" name="username" data-userchk="{{ url_for('invites.check_username', token=token) }}" aria-describedby="uchk" value="{{ username or '' }}" autocapitalize="none" autocomplete="username" required autofocus maxlength="60">
+    <label for="u">{{ _("Brugernavn") }}</label><input id="u" type="text" name="username" data-userchk="{{ url_for('invites.check_username', token=token) }}" aria-describedby="uchk" value="{{ username or '' }}" autocapitalize="none" autocomplete="username" required autofocus maxlength="60">
     <p id="uchk" class="muted small" role="status" aria-live="polite"></p>
-    <label for="d">Dit navn</label><input id="d" type="text" name="display_name" value="{{ display_name or '' }}" autocomplete="name" maxlength="80">
-    <label for="p1">Adgangskode (mindst 12 tegn)</label><input id="p1" type="password" name="password" autocomplete="new-password" required>
-    <label for="p2">Gentag adgangskode</label><input id="p2" type="password" name="password2" autocomplete="new-password" required>
-    <div class="actions"><button class="btn block">Opret bruger</button></div>
+    <label for="d">{{ _("Dit navn") }}</label><input id="d" type="text" name="display_name" value="{{ display_name or '' }}" autocomplete="name" maxlength="80">
+    <label for="p1">{{ _("Adgangskode (mindst 12 tegn)") }}</label><input id="p1" type="password" name="password" autocomplete="new-password" required>
+    <label for="p2">{{ _("Gentag adgangskode") }}</label><input id="p2" type="password" name="password2" autocomplete="new-password" required>
+    <div class="actions"><button class="btn block">{{ _("Opret bruger") }}</button></div>
   </form>
 </div>
 {% endblock %}

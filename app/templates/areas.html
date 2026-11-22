@@ -1,15 +1,15 @@
-{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}Områder{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}{{ _("Områder") }}{% endblock %}
 {% block content %}
-<h1>Områdeudvikling</h1>
-<div class="card"><h2>Roller</h2>{{ role_chart }}</div>
-<div class="card"><h2>Nøglefærdigheder</h2>{{ skill_chart }}</div>
-<h2>Holdets gennemsnit pr. rolle</h2>
-<div class="scroll"><table><thead><tr><th>Rolle</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
+<h1>{{ _("Områdeudvikling") }}</h1>
+<div class="card"><h2>{{ _("Roller") }}</h2>{{ role_chart }}</div>
+<div class="card"><h2>{{ _("Nøglefærdigheder") }}</h2>{{ skill_chart }}</div>
+<h2>{{ _("Holdets gennemsnit pr. rolle") }}</h2>
+<div class="scroll"><table><thead><tr><th>{{ _("Rolle") }}</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
   <tbody>{% for ri in range(4) %}<tr><td>{{ ROLES[ri] }}</td>{% for r in rounds %}{{ heatcell(roles[r][ri]) }}{% endfor %}</tr>{% endfor %}</tbody></table></div>
-<h2>Holdets gennemsnit pr. nøglefærdighed</h2>
-<div class="scroll"><table><thead><tr><th>Færdighed</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
+<h2>{{ _("Holdets gennemsnit pr. nøglefærdighed") }}</h2>
+<div class="scroll"><table><thead><tr><th>{{ _("Færdighed") }}</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
   <tbody>{% for si in range(6) %}<tr><td>{{ SKILLS[si] }}</td>{% for r in rounds %}{{ heatcell(skills[r][si]) }}{% endfor %}</tr>{% endfor %}</tbody></table></div>
-<h2>Rolle × færdighed ({{ rounds_info[latest_r - 1]['label'] }})</h2>
-<div class="scroll"><table><thead><tr><th>Rolle</th>{% for s in SKILLS %}<th class="num">{{ s }}</th>{% endfor %}</tr></thead>
+<h2>{{ _("Rolle × færdighed ({latest_r})", latest_r=rounds_info[latest_r - 1]['label']) }}</h2>
+<div class="scroll"><table><thead><tr><th>{{ _("Rolle") }}</th>{% for s in SKILLS %}<th class="num">{{ s }}</th>{% endfor %}</tr></thead>
   <tbody>{% for ri in range(4) %}<tr><td>{{ ROLES[ri] }}</td>{% for si in range(6) %}{{ heatcell(grid[ri][si]) }}{% endfor %}</tr>{% endfor %}</tbody></table></div>
 {% endblock %}

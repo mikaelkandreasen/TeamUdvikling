@@ -1,14 +1,14 @@
-{% extends "base.html" %}{% block title %}Noter{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Noter") }}{% endblock %}
 {% block content %}
-<p><a href="{{ url_for('team.index') }}">‹ Hold</a></p>
-<h1>Noter – {{ team['name'] }}</h1>
-<p class="muted">Delte noter til alle trænere på holdet. Alle kan læse og rette dem.</p>
-<div class="actions"><a class="btn" href="{{ url_for('team.notes_new') }}">+ Ny note</a></div>
-<form method="get" class="card noprint"><label for="q">Søg i noter</label><input id="q" type="search" name="q" value="{{ q }}"><div class="actions"><button class="btn sec">Søg</button></div></form>
+<p><a href="{{ url_for('team.index') }}">{{ _("‹ Hold") }}</a></p>
+<h1>{{ _("Noter – {team}", team=team['name']) }}</h1>
+<p class="muted">{{ _("Delte noter til alle trænere på holdet. Alle kan læse og rette dem.") }}</p>
+<div class="actions"><a class="btn" href="{{ url_for('team.notes_new') }}">{{ _("+ Ny note") }}</a></div>
+<form method="get" class="card noprint"><label for="q">{{ _("Søg i noter") }}</label><input id="q" type="search" name="q" value="{{ q }}"><div class="actions"><button class="btn sec">{{ _("Søg") }}</button></div></form>
 {% for n in rows %}
 <a class="pcard" href="{{ url_for('team.note_view', nid=n['id']) }}" style="display:block;text-decoration:none;color:inherit">
   <div><b>{{ n['title'] or '(uden titel)' }}</b> <span class="muted small">{{ n['note_date'] }}</span></div>
-  <div class="muted small">{{ n['author'] }}{% if n['updated_at'] %} · rettet af {{ n['updated_by'] }}{% endif %}</div>
+  <div class="muted small">{{ n['author'] }}{% if n['updated_at'] %} {{ _("· rettet af {n}", n=n['updated_by']) }}{% endif %}</div>
   <div class="muted small">{{ n['snip'] }}</div>
 </a>
 {% else %}<div class="card muted">{{ 'Ingen noter matcher.' if q else 'Ingen noter endnu.' }}</div>{% endfor %}

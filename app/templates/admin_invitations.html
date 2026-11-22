@@ -1,32 +1,32 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Invitationer{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Invitationer") }}{% endblock %}
 {% block content %}
 <h1>{{ 'Invitationer' if manager else 'Trænere og assistenter' }}</h1>
-{% if mail_missing %}<div class="card" style="border-color:#e0a800">E-mail kan ikke sendes endnu: mangler {{ mail_missing }} i stackens miljøvariable.</div>{% endif %}
-<form method="post" class="card">{{ csrf() }}<h2>Invitér en ny bruger</h2>
-  <p class="muted small">Personen får en e-mail med et link, hvor vedkommende selv vælger brugernavn og adgangskode og sætter 2FA op. Linket virker i <b>7 dage</b> og kan kun bruges én gang.</p>
-  <label for="em">E-mailadresse</label><input id="em" type="email" name="email" required autocomplete="off" autocapitalize="none" maxlength="254">
-  {% if sysadmin %}<label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner</option><option value="clubadmin">Klubadministrator</option></select>{% endif %}
-  <label class="check"><input type="checkbox" name="as_readonly" value="1"> Assistent (kan se og evaluere; tæller kun med, hvis cheftræneren vælger det)</label>
-  {% if manager %}<label class="check"><input type="checkbox" name="as_head" value="1"> Chef-træner for de valgte hold (kan ændre holdindstillinger og invitere assistenter)</label>{% endif %}
-  {% if clubs|length > 1 %}<label for="cb">Klub</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
+{% if mail_missing %}<div class="card" style="border-color:#e0a800">{{ _("E-mail kan ikke sendes endnu: mangler {mail_missing} i stackens miljøvariable.", mail_missing=mail_missing) }}</div>{% endif %}
+<form method="post" class="card">{{ csrf() }}<h2>{{ _("Invitér en ny bruger") }}</h2>
+  <p class="muted small">{{ _("Personen får en e-mail med et link, hvor vedkommende selv vælger brugernavn og adgangskode og sætter 2FA op. Linket virker i") }} <b>{{ _("7 dage") }}</b> {{ _("og kan kun bruges én gang.") }}</p>
+  <label for="em">{{ _("E-mailadresse") }}</label><input id="em" type="email" name="email" required autocomplete="off" autocapitalize="none" maxlength="254">
+  {% if sysadmin %}<label for="r">{{ _("Rolle") }}</label><select id="r" name="role"><option value="trainer">{{ _("Træner") }}</option><option value="clubadmin">{{ _("Klubadministrator") }}</option></select>{% endif %}
+  <label class="check"><input type="checkbox" name="as_readonly" value="1"> {{ _("Assistent (kan se og evaluere; tæller kun med, hvis cheftræneren vælger det)") }}</label>
+  {% if manager %}<label class="check"><input type="checkbox" name="as_head" value="1"> {{ _("Chef-træner for de valgte hold (kan ændre holdindstillinger og invitere assistenter)") }}</label>{% endif %}
+  {% if clubs|length > 1 %}<label for="cb">{{ _("Klub") }}</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
   {% elif sysadmin %}<input type="hidden" name="club" value="{{ clubs[0]['id'] }}">{% endif %}
-  <label>{{ 'Hold (kun for trænere)' if manager else 'Dine hold – vælg mindst ét' }}</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] or '(uden navn)' }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
-  <label for="c">Din egen 2FA-kode (godkendelse)</label>
+  <label>{{ 'Hold (kun for trænere)' if manager else 'Dine hold – vælg mindst ét' }}</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] or '(uden navn)' }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">{{ _("Opret først et hold.") }}</p>{% endfor %}
+  <label for="c">{{ _("Din egen 2FA-kode (godkendelse)") }}</label>
   <input id="c" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
-  <p class="muted small">Skriv en frisk kode fra din app. Er den brugt ved login lige før, så vent på næste kode.</p>
-  <div class="actions"><button class="btn" {{ 'disabled' if mail_missing }}>Send invitation</button></div></form>
-<h2>Sendte invitationer</h2>
+  <p class="muted small">{{ _("Skriv en frisk kode fra din app. Er den brugt ved login lige før, så vent på næste kode.") }}</p>
+  <div class="actions"><button class="btn" {{ 'disabled' if mail_missing }}>{{ _("Send invitation") }}</button></div></form>
+<h2>{{ _("Sendte invitationer") }}</h2>
 {% for r in rows %}
 <div class="card"><b>{{ r['email'] }}</b> <span class="badge">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else ('assistent' if r['as_readonly'] else 'træner')) }}</span>
-  <p class="muted small">{{ r['club_name'] or '(uden navn)' }} · sendt af {{ r['created_by'] }} · <b>{{ r['state'] }}</b></p>
+  <p class="muted small">{{ _("{or} · sendt af {r} ·", or=r['club_name'] or '(uden navn)', r=r['created_by']) }} <b>{{ r['state'] }}</b></p>
   {% if r['state'] in ('afventer', 'udløbet') %}
   <div class="actions">
-    <form method="post" action="{{ url_for('invites_admin.revoke', iid=r['id']) }}">{{ csrf() }}<button class="btn sec">Tilbagekald</button></form>
+    <form method="post" action="{{ url_for('invites_admin.revoke', iid=r['id']) }}">{{ csrf() }}<button class="btn sec">{{ _("Tilbagekald") }}</button></form>
   </div>
-  <details><summary>Send igen (nyt link)</summary>
+  <details><summary>{{ _("Send igen (nyt link)") }}</summary>
     <form method="post" action="{{ url_for('invites_admin.resend', iid=r['id']) }}">{{ csrf() }}
-      <label for="rc{{ r['id'] }}">Din 2FA-kode</label><input id="rc{{ r['id'] }}" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
-      <div class="actions"><button class="btn">Send igen</button></div></form></details>{% endif %}
+      <label for="rc{{ r['id'] }}">{{ _("Din 2FA-kode") }}</label><input id="rc{{ r['id'] }}" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
+      <div class="actions"><button class="btn">{{ _("Send igen") }}</button></div></form></details>{% endif %}
 </div>
-{% else %}<div class="card muted">Ingen invitationer endnu.</div>{% endfor %}
+{% else %}<div class="card muted">{{ _("Ingen invitationer endnu.") }}</div>{% endfor %}
 {% endblock %}

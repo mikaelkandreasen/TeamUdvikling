@@ -138,6 +138,8 @@ _T = {
     'Gennemsnit vises som en blanding af nabofarverne.': ('Averages are shown as a blend of the neighbouring colours.', 'Durchschnitte werden als Mischung der benachbarten Farben angezeigt.', 'Medelvärden visas som en blandning av grannfärgerna.', 'Gjennomsnitt vises som en blanding av nabofargene.'),
     'Klubadministration': ('Club administration', 'Vereinsverwaltung', 'Klubbadministration', 'Klubbadministrasjon'),
 }
+from .i18n_more import MORE   # noqa: E402  (resten af appens tekster, B-09)
+_T.update(MORE)
 TR = {"en": {}, "de": {}, "sv": {}, "no": {}}
 for _k, _v in _T.items():
     for _lang, _x in zip(("en", "de", "sv", "no"), _v):
@@ -157,5 +159,20 @@ def current():
     return DEFAULT
 
 
-def gettext(text):
-    return TR.get(current(), {}).get(text, text)
+def gettext(text, **kw):
+    """Oversætter `text`; med nøgleord indsættes værdierne i {pladsholdere} (efter oversættelsen, så ordstillingen kan følge sproget)."""
+    out = TR.get(current(), {}).get(text, text)
+    if not kw:
+        return out
+    # Er en af værdierne allerede HTML (Markup), flettes den ind uden at blive escaped igen;
+    # øvrige værdier escapes. Ellers returneres almindelig tekst (Jinja escaper den).
+    if any(hasattr(v, "__html__") for v in kw.values()):
+        from markupsafe import Markup
+        try:
+            return Markup(out).format(**kw)
+        except (KeyError, IndexError, ValueError):
+            return Markup(text).format(**kw)
+    try:
+        return out.format(**kw)
+    except (KeyError, IndexError, ValueError):
+        return text.format(**kw)

@@ -1,17 +1,17 @@
-{% extends "base.html" %}{% block title %}Opsæt 2FA{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Opsæt 2FA") }}{% endblock %}
 {% block content %}
 <div class="login card">
-  <h1>Opsæt to-faktor-login</h1>
-  <p>1. Åbn en autentificeringsapp (fx Google Authenticator, Microsoft Authenticator, Authy eller 1Password).<br>
-     2. Scan QR-koden – eller indtast nøglen manuelt.<br>3. Skriv den viste 6-cifrede kode herunder.</p>
+  <h1>{{ _("Opsæt to-faktor-login") }}</h1>
+  <p>{{ _("1. Åbn en autentificeringsapp (fx Google Authenticator, Microsoft Authenticator, Authy eller 1Password).") }}<br>
+     {{ _("2. Scan QR-koden – eller indtast nøglen manuelt.") }}<br>{{ _("3. Skriv den viste 6-cifrede kode herunder.") }}</p>
   {% if qr %}<div class="qr">{{ qr }}</div>{% endif %}
-  <p class="small muted">Manuel nøgle (tidsbaseret, 6 cifre, SHA-1):</p>
+  <p class="small muted">{{ _("Manuel nøgle (tidsbaseret, 6 cifre, SHA-1):") }}</p>
   <div class="secret">{{ secret }}</div>
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="c">Kode fra appen</label>
+    <label for="c">{{ _("Kode fra appen") }}</label>
     <input id="c" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus>
-    <div class="actions"><button class="btn block">Bekræft og aktivér</button></div>
+    <div class="actions"><button class="btn block">{{ _("Bekræft og aktivér") }}</button></div>
   </form>
 </div>
 {% endblock %}

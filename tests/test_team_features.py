@@ -692,3 +692,16 @@ def test_assistant_locked_out_of_sensitive_sections(world):
     for path in ("/motivation/", "/devdata/", "/reports", "/kampe/", "/lineup/"):
         assert ta.get(path).status_code == 403, path
     assert ta.get("/eval").status_code == 200 and ta.get("/players/").status_code == 200
+
+
+def test_note_edit_with_javascript_stays_on_the_edit_page(app, admin):
+    """I-09: «Gem» i en note med JS bliver på redigeringssiden; uden JS går man til noten som før."""
+    make_team(admin, "A"); switch(admin, team_id(app, "A"))
+    admin.post("/team/notes/add", {"title": "Swap", "body": "Første"}, page="/team/notes/new")
+    nid = sql(app, "SELECT id FROM team_notes WHERE title='Swap'")[0]["id"]
+    pg = f"/team/notes/{nid}/edit"
+    r = admin.post(pg, {"title": "Swap", "body": "Anden"}, page=pg, headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 302 and r.headers["Location"].endswith(pg)
+    r = admin.post(pg, {"title": "Swap", "body": "Tredje"}, page=pg)
+    assert r.headers["Location"].endswith(f"/team/notes/{nid}")
+    assert 'data-swap="#noteform"' in admin.get(pg).get_data(as_text=True)

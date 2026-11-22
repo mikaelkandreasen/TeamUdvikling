@@ -1,39 +1,39 @@
-{% extends "base.html" %}{% block title %}Hjem{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Hjem") }}{% endblock %}
 {% block content %}
-<h1>Hjem{% if team %} – {{ team['name'] }}{% endif %}</h1>
+<h1>{{ _("Hjem") }}{% if team %} – {{ team['name'] }}{% endif %}</h1>
 {% if team and team['slogan'] %}<p class="muted"><i>“{{ team['slogan'] }}”</i></p>{% endif %}
 {% if tfocus and tfocus['items'] %}<div class="card"><b>{{ _('Holdets fokus') }}</b> <a class="small" href="{{ url_for('team.focus') }}">{{ _('ret') }}</a><ul style="margin:.3rem 0 0">{% for x in tfocus['items'] %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
 {% if not players %}
 <div class="card">
   <h2>{{ _('Kom i gang') }}</h2>
   <ol>
-    <li><a href="{{ url_for('players.new') }}">Opret spillerne</a> (navn, fødselsdato, position).</li>
-    <li>Under <a href="{{ url_for('admin.settings') if user['role']=='admin' else url_for('evaluation.eval_home') }}">Evaluering</a>: hver træner scorer spillerne 1–5 på de 24 kriterier.</li>
-    {% if features['motivation'] %}<li>Lad spillerne udfylde <a href="{{ url_for('motivation.tablet_list') }}">motivationsskemaet</a> på en tablet.</li>{% endif %}
-    {% if features['devdata'] %}<li>Registrér fremmøde, trivsel og motorik under <a href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>.</li>{% endif %}
-    <li>Udskriv eller del en <a href="{{ url_for('reports.index') }}">spillerrapport</a> til samtalen.</li>
+    <li><a href="{{ url_for('players.new') }}">{{ _("Opret spillerne") }}</a> {{ _("(navn, fødselsdato, position).") }}</li>
+    <li>{{ _("Under") }} <a href="{{ url_for('admin.settings') if user['role']=='admin' else url_for('evaluation.eval_home') }}">{{ _("Evaluering") }}</a>{{ _(": hver træner scorer spillerne 1–5 på de 24 kriterier.") }}</li>
+    {% if features['motivation'] %}<li>{{ _("Lad spillerne udfylde") }} <a href="{{ url_for('motivation.tablet_list') }}">{{ _("motivationsskemaet") }}</a> {{ _("på en tablet.") }}</li>{% endif %}
+    {% if features['devdata'] %}<li>{{ _("Registrér fremmøde, trivsel og motorik under") }} <a href="{{ url_for('devdata.matrix') }}">{{ _("Udviklingsdata") }}</a>.</li>{% endif %}
+    <li>{{ _("Udskriv eller del en") }} <a href="{{ url_for('reports.index') }}">{{ _("spillerrapport") }}</a> {{ _("til samtalen.") }}</li>
   </ol>
 </div>
 {% endif %}
 <div class="card">
-  <h2>Min evaluering</h2>
+  <h2>{{ _("Min evaluering") }}</h2>
   {% for r in prog if r['shown'] %}
   <p><a href="{{ url_for('evaluation.eval_round', rnd=r['no']) }}">{{ r['label'] }}</a>{% if r['date'] %} <span class="muted small">{{ r['date']|date_dk }}</span>{% endif %}{% if r['closed'] %} <span class="badge">{{ _('lukket') }}</span>{% endif %}
-     <span class="muted">{{ r['done'] }} af {{ r['total'] }} spillere færdige</span></p>
+     <span class="muted">{{ _("{r} af {r2} spillere færdige", r=r['done'], r2=r['total']) }}</span></p>
   <div class="bar"><i style="width:{{ (100 * r['done'] / r['total']) if r['total'] else 0 }}%"></i></div>
   {% endfor %}
-  {% if prog|length > prog|selectattr('shown')|list|length %}<a href="{{ url_for('evaluation.eval_home', alle=1) }}">Vis alle evalueringer ({{ prog|length }})</a>{% endif %}
+  {% if prog|length > prog|selectattr('shown')|list|length %}<a href="{{ url_for('evaluation.eval_home', alle=1) }}">{{ _("Vis alle evalueringer ({prog})", prog=prog|length) }}</a>{% endif %}
 </div>
 <div class="tiles">
-  <a class="tile" href="{{ url_for('players.index') }}">Spillere<small>{{ players|length }} aktive</small></a>
-  <a class="tile" href="{{ url_for('team.index') }}">Hold<small>{{ _('niveau, kalender, noter') }}</small></a>
-  <a class="tile" href="{{ url_for('evaluation.team') }}">Teamoversigt<small>{{ _('roller og samlet score') }}</small></a>
+  <a class="tile" href="{{ url_for('players.index') }}">{{ _("Spillere") }}<small>{{ _("{players} aktive", players=players|length) }}</small></a>
+  <a class="tile" href="{{ url_for('team.index') }}">{{ _("Hold") }}<small>{{ _('niveau, kalender, noter') }}</small></a>
+  <a class="tile" href="{{ url_for('evaluation.team') }}">{{ _("Teamoversigt") }}<small>{{ _('roller og samlet score') }}</small></a>
   {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">{{ _('Noter') }}<small>{{ _('del med trænerne') }}</small></a>{% endif %}
-  {% if features['motivation'] and 'motivation.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('motivation.matrix') }}">Motivation<small>{{ _('svar pr. spiller') }}</small></a>{% endif %}
-  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('devdata.matrix') }}">Udviklingsdata<small>{{ _('alder, fremmøde, trivsel') }}</small></a>{% endif %}
-  <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling<small>{{ _('runde for runde') }}</small></a>
-  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder<small>{{ _('roller og færdigheder') }}</small></a>
-  {% if 'reports.index' not in nav_hidden %}<a class="tile alt" href="{{ url_for('reports.index') }}">Rapporter<small>{{ _('én side pr. spiller') }}</small></a>{% endif %}
+  {% if features['motivation'] and 'motivation.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('motivation.matrix') }}">{{ _("Motivation") }}<small>{{ _('svar pr. spiller') }}</small></a>{% endif %}
+  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('devdata.matrix') }}">{{ _("Udviklingsdata") }}<small>{{ _('alder, fremmøde, trivsel') }}</small></a>{% endif %}
+  <a class="tile alt" href="{{ url_for('evaluation.development') }}">{{ _("Udvikling") }}<small>{{ _('runde for runde') }}</small></a>
+  <a class="tile alt" href="{{ url_for('evaluation.areas') }}">{{ _("Områder") }}<small>{{ _('roller og færdigheder') }}</small></a>
+  {% if 'reports.index' not in nav_hidden %}<a class="tile alt" href="{{ url_for('reports.index') }}">{{ _("Rapporter") }}<small>{{ _('én side pr. spiller') }}</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('main.mobile', hold=1) }}">{{ _('Mobilvisning') }}<small>{{ _('til banen') }}</small></a>
 </div>
 {% endblock %}

@@ -1,20 +1,20 @@
 {% extends "base.html" %}{% from "_macros.html" import heatcell, avatar with context %}{% block title %}Position &amp; bane{% endblock %}
 {% block content %}
 <h1>Position &amp; bane</h1>
-<p class="muted small">Hver spiller kan have op til 4 positioner (valg 1–4). Vælg hvilket valg banen skal vise.</p>
+<p class="muted small">{{ _("Hver spiller kan have op til 4 positioner (valg 1–4). Vælg hvilket valg banen skal vise.") }}</p>
 <div class="filters">
   {% for k, lbl in type_choices %}<a href="{{ url_for('evaluation.position_view', type=k, pos=pos, runde=rnd) }}" class="{{ 'on' if k == type_key }}">{{ lbl }}</a>{% endfor %}
 </div>
 <div class="filters">
-  <a href="{{ url_for('evaluation.position_view', type=type_key, runde=rnd) }}" class="{{ 'on' if not pos }}">Alle</a>
+  <a href="{{ url_for('evaluation.position_view', type=type_key, runde=rnd) }}" class="{{ 'on' if not pos }}">{{ _("Alle") }}</a>
   {% for x in POSITIONS %}<a href="{{ url_for('evaluation.position_view', type=type_key, pos=x, runde=rnd) }}" class="{{ 'on' if pos == x }}">{{ x }}</a>{% endfor %}
 </div>
 <div class="filters">{% for i in rounds_info %}<a href="{{ url_for('evaluation.position_view', type=type_key, pos=pos, runde=i['no']) }}" class="{{ 'on' if i['no'] == rnd }}">{{ i['label'] }}</a>{% endfor %}</div>
 <div class="card">{{ pitch }}</div>
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Spiller</th><th>Positioner</th>{% for r in ROLES %}<th class="num">{{ r }}</th>{% endfor %}<th class="num">Samlet</th></tr></thead>
+  <thead><tr><th>{{ _("Spiller") }}</th><th>{{ _("Positioner") }}</th>{% for r in ROLES %}<th class="num">{{ r }}</th>{% endfor %}<th class="num">{{ _("Samlet") }}</th></tr></thead>
   <tbody>{% for x in items %}<tr><td class="name">{{ avatar(x['p'], photos) }}<a href="{{ url_for('evaluation.profile', pid=x['p']['id']) }}">{{ x['p']['name'] }}</a></td>
     <td data-label="Positioner">{{ positions_of(x['p'])|join(' / ') }}</td>
     {% for i in range(4) %}{{ heatcell(x['roles'][i], ROLES[i]) }}{% endfor %}{{ heatcell(x['samlet'], 'Samlet') }}</tr>
-  {% else %}<tr><td class="name">Ingen spillere på denne position.</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<tr><td class="name">{{ _("Ingen spillere på denne position.") }}</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}

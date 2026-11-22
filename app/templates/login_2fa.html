@@ -7,8 +7,8 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <label for="c">{{ _('Kode') }}</label>
     <input id="c" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="none" required autofocus>
-    {% if remember_days %}<label class="check"><input type="checkbox" name="remember" value="1"> Husk denne enhed i {{ remember_days }} dage (ingen kode eller 2FA)</label>
-    <p class="muted small">Brug kun på din egen telefon eller computer. Mister du enheden, så skift adgangskode eller vælg “Glem alle enheder” under Min konto.{% if is_admin %} Administration kræver altid et nyt login med kode.{% endif %}</p>{% endif %}
+    {% if remember_days %}<label class="check"><input type="checkbox" name="remember" value="1"> {{ _("Husk denne enhed i {remember_days} dage (ingen kode eller 2FA)", remember_days=remember_days) }}</label>
+    <p class="muted small">{{ _("Brug kun på din egen telefon eller computer. Mister du enheden, så skift adgangskode eller vælg “Glem alle enheder” under Min konto.") }}{% if is_admin %} {{ _("Administration kræver altid et nyt login med kode.") }}{% endif %}</p>{% endif %}
     <div class="actions"><button class="btn block">{{ _('Log ind') }}</button></div>
   </form>
   <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec block">{{ _('Annullér') }}</button></form>

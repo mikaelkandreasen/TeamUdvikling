@@ -3,12 +3,12 @@
 {% for c in data %}
 <h3>{{ c['title'] }}</h3>
 <div class="scroll"><table>
-  <thead><tr><th>Udsagn</th><th class="num">Spiller</th><th class="num">Holdet</th><th class="num">Forskel</th></tr></thead>
+  <thead><tr><th>{{ _("Udsagn") }}</th><th class="num">{{ _("Spiller") }}</th><th class="num">{{ _("Holdet") }}</th><th class="num">{{ _("Forskel") }}</th></tr></thead>
   <tbody>
   {% for r in c['rows'] %}<tr><td>{{ r['text'] }}</td>
     <td class="score" style="background:{{ r['score']|heat }};color:{{ r['score']|heat_fg }}">{{ r['score'] if r['score'] is not none else '' }}</td>
     <td class="num">{{ r['hold']|dk }}</td><td class="num {{ r['diff']|delta_class }}">{{ r['diff']|signed }}</td></tr>{% endfor %}
-  <tr class="avg"><td>Gennemsnit</td><td class="num">{{ c['avg']|dk }}</td><td class="num">{{ c['hold_avg']|dk }}</td><td class="num">{{ c['diff']|signed }}</td></tr>
+  <tr class="avg"><td>{{ _("Gennemsnit") }}</td><td class="num">{{ c['avg']|dk }}</td><td class="num">{{ c['hold_avg']|dk }}</td><td class="num">{{ c['diff']|signed }}</td></tr>
   </tbody></table></div>
 {% if c['top'] and c['cat'] in tops %}<p><b>{{ tops[c['cat']] }}:</b> {{ c['top'] }}</p>{% endif %}
-{% else %}<p class="muted">Ingen motivationssvar endnu.</p>{% endfor %}
+{% else %}<p class="muted">{{ _("Ingen motivationssvar endnu.") }}</p>{% endfor %}

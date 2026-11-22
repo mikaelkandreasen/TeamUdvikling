@@ -1,9 +1,9 @@
-{% extends "base.html" %}{% block title %}Gendannelseskoder{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Gendannelseskoder") }}{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Gendannelseskoder</h1>
-  <p><b>Gem disse koder et sikkert sted nu.</b> Hver kode kan bruges én gang, hvis du mister din telefon. De vises kun denne ene gang.</p>
+  <h1>{{ _("Gendannelseskoder") }}</h1>
+  <p><b>{{ _("Gem disse koder et sikkert sted nu.") }}</b> {{ _("Hver kode kan bruges én gang, hvis du mister din telefon. De vises kun denne ene gang.") }}</p>
   <div class="codes">{% for c in codes %}<div>{{ c }}</div>{% endfor %}</div>
-  <div class="actions"><a class="btn" href="{{ url_for('main.home') }}">Jeg har gemt dem – fortsæt</a></div>
+  <div class="actions"><a class="btn" href="{{ url_for('main.home') }}">{{ _("Jeg har gemt dem – fortsæt") }}</a></div>
 </div>
 {% endblock %}

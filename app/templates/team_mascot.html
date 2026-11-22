@@ -1,18 +1,18 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Mascot{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Mascot") }}{% endblock %}
 {% block content %}
-<h1>Mascot{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}</h1>
-<div class="card">{% if now_with %}<b>{{ team['mascot_name'] or 'Mascotten' }} er hos {{ now_with['name'] }}</b> <span class="muted">siden {{ now_with['taken_on'] }}</span>
-  <form method="post" action="{{ url_for('team.mascot_return', mid=now_with['id']) }}">{{ csrf() }}<button class="btn sec">Er hjemme igen</button></form>{% else %}<span class="muted">Mascotten er hos træneren.</span>{% endif %}
-  <p><a href="{{ url_for('team.mascot_report') }}">Se rapport (hvem, hvor mange gange, hvorfor)</a></p></div>
-<form method="post" class="card">{{ csrf() }}<h2>Hvem tager mascotten med hjem?</h2>
-  <label for="pl">Spiller</label><select id="pl" name="player" required><option value="">Vælg …</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
-  <label for="rs">Hvorfor?</label><select id="rs" name="reason" required>{% for k, v in reasons.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
-  <label for="dt">Dato</label><input id="dt" type="date" name="taken_on" value="{{ today }}">
-  <label for="nt">Note (valgfri)</label><input id="nt" type="text" name="note" maxlength="300">
-  <div class="actions"><button class="btn">Registrér</button></div></form>
-<h2>Seneste</h2>
+<h1>{{ _("Mascot") }}{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}</h1>
+<div class="card">{% if now_with %}<b>{{ _("{or} er hos {now_with}", or=team['mascot_name'] or 'Mascotten', now_with=now_with['name']) }}</b> <span class="muted">{{ _("siden {now_with}", now_with=now_with['taken_on']) }}</span>
+  <form method="post" action="{{ url_for('team.mascot_return', mid=now_with['id']) }}">{{ csrf() }}<button class="btn sec">{{ _("Er hjemme igen") }}</button></form>{% else %}<span class="muted">{{ _("Mascotten er hos træneren.") }}</span>{% endif %}
+  <p><a href="{{ url_for('team.mascot_report') }}">{{ _("Se rapport (hvem, hvor mange gange, hvorfor)") }}</a></p></div>
+<form method="post" class="card">{{ csrf() }}<h2>{{ _("Hvem tager mascotten med hjem?") }}</h2>
+  <label for="pl">{{ _("Spiller") }}</label><select id="pl" name="player" required><option value="">{{ _("Vælg …") }}</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
+  <label for="rs">{{ _("Hvorfor?") }}</label><select id="rs" name="reason" required>{% for k, v in reasons.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <label for="dt">{{ _("Dato") }}</label><input id="dt" type="date" name="taken_on" value="{{ today }}">
+  <label for="nt">{{ _("Note (valgfri)") }}</label><input id="nt" type="text" name="note" maxlength="300">
+  <div class="actions"><button class="btn">{{ _("Registrér") }}</button></div></form>
+<h2>{{ _("Seneste") }}</h2>
 {% for r in rows %}<div class="card"><b>{{ r['name'] }}</b> · {{ r['taken_on'] }}{% if r['returned_on'] %} → {{ r['returned_on'] }}{% endif %}
   <div class="muted small">{{ reasons.get(r['reason'], r['reason']) }}{% if r['note'] %} – {{ r['note'] }}{% endif %} · {{ r['created_by'] }}</div>
-  <form method="post" action="{{ url_for('team.mascot_delete', mid=r['id']) }}">{{ csrf() }}<button class="btn sec">Slet</button></form></div>
-{% else %}<div class="card muted">Ingen registreringer endnu.</div>{% endfor %}
+  <form method="post" action="{{ url_for('team.mascot_delete', mid=r['id']) }}">{{ csrf() }}<button class="btn sec">{{ _("Slet") }}</button></form></div>
+{% else %}<div class="card muted">{{ _("Ingen registreringer endnu.") }}</div>{% endfor %}
 {% endblock %}

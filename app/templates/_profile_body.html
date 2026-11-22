@@ -1,24 +1,24 @@
 {# Delt mellem profil og rapport. Forventer: p, rnd, res, radar, role_rows, samlet, crit_rows, strongest, weakest, infos, age_note #}
 {% from "_macros.html" import heatcell with context %}
-{% if radar %}<div class="card">{{ radar }}</div>{% else %}<div class="card muted">Ingen evalueringer endnu for denne spiller.</div>{% endif %}
+{% if radar %}<div class="card">{{ radar }}</div>{% else %}<div class="card muted">{{ _("Ingen evalueringer endnu for denne spiller.") }}</div>{% endif %}
 <div class="scroll"><table>
-  <thead><tr><th>Rolle</th>{% for i in infos %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
+  <thead><tr><th>{{ _("Rolle") }}</th>{% for i in infos %}<th class="num">{{ i['label'] }}</th>{% endfor %}</tr></thead>
   <tbody>{% for rr in role_rows %}<tr><td>{{ rr['role'] }}</td>{% for v in rr['vals'] %}{{ heatcell(v) }}{% endfor %}</tr>{% endfor %}
-  <tr class="avg"><td>Samlet</td>{% for v in samlet %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr></tbody></table></div>
-{% if changes %}<div class="card"><h3>Siden {{ changes['prev_label'] }}</h3>
-  <div>Samlet {{ 'op' if changes['total'] > 0.05 else ('ned' if changes['total'] < -0.05 else 'uændret') }}{% if changes['total']|abs > 0.05 %} med {{ changes['total']|abs|dk }}{% endif %}.</div>
+  <tr class="avg"><td>{{ _("Samlet") }}</td>{% for v in samlet %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr></tbody></table></div>
+{% if changes %}<div class="card"><h3>{{ _("Siden {changes}", changes=changes['prev_label']) }}</h3>
+  <div>{{ _("Samlet {else}", else='op' if changes['total'] > 0.05 else ('ned' if changes['total'] < -0.05 else 'uændret')) }}{% if changes['total']|abs > 0.05 %} {{ _("med {abs}", abs=changes['total']|abs|dk) }}{% endif %}.</div>
   {% for c, d in changes['up'] %}<div>▲ {{ c['role'] }} – {{ c['skill'] }} <b>(+{{ d|dk }})</b></div>{% endfor %}
   {% for c, d in changes['down'] %}<div>▼ {{ c['role'] }} – {{ c['skill'] }} <b>(−{{ d|abs|dk }})</b></div>{% endfor %}
-  {% if not changes['up'] and not changes['down'] %}<div class="muted small">Ingen enkeltområder har ændret sig med 0,5 point eller mere.</div>{% endif %}</div>{% endif %}
+  {% if not changes['up'] and not changes['down'] %}<div class="muted small">{{ _("Ingen enkeltområder har ændret sig med 0,5 point eller mere.") }}</div>{% endif %}</div>{% endif %}
 {% if strongest %}
 <div class="row" style="margin-top:.8rem">
-  <div class="card"><h3>Styrker</h3>{% for c, v in strongest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
-  <div class="card"><h3>Udviklingsområder</h3>{% for c, v in weakest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
+  <div class="card"><h3>{{ _("Styrker") }}</h3>{% for c, v in strongest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
+  <div class="card"><h3>{{ _("Udviklingsområder") }}</h3>{% for c, v in weakest %}<div>{{ c['role'] }} – {{ c['skill'] }} <b>({{ v|dk }})</b></div>{% endfor %}</div>
 </div>
 {% endif %}
 
-{% if history %}<div class="card"><h3>Tidligere hold</h3><p class="muted small">Evalueringer fra før spilleren skiftede hold. De indgår ikke i det nuværende holds tal.</p>
-{% for h in history %}<details class="role"><summary>{{ h['team'] }} <span class="muted small">(flyttet {{ h['moved']|date_dk }})</span></summary>
-<div class="scroll"><table><thead><tr><th>Evaluering</th><th class="num">Samlet</th>{% for r in ['Bold','Med','Press','Støtte'] %}<th class="num">{{ r }}</th>{% endfor %}</tr></thead><tbody>
+{% if history %}<div class="card"><h3>{{ _("Tidligere hold") }}</h3><p class="muted small">{{ _("Evalueringer fra før spilleren skiftede hold. De indgår ikke i det nuværende holds tal.") }}</p>
+{% for h in history %}<details class="role"><summary>{{ h['team'] }} <span class="muted small">{{ _("(flyttet {date_dk})", date_dk=h['moved']|date_dk) }}</span></summary>
+<div class="scroll"><table><thead><tr><th>{{ _("Evaluering") }}</th><th class="num">{{ _("Samlet") }}</th>{% for r in ['Bold','Med','Press','Støtte'] %}<th class="num">{{ r }}</th>{% endfor %}</tr></thead><tbody>
 {% for r in h['rounds'] %}<tr><td>{{ r['label'] }}{% if r['date'] %}<div class="muted small">{{ r['date']|date_dk }}</div>{% endif %}<div class="muted small">{{ r['trainers']|join(', ') }}</div></td><td class="num">{{ r['samlet']|dk }}</td>{% for v in r['roles'] %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr>{% endfor %}
 </tbody></table></div></details>{% endfor %}</div>{% endif %}

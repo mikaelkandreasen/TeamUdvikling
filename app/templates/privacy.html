@@ -1,19 +1,19 @@
-{% extends "base.html" %}{% block title %}Privatliv{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Privatliv") }}{% endblock %}
 {% block content %}
-<h1>Privatliv og databeskyttelse</h1>
+<h1>{{ _("Privatliv og databeskyttelse") }}</h1>
 <div class="card">
-<p><b>Dataansvarlig:</b> {{ club['name'] or 'klubben' }}{% if club['email'] %} · {{ club['email'] }}{% endif %}{% if club['phone'] %} · {{ club['phone'] }}{% endif %}</p>
-<h2>Hvad bruges systemet til?</h2>
-<p>Trænerne bruger systemet til at følge børnenes fodboldmæssige udvikling og trivsel i klubben, så træningen kan tilrettelægges bedre. Resultater bruges ikke til rangering eller udtagelse alene, og de deles ikke med andre klubber.</p>
-<h2>Hvilke oplysninger behandles?</h2>
-<p>Barnets navn, fødselsdato, positioner, evt. et portrætbillede (kun hvis forældre har givet samtykke; kan slettes når som helst), trænernes vurderinger af nøglefærdigheder, barnets egne svar om motivation og træningsønsker, fremmøde, kampdeltagelse, trivsel og motorik samt mål og tiltag. Om trænere: navn, brugernavn og login-oplysninger samt hvornår de har været aktive i systemet (kun tidspunkt, ikke hvad de har lavet; slettes efter 180 dage).</p>
-<h2>Hvorfor må vi det?</h2>
-<p>Behandlingen sker på baggrund af samtykke fra forældremyndighedsindehaver (GDPR art. 6, stk. 1, litra a), som kan trækkes tilbage når som helst.</p>
-<h2>Hvem ser oplysningerne?</h2>
-<p>Kun trænere tilknyttet barnets hold og klubbens administratorer. Alle logger ind med adgangskode og to-faktor-godkendelse. Oplysningerne gemmes på klubbens egen server og overføres ikke til tredjeparter.</p>
-<h2>Hvor længe gemmes de?</h2>
-<p>Så længe barnet er aktiv på holdet. Når barnet stopper, slettes oplysningerne. Sikkerhedskopier overskrives inden for 14 dage. Loglinjer om brug slettes efter 12 måneder.</p>
-<h2>Dine rettigheder</h2>
-<p>Du kan bede om indsigt i, rettelse af eller sletning af dit barns oplysninger, begrænse eller gøre indsigelse mod behandlingen og trække samtykket tilbage. Kontakt klubben på ovenstående oplysninger. Du kan også klage til Datatilsynet (datatilsynet.dk).</p>
+<p><b>{{ _("Dataansvarlig:") }}</b> {{ club['name'] or 'klubben' }}{% if club['email'] %} · {{ club['email'] }}{% endif %}{% if club['phone'] %} · {{ club['phone'] }}{% endif %}</p>
+<h2>{{ _("Hvad bruges systemet til?") }}</h2>
+<p>{{ _("Trænerne bruger systemet til at følge børnenes fodboldmæssige udvikling og trivsel i klubben, så træningen kan tilrettelægges bedre. Resultater bruges ikke til rangering eller udtagelse alene, og de deles ikke med andre klubber.") }}</p>
+<h2>{{ _("Hvilke oplysninger behandles?") }}</h2>
+<p>{{ _("Barnets navn, fødselsdato, positioner, evt. et portrætbillede (kun hvis forældre har givet samtykke; kan slettes når som helst), trænernes vurderinger af nøglefærdigheder, barnets egne svar om motivation og træningsønsker, fremmøde, kampdeltagelse, trivsel og motorik samt mål og tiltag. Om trænere: navn, brugernavn og login-oplysninger samt hvornår de har været aktive i systemet (kun tidspunkt, ikke hvad de har lavet; slettes efter 180 dage).") }}</p>
+<h2>{{ _("Hvorfor må vi det?") }}</h2>
+<p>{{ _("Behandlingen sker på baggrund af samtykke fra forældremyndighedsindehaver (GDPR art. 6, stk. 1, litra a), som kan trækkes tilbage når som helst.") }}</p>
+<h2>{{ _("Hvem ser oplysningerne?") }}</h2>
+<p>{{ _("Kun trænere tilknyttet barnets hold og klubbens administratorer. Alle logger ind med adgangskode og to-faktor-godkendelse. Oplysningerne gemmes på klubbens egen server og overføres ikke til tredjeparter.") }}</p>
+<h2>{{ _("Hvor længe gemmes de?") }}</h2>
+<p>{{ _("Så længe barnet er aktiv på holdet. Når barnet stopper, slettes oplysningerne. Sikkerhedskopier overskrives inden for 14 dage. Loglinjer om brug slettes efter 12 måneder.") }}</p>
+<h2>{{ _("Dine rettigheder") }}</h2>
+<p>{{ _("Du kan bede om indsigt i, rettelse af eller sletning af dit barns oplysninger, begrænse eller gøre indsigelse mod behandlingen og trække samtykket tilbage. Kontakt klubben på ovenstående oplysninger. Du kan også klage til Datatilsynet (datatilsynet.dk).") }}</p>
 </div>
 {% endblock %}

@@ -1,9 +1,9 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf, scale, levelhelp with context %}{% block title %}{{ p['name'] }} – {{ info['label'] }}{% endblock %}
 {% block content %}
 <h1>{{ p['name'] }}</h1>
-<p class="muted">{{ info['label'] }} · {{ p['position'] or 'ingen position' }} · {{ model.EVAL_SCALE }}. Lad et felt stå tomt, hvis du ikke kan vurdere det.</p>
-{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>{{ info['label'] }} er lukket</b> (lukkede {{ info['closes']|date_dk }}). Du kan se scorerne, men ikke rette dem.</div>{% endif %}
-{% if user['readonly'] %}<div class="card small">Du er assistent. Din evaluering gemmes, men tæller først med i holdets og spillernes samlede score, hvis cheftræneren vælger det for runden{{ ' (er medtaget i denne runde)' if assist_in else '' }}.</div>{% endif %}
+<p class="muted">{{ _("{info} · {or} · {EVAL_SCALE}. Lad et felt stå tomt, hvis du ikke kan vurdere det.", info=info['label'], or=p['position'] or 'ingen position', EVAL_SCALE=model.EVAL_SCALE) }}</p>
+{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>{{ _("{info} er lukket", info=info['label']) }}</b> {{ _("(lukkede {date_dk}). Du kan se scorerne, men ikke rette dem.", date_dk=info['closes']|date_dk) }}</div>{% endif %}
+{% if user['readonly'] %}<div class="card small">{{ _("Du er assistent. Din evaluering gemmes, men tæller først med i holdets og spillernes samlede score, hvis cheftræneren vælger det for runden{else}.", else=' (er medtaget i denne runde)' if assist_in else '') }}</div>{% endif %}
 <form method="post" id="evalform" data-swap="#evalform"><fieldset {{ 'disabled' if info['closed'] }} style="border:0;padding:0;margin:0;min-width:0">{{ csrf() }}<input type="hidden" name="open" value="" data-open-roles>
 {% for role in ROLES %}
 <details class="role" data-role="{{ loop.index0 }}" {{ 'open' if (open_roles is none and loop.first) or (open_roles is not none and loop.index0 in open_roles) }}>
@@ -17,18 +17,18 @@
 {% if features['levels'] %}
 <details class="role">
   <summary>{{ _('Niveauvurdering efter DBU') }}</summary>
-  <p class="muted small">Vælg for hver kompetence, hvilket niveau (A, B, C eller D) spilleren ligger på – start altid ved A, uanset hvad du tror om spilleren. Er <b>alle ti</b> scoret A, er spilleren <b>A+</b>. Ellers bliver niveauet det, der er <b>flest af</b> (ved lighed vælges det højeste). {{ levelhelp() }}</p>
+  <p class="muted small">{{ _("Vælg for hver kompetence, hvilket niveau (A, B, C eller D) spilleren ligger på – start altid ved A, uanset hvad du tror om spilleren. Er") }} <b>{{ _("alle ti") }}</b> {{ _("scoret A, er spilleren") }} <b>A+</b>{{ _(". Ellers bliver niveauet det, der er") }} <b>{{ _("flest af") }}</b> {{ _("(ved lighed vælges det højeste). {levelhelp}", levelhelp=levelhelp()) }}</p>
   <input type="hidden" name="dbu_present" value="1">
   {% for key, label, texts in model.DBU_ITEMS %}
   <div class="crit"><b>{{ label }}</b>
     {% for col in model.DBU_COLS if texts.get(col) %}<label class="check"><input type="radio" name="dbu_{{ key }}" value="{{ col }}" {{ 'checked' if (key ~ '.' ~ col) in dbu }}> <span><b>{{ col }}</b> – {{ texts[col] }}</span></label>{% endfor %}
     <label class="check"><input type="radio" name="dbu_{{ key }}" value="" {{ 'checked' if key not in dbu_done }}> <span class="muted">{{ _('Ikke vurderet') }}</span></label>
   </div>{% endfor %}
-  {% if dbu_res %}<div class="card"><b>Dine valg giver: {{ model.LEVEL_LABEL.get(dbu_res['level'], dbu_res['level']) }}-spiller</b>
-    <div class="muted small">{{ dbu_res['n'] }} af {{ model.DBU_ITEMS|length }} vurderet · A: {{ dbu_res['a'] }} · B: {{ dbu_res['b'] }} · C: {{ dbu_res['c'] }} · D: {{ dbu_res['d'] }}. Gem for at opdatere.</div></div>{% endif %}
+  {% if dbu_res %}<div class="card"><b>{{ _("Dine valg giver: {dbu_res}-spiller", dbu_res=model.LEVEL_LABEL.get(dbu_res['level'], dbu_res['level'])) }}</b>
+    <div class="muted small">{{ _("{dbu_res} af {DBU_ITEMS} vurderet · A: {dbu_res2} · B: {dbu_res3} · C: {dbu_res4} · D: {dbu_res5}. Gem for at opdatere.", dbu_res=dbu_res['n'], DBU_ITEMS=model.DBU_ITEMS|length, dbu_res2=dbu_res['a'], dbu_res3=dbu_res['b'], dbu_res4=dbu_res['c'], dbu_res5=dbu_res['d']) }}</div></div>{% endif %}
 </details>
 <div class="card"><label for="lvl"><b>{{ _('Samlet niveau for spilleren') }}</b></label>
-  <div class="muted small">Din samlede vurdering. Vælger du intet her, bruges niveauet fra dine valg ovenfor{% if dbu_res %} ({{ dbu_res['level'] }}){% endif %}. Vælg A+ eller Nystartet, hvis spilleren ligger uden for A–D.</div>
+  <div class="muted small">{{ _("Din samlede vurdering. Vælger du intet her, bruges niveauet fra dine valg ovenfor") }}{% if dbu_res %} ({{ dbu_res['level'] }}){% endif %}{{ _(". Vælg A+ eller Nystartet, hvis spilleren ligger uden for A–D.") }}</div>
   <select id="lvl" name="level"><option value="">{{ _('– brug mine valg ovenfor –') }}</option>{% for lv in model.LEVELS %}<option value="{{ lv }}" {{ 'selected' if mylevel == lv }}>{{ model.LEVEL_LABEL.get(lv, lv) }}</option>{% endfor %}</select></div>{% endif %}
 <div class="stickybar">
   <button class="btn" name="go" value="stay">{{ _('Gem') }}</button>

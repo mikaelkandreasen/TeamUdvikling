@@ -1,17 +1,17 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf, levelhelp with context %}{% block title %}Del i hold{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf, levelhelp with context %}{% block title %}{{ _("Del i hold") }}{% endblock %}
 {% block content %}
-<h1>Del truppen i hold{{ levelhelp() }}</h1>
-<p class="muted">{{ prof['game_type'] }} · {{ prof['size'] }} på banen + {{ prof['subs'] }} udskiftere ({{ prof['size'] + prof['subs'] }} pr. hold) · opstilling {{ formation }}. {% if can_configure() %}Ændres under <a href="{{ url_for('team.settings') }}">Holdindstillinger</a>.{% endif %}</p>
-<form method="get" class="card noprint"><label for="pt">Antal hold pr. niveau</label><select id="pt" name="per_tier" data-autosubmit>{% for n in (1, 2, 3) %}<option value="{{ n }}" {{ 'selected' if n == per }}>{{ n }} ({{ n * 3 }} hold i alt)</option>{% endfor %}</select><noscript><button class="btn sec">Vis</button></noscript>
-  <p class="muted small">A-holdene får A+, A og B. B-holdene får B. C-holdene får resten. Er der ikke spillere nok, fyldes A-holdene først. De bedste efter samlet score spiller.</p></form>
-{% if no_levels %}<div class="card" style="border-color:#e0a800">{{ no_levels }} spillere har ikke noget niveau og regnes som C. {% if features['levels'] %}<a href="{{ url_for('team.levels') }}">Sæt niveauer</a>{% endif %}</div>{% endif %}
+<h1>{{ _("Del truppen i hold{levelhelp}", levelhelp=levelhelp()) }}</h1>
+<p class="muted">{{ _("{prof} · {prof2} på banen + {prof3} udskiftere ({prof4} pr. hold) · opstilling {formation}.", prof=prof['game_type'], prof2=prof['size'], prof3=prof['subs'], prof4=prof['size'] + prof['subs'], formation=formation) }} {% if can_configure() %}{{ _("Ændres under") }} <a href="{{ url_for('team.settings') }}">{{ _("Holdindstillinger") }}</a>.{% endif %}</p>
+<form method="get" class="card noprint"><label for="pt">{{ _("Antal hold pr. niveau") }}</label><select id="pt" name="per_tier" data-autosubmit>{% for n in (1, 2, 3) %}<option value="{{ n }}" {{ 'selected' if n == per }}>{{ _("{n} ({n2} hold i alt)", n=n, n2=n * 3) }}</option>{% endfor %}</select><noscript><button class="btn sec">{{ _("Vis") }}</button></noscript>
+  <p class="muted small">{{ _("A-holdene får A+, A og B. B-holdene får B. C-holdene får resten. Er der ikke spillere nok, fyldes A-holdene først. De bedste efter samlet score spiller.") }}</p></form>
+{% if no_levels %}<div class="card" style="border-color:#e0a800">{{ _("{no_levels} spillere har ikke noget niveau og regnes som C.", no_levels=no_levels) }} {% if features['levels'] %}<a href="{{ url_for('team.levels') }}">{{ _("Sæt niveauer") }}</a>{% endif %}</div>{% endif %}
 {% for t in teams if t['players'] %}
-<div class="card"><h2>{{ t['name'] }} <span class="muted">({{ t['players']|length }} spillere)</span></h2>
-  {% if t['short'] %}<p style="color:#b00020">Mangler {{ t['short'] }} spillere for at stille hold.</p>{% endif %}
-  {% for s in t['slots'] %}<div>{{ s['tag'] }}: {% if s['player'] %}<b>{{ s['player']['name'] }}</b> <span class="muted small">{{ s['player']['level'] or '–' }}</span>{% else %}<span class="muted">ledig</span>{% endif %}</div>{% endfor %}
-  {% if t['subs'] %}<p class="muted small">Udskiftere: {% for p in t['subs'] %}{{ p['name'] }} ({{ p['level'] or '–' }}){{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}</div>
+<div class="card"><h2>{{ t['name'] }} <span class="muted">{{ _("({t} spillere)", t=t['players']|length) }}</span></h2>
+  {% if t['short'] %}<p style="color:#b00020">{{ _("Mangler {t} spillere for at stille hold.", t=t['short']) }}</p>{% endif %}
+  {% for s in t['slots'] %}<div>{{ s['tag'] }}: {% if s['player'] %}<b>{{ s['player']['name'] }}</b> <span class="muted small">{{ s['player']['level'] or '–' }}</span>{% else %}<span class="muted">{{ _("ledig") }}</span>{% endif %}</div>{% endfor %}
+  {% if t['subs'] %}<p class="muted small">{{ _("Udskiftere:") }} {% for p in t['subs'] %}{{ p['name'] }} ({{ p['level'] or '–' }}){{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}</div>
 {% endfor %}
-{% if left %}<div class="card"><b>Ikke placeret ({{ left|length }}):</b> {% for p in left %}{{ p['name'] }}{{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}
+{% if left %}<div class="card"><b>{{ _("Ikke placeret ({left}):", left=left|length) }}</b> {% for p in left %}{{ p['name'] }}{{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}
 <form method="post" class="noprint">{{ csrf() }}<input type="hidden" name="action" value="save"><input type="hidden" name="per_tier" value="{{ per }}">
-  <button class="btn">Gem som opstillinger</button> <p class="muted small">Gemmer hvert hold som en opstilling under Holdsætning ({{ prof['game_type'] }}). Opstillinger med samme navn erstattes.</p></form>
+  <button class="btn">{{ _("Gem som opstillinger") }}</button> <p class="muted small">{{ _("Gemmer hvert hold som en opstilling under Holdsætning ({prof}). Opstillinger med samme navn erstattes.", prof=prof['game_type']) }}</p></form>
 {% endblock %}

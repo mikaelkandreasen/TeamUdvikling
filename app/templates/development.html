@@ -1,14 +1,14 @@
-{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}Udvikling{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import heatcell with context %}{% block title %}{{ _("Udvikling") }}{% endblock %}
 {% block content %}
-<h1>Udvikling</h1>
+<h1>{{ _("Udvikling") }}</h1>
 <div class="card">{{ chart }}</div>
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Spiller</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}<th class="num">Δ seneste</th><th class="num">Δ i alt</th></tr></thead>
+  <thead><tr><th>{{ _("Spiller") }}</th>{% for i in rounds_info %}<th class="num">{{ i['label'] }}</th>{% endfor %}<th class="num">{{ _("Δ seneste") }}</th><th class="num">{{ _("Δ i alt") }}</th></tr></thead>
   <tbody>{% for x in rows %}<tr>
     <td class="name"><a href="{{ url_for('evaluation.profile', pid=x['p']['id']) }}">{{ x['p']['name'] }}</a></td>
     {% for v in x['vals'] %}{{ heatcell(v, rounds_info[loop.index0]['label']) }}{% endfor %}
     <td class="num {{ x['d_last']|delta_class }}" data-label="Δ seneste">{{ x['d_last']|signed }}</td>
     <td class="num {{ x['d_total']|delta_class }}" data-label="Δ i alt">{{ x['d_total']|signed }}</td>
-  </tr>{% else %}<tr><td class="name">Ingen spillere.</td></tr>{% endfor %}</tbody></table></div>
-<p class="muted small">Δ seneste = ændring siden forrige runde med data. Δ i alt = fra første til seneste runde.</p>
+  </tr>{% else %}<tr><td class="name">{{ _("Ingen spillere.") }}</td></tr>{% endfor %}</tbody></table></div>
+<p class="muted small">{{ _("Δ seneste = ændring siden forrige runde med data. Δ i alt = fra første til seneste runde.") }}</p>
 {% endblock %}

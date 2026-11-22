@@ -1,17 +1,17 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf, heatcell with context %}{% block title %}Udviklingsdata{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf, heatcell with context %}{% block title %}{{ _("Udviklingsdata") }}{% endblock %}
 {% block content %}
-<h1>Udviklingsdata</h1>
-<p class="muted">Fødselsdato hentes fra spillerprofilen. Trivsel (1–5) kan spilleren selv svare på. Motorik (1–5) scores af træneren relativt til årgangen (1 = har brug for meget støtte, 3 = på niveau, 5 = meget stærk).</p>
+<h1>{{ _("Udviklingsdata") }}</h1>
+<p class="muted">{{ _("Fødselsdato hentes fra spillerprofilen. Trivsel (1–5) kan spilleren selv svare på. Motorik (1–5) scores af træneren relativt til årgangen (1 = har brug for meget støtte, 3 = på niveau, 5 = meget stærk).") }}</p>
 <form method="post">{{ csrf() }}
-<div class="card"><h2>Holdets totaler</h2>
-  {% if ov['auto'] %}<p>Beregnes fra <a href="{{ url_for('devdata.attendance') }}">fremmøde pr. træning/kamp</a>: <b>{{ ov['totals'][0] or 0 }}</b> træninger og <b>{{ ov['totals'][1] or 0 }}</b> kampe registreret.</p></div>
-  {% else %}<p class="muted small">Tip: registrér <a href="{{ url_for('devdata.attendance') }}">fremmøde pr. træning/kamp</a>, så beregnes tallene automatisk.</p>
-  <div class="row"><div><label for="tt">Træninger afholdt (antal)</label><input id="tt" type="number" min="0" max="999" name="trainings_total" value="{{ trainings_total }}" inputmode="numeric"></div>
-  <div><label for="mt">Kampe afholdt (antal)</label><input id="mt" type="number" min="0" max="999" name="matches_total" value="{{ matches_total }}" inputmode="numeric"></div></div></div>{% endif %}
-<p class="muted small">Trivsel kan også registreres som <a href="{{ url_for('devdata.wellbeing') }}">målinger over tid</a>; den seneste måling vises her.</p>
+<div class="card"><h2>{{ _("Holdets totaler") }}</h2>
+  {% if ov['auto'] %}<p>{{ _("Beregnes fra") }} <a href="{{ url_for('devdata.attendance') }}">{{ _("fremmøde pr. træning/kamp") }}</a>: <b>{{ ov['totals'][0] or 0 }}</b> {{ _("træninger og") }} <b>{{ ov['totals'][1] or 0 }}</b> {{ _("kampe registreret.") }}</p></div>
+  {% else %}<p class="muted small">{{ _("Tip: registrér") }} <a href="{{ url_for('devdata.attendance') }}">{{ _("fremmøde pr. træning/kamp") }}</a>{{ _(", så beregnes tallene automatisk.") }}</p>
+  <div class="row"><div><label for="tt">{{ _("Træninger afholdt (antal)") }}</label><input id="tt" type="number" min="0" max="999" name="trainings_total" value="{{ trainings_total }}" inputmode="numeric"></div>
+  <div><label for="mt">{{ _("Kampe afholdt (antal)") }}</label><input id="mt" type="number" min="0" max="999" name="matches_total" value="{{ matches_total }}" inputmode="numeric"></div></div></div>{% endif %}
+<p class="muted small">{{ _("Trivsel kan også registreres som") }} <a href="{{ url_for('devdata.wellbeing') }}">{{ _("målinger over tid") }}</a>{{ _("; den seneste måling vises her.") }}</p>
 <div class="scroll"><table class="matrix">
-  <thead><tr><th>Spiller</th><th class="q">Kvartal</th><th class="q">Træninger deltaget</th><th class="q">Fremmøde</th><th class="q">Kampe med spilletid</th><th class="q">Kamp-deltagelse</th>
-    {% for t in trivsel %}<th class="q">{{ t }}</th>{% endfor %}{% for t in motorik %}<th class="q">{{ t }}</th>{% endfor %}<th class="q">Handleplan</th></tr></thead>
+  <thead><tr><th>{{ _("Spiller") }}</th><th class="q">{{ _("Kvartal") }}</th><th class="q">{{ _("Træninger deltaget") }}</th><th class="q">{{ _("Fremmøde") }}</th><th class="q">{{ _("Kampe med spilletid") }}</th><th class="q">{{ _("Kamp-deltagelse") }}</th>
+    {% for t in trivsel %}<th class="q">{{ t }}</th>{% endfor %}{% for t in motorik %}<th class="q">{{ t }}</th>{% endfor %}<th class="q">{{ _("Handleplan") }}</th></tr></thead>
   <tbody>
   {% for r in ov['rows'] %}{% set p = r['p'] %}{% set d = r['dev'] %}<tr>
     <td>{{ p['name'] }}</td><td class="num">{{ 'Q%d'|format(r['q']) if r['q'] else '' }}</td>
@@ -20,17 +20,17 @@
     <td class="q">{% if ov['auto'] %}{{ d['matches'] if d and d['matches'] is not none else '' }}{% else %}<input type="number" min="0" max="999" name="matches_{{ p['id'] }}" value="{{ d['matches'] if d and d['matches'] is not none else '' }}" inputmode="numeric" aria-label="Kampe – {{ p['name'] }}">{% endif %}</td>
     <td class="num">{{ r['matchp']|pct }}</td>
     {% for k in ['t1','t2','t3','m1','m2','m3','m4'] %}<td class="q"><input type="number" min="1" max="5" name="{{ k }}_{{ p['id'] }}" value="{{ d[k] if d and d[k] is not none else '' }}" inputmode="numeric" aria-label="{{ k }} – {{ p['name'] }}"></td>{% endfor %}
-    <td><a href="{{ url_for('devdata.plan', pid=p['id']) }}">Åbn</a></td></tr>
-  {% else %}<tr><td>Ingen spillere.</td></tr>{% endfor %}
-  {% if ov['rows'] %}<tr class="avg"><td>Holdgennemsnit</td><td></td><td></td><td class="num">{{ ov['avg']['att']|pct }}</td><td></td><td class="num">{{ ov['avg']['matchp']|pct }}</td>
+    <td><a href="{{ url_for('devdata.plan', pid=p['id']) }}">{{ _("Åbn") }}</a></td></tr>
+  {% else %}<tr><td>{{ _("Ingen spillere.") }}</td></tr>{% endfor %}
+  {% if ov['rows'] %}<tr class="avg"><td>{{ _("Holdgennemsnit") }}</td><td></td><td></td><td class="num">{{ ov['avg']['att']|pct }}</td><td></td><td class="num">{{ ov['avg']['matchp']|pct }}</td>
     {% for k in ['t1','t2','t3','m1','m2','m3','m4'] %}<td class="num">{{ ov['avg'][k]|dk }}</td>{% endfor %}<td></td></tr>{% endif %}
   </tbody></table></div>
-{% if ov['rows'] %}<div class="stickybar"><button class="btn">Gem udviklingsdata</button></div>{% endif %}
+{% if ov['rows'] %}<div class="stickybar"><button class="btn">{{ _("Gem udviklingsdata") }}</button></div>{% endif %}
 </form>
-<h2>Relativ alder – holdoverblik</h2>
-<p class="muted small">Q1 = jan–mar, Q2 = apr–jun, Q3 = jul–sep, Q4 = okt–dec.</p>
+<h2>{{ _("Relativ alder – holdoverblik") }}</h2>
+<p class="muted small">{{ _("Q1 = jan–mar, Q2 = apr–jun, Q3 = jul–sep, Q4 = okt–dec.") }}</p>
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Kvartal</th><th class="num">Antal</th><th class="num">Andel</th><th class="num">Gns. færdighedsscore</th><th class="num">Gns. fremmøde</th><th class="num">Gns. kampdeltagelse</th><th class="num">Gns. trivsel</th></tr></thead>
+  <thead><tr><th>{{ _("Kvartal") }}</th><th class="num">{{ _("Antal") }}</th><th class="num">{{ _("Andel") }}</th><th class="num">{{ _("Gns. færdighedsscore") }}</th><th class="num">{{ _("Gns. fremmøde") }}</th><th class="num">{{ _("Gns. kampdeltagelse") }}</th><th class="num">{{ _("Gns. trivsel") }}</th></tr></thead>
   <tbody>{% for x in ov['quarters'] %}<tr><td class="name">Q{{ x['q'] }}</td><td class="num" data-label="Antal">{{ x['n'] }}</td><td class="num" data-label="Andel">{{ x['share']|pct }}</td>
     {{ heatcell(x['score'], 'Gns. færdighedsscore') }}<td class="num" data-label="Gns. fremmøde">{{ x['att']|pct }}</td><td class="num" data-label="Gns. kampdeltagelse">{{ x['matchp']|pct }}</td>{{ heatcell(x['trivsel'], 'Gns. trivsel') }}</tr>{% endfor %}</tbody></table></div>
 {% for n in ov['notes'] %}<div class="card">{{ n }}</div>{% endfor %}

@@ -16,14 +16,12 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
 ## Teknisk gæld og forbedringer (P1)
-- **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt. *Status v0.28.0: menuer, login, Menu, Min konto, Hjem, spillerliste og evalueringsknapper er oversat; resten (især sætninger med fed tekst/links midt i, som skal skrives som hele sætninger) mangler.*
-
 - **B-046 · Off-site-backup og afprøvet gendannelse** · S (drift, din opgave) – restic/rclone crypt til ekstern placering, `BACKUP_OFFSITE=1` (A1/A12, se docs/ARKITEKTURGENNEMGANG.md).
 - **B-047 · Nøgler som miljøvariabler og lukket port** · S (drift) – `SECRET_KEY`/`TOTP_KEY` i Dockhand, `U11_BIND=127.0.0.1` eller ingen `ports:` (A2/A3).
 - **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
 
 ## Idéer (uprioriteret)
-- **I-09 (rest)** Delvise opdateringer også i noter (evalueringsskemaet er lavet).
+(ingen åbne)
 
 ## Færdigt
 - [x] **B-01** Første gennemløb med trænere – udført af dig; nye ønsker er løbende lagt ind (lukket).
@@ -35,7 +33,9 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - [x] **I-05** Tjek mod lækkede adgangskoder var lavet, men slået fra – tændt som standard i compose (v0.34.0).
 - [x] **I-06** Rolle, e-mail, slet, lås op og profiler kræver frisk 2FA-kode (v0.34.0).
 - [x] **I-07** Tilgængelighedstests (kontrast, labels, alt, trykflader); fandt og rettede manglende labels på Min konto (v0.34.0). Browser-test med Playwright er forberedt, men kræver installation.
-- [x] **I-09** Evalueringsskemaet gemmer uden sideskift (v0.34.0).
+- [x] **I-09** Evalueringsskemaet (v0.34.0) og noter (v0.35.0) gemmer uden sideskift.
+- [x] **B-09 / B-045** Resten af skabelonerne og flash-beskeder er oversat til en/de/sv/no (v0.35.0). Maskinoversat – bør læses af modersmålstalende; sysadmin-sider og Python-fejltekster med variable er på dansk.
+- [x] **B-08** Lukket.
 - [x] **I-10** Kalenderændringer (flyttet/væk) vises for oprettede kampe, med knap til at opdatere (v0.34.0).
 - [x] **B-051** Assistenter låst ude af motivation, udviklingsdata, rapporter, kampe og holdsætning på serversiden (v0.33.1).
 - **Arkitekturgennemgang + komplet dokumentation** – færdig (v0.30.0): driftstjek, tokens fjernet fra log, backup uden login, docs/ARCHITECTURE, SWIMLANES, FUNKTIONER, ARKITEKTURGENNEMGANG.

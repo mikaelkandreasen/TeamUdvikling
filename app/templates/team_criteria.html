@@ -1,10 +1,10 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Kriterietekster{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Kriterietekster") }}{% endblock %}
 {% block content %}
-<h1>Kriterietekster – {{ team['name'] }}</h1>
-<p class="muted">Standardteksterne følger DBU's roller. Skriv egne formuleringer for jeres hold – ryd feltet for at vende tilbage til standardteksten. Scores og beregninger påvirkes ikke.</p>
+<h1>{{ _("Kriterietekster – {team}", team=team['name']) }}</h1>
+<p class="muted">{{ _("Standardteksterne følger DBU's roller. Skriv egne formuleringer for jeres hold – ryd feltet for at vende tilbage til standardteksten. Scores og beregninger påvirkes ikke.") }}</p>
 <form method="post">{{ csrf() }}
 {% for c in crit %}{% if loop.first or crit[loop.index0 - 1]['role'] != c['role'] %}<h2>{{ c['role'] }}</h2>{% endif %}
-<div class="card"><label for="d{{ c['idx'] }}"><b>{{ c['skill'] }}</b>{% if c['custom'] %} <span class="badge">egen tekst</span>{% endif %}</label>
+<div class="card"><label for="d{{ c['idx'] }}"><b>{{ c['skill'] }}</b>{% if c['custom'] %} <span class="badge">{{ _("egen tekst") }}</span>{% endif %}</label>
   <textarea id="d{{ c['idx'] }}" name="desc_{{ c['idx'] }}" maxlength="300">{{ c['desc'] }}</textarea></div>{% endfor %}
-<div class="actions"><button class="btn">Gem</button></div></form>
+<div class="actions"><button class="btn">{{ _("Gem") }}</button></div></form>
 {% endblock %}

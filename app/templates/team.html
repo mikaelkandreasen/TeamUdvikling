@@ -1,11 +1,11 @@
-{% extends "base.html" %}{% from "_macros.html" import heatcell, rounds_nav with context %}{% block title %}Teamoversigt{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import heatcell, rounds_nav with context %}{% block title %}{{ _("Teamoversigt") }}{% endblock %}
 {% block content %}
-<h1>Teamoversigt</h1>
+<h1>{{ _("Teamoversigt") }}</h1>
 {{ rounds_nav('evaluation.team', rnd, rounds_info) }}
 <div class="scroll"><table class="responsive">
-  <thead><tr><th>Spiller</th><th>Position</th>{% for r in ROLES %}<th class="num">{{ r }}</th>{% endfor %}<th class="num">Samlet</th><th class="num">Trænere</th><th class="num">Enighed</th><th>Fortolkning</th></tr></thead>
+  <thead><tr><th>{{ _("Spiller") }}</th><th>{{ _("Position") }}</th>{% for r in ROLES %}<th class="num">{{ r }}</th>{% endfor %}<th class="num">{{ _("Samlet") }}</th><th class="num">{{ _("Trænere") }}</th><th class="num">{{ _("Enighed") }}</th><th>{{ _("Fortolkning") }}</th></tr></thead>
   <tbody>
-  {% if rows %}<tr class="avg"><td class="name">Holdets gennemsnit</td><td></td>{% for v in avg %}<td class="num" data-label="{{ ROLES[loop.index0] }}">{{ v|dk }}</td>{% endfor %}<td class="num" data-label="Samlet">{{ avg_samlet|dk }}</td><td></td><td></td><td></td></tr>
+  {% if rows %}<tr class="avg"><td class="name">{{ _("Holdets gennemsnit") }}</td><td></td>{% for v in avg %}<td class="num" data-label="{{ ROLES[loop.index0] }}">{{ v|dk }}</td>{% endfor %}<td class="num" data-label="Samlet">{{ avg_samlet|dk }}</td><td></td><td></td><td></td></tr>
   {% for x in rows %}<tr>
     <td class="name"><a href="{{ url_for('evaluation.profile', pid=x['p']['id'], runde=rnd) }}">{{ x['p']['name'] }}</a></td>
     <td data-label="Position">{{ x['p']['position'] or '' }}</td>
@@ -14,8 +14,8 @@
     <td class="num" data-label="Trænere">{{ x['r']['trainers'] if x['r'] else '' }}</td>
     <td class="num" data-label="Enighed">{{ x['r']['enighed']|dk if x['r'] else '' }}</td>
     <td data-label="Fortolkning">{{ x['r']['fortolkning'] if x['r'] else '' }}</td>
-  </tr>{% else %}<tr><td class="name">Ingen spillere.</td></tr>{% endfor %}
+  </tr>{% else %}<tr><td class="name">{{ _("Ingen spillere.") }}</td></tr>{% endfor %}
 {% endif %}
   </tbody></table></div>
-<p class="muted small">Enighed = største minus mindste samlede score mellem trænerne (kræver mindst to). ≤ 1 høj enighed · ≤ 2 moderat forskel · derover stor forskel.</p>
+<p class="muted small">{{ _("Enighed = største minus mindste samlede score mellem trænerne (kræver mindst to). ≤ 1 høj enighed · ≤ 2 moderat forskel · derover stor forskel.") }}</p>
 {% endblock %}

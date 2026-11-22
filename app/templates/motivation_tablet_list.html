@@ -1,8 +1,8 @@
-{% extends "base.html" %}{% block title %}Spillervisning{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Spillervisning") }}{% endblock %}
 {% block content %}
-<h1>Hvem er du?</h1>
-<p><a class="btn sec" href="{{ url_for('motivation.links') }}">Send personligt link i stedet</a></p>
-<p class="muted">Giv telefonen eller tabletten til spilleren, og lad hende trykke på sit navn.</p>
+<h1>{{ _("Hvem er du?") }}</h1>
+<p><a class="btn sec" href="{{ url_for('motivation.links') }}">{{ _("Send personligt link i stedet") }}</a></p>
+<p class="muted">{{ _("Giv telefonen eller tabletten til spilleren, og lad hende trykke på sit navn.") }}</p>
 {% for p in players %}<a class="pcard" href="{{ url_for('motivation.tablet', pid=p['id']) }}"><div class="nm" style="font-size:1.15rem">{{ p['name'] }}</div><span>›</span></a>
-{% else %}<div class="card">Ingen spillere endnu.</div>{% endfor %}
+{% else %}<div class="card">{{ _("Ingen spillere endnu.") }}</div>{% endfor %}
 {% endblock %}

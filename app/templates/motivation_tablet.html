@@ -1,12 +1,12 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf, scale with context %}{% block title %}Spørgsmål{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf, scale with context %}{% block title %}{{ _("Spørgsmål") }}{% endblock %}
 {% block content %}
-<h1>Hej {{ p['name'].split()[0] }}! 👋</h1>
-<p>Tryk på et tal for hvert udsagn. <b>1</b> = slet ikke · <b>3</b> = nogenlunde · <b>5</b> = rigtig meget. Der er ingen rigtige eller forkerte svar.</p>
+<h1>{{ _("Hej {split}! 👋", split=p['name'].split()[0]) }}</h1>
+<p>{{ _("Tryk på et tal for hvert udsagn.") }} <b>1</b> {{ _("= slet ikke ·") }} <b>3</b> {{ _("= nogenlunde ·") }} <b>5</b> {{ _("= rigtig meget. Der er ingen rigtige eller forkerte svar.") }}</p>
 <form method="post">{{ csrf() }}
 {% for c, title in cats.items() %}{% set items = visible|selectattr('cat', 'equalto', c)|list %}{% if items %}
 <div class="card"><h2>{{ title }}</h2>
   {% for q in items %}<div class="crit"><b>{{ q['text'] }}</b>{{ scale('q%d' % q['qidx'], mine.get(q['qidx']), True) }}</div>{% endfor %}
 </div>{% endif %}{% endfor %}
-<div class="stickybar"><button class="btn">Færdig – send ✔</button>{% if not public %}<a class="btn sec" href="{{ url_for('motivation.tablet_list') }}">Annullér</a>{% endif %}</div>
+<div class="stickybar"><button class="btn">{{ _("Færdig – send ✔") }}</button>{% if not public %}<a class="btn sec" href="{{ url_for('motivation.tablet_list') }}">{{ _("Annullér") }}</a>{% endif %}</div>
 </form>
 {% endblock %}

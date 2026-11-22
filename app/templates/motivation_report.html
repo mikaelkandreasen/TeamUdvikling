@@ -1,10 +1,10 @@
-{% extends "base.html" %}{% block title %}Motivation – {{ p['name'] }}{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Motivation – {p}", p=p['name']) }}{% endblock %}
 {% block content %}
 {% include "_club_header.html" %}
-<h1>Motivation – {{ p['name'] }}</h1>
+<h1>{{ _("Motivation – {p}", p=p['name']) }}</h1>
 {% include "_motivation_body.html" %}
-{% if over_tid %}<div class="card"><h2>Over tid</h2><div class="scroll"><table><thead><tr><th>Dato</th>{% for t in over_tid['titles'] %}<th class="num">{{ t }}</th>{% endfor %}</tr></thead><tbody>
+{% if over_tid %}<div class="card"><h2>{{ _("Over tid") }}</h2><div class="scroll"><table><thead><tr><th>{{ _("Dato") }}</th>{% for t in over_tid['titles'] %}<th class="num">{{ t }}</th>{% endfor %}</tr></thead><tbody>
 {% for r in over_tid['rows'] %}<tr><td>{{ r['date']|date_dk }}</td>{% for v in r['vals'] %}<td class="num">{{ v|dk }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
-<p class="muted small">Gennemsnit pr. kategori hver gang skemaet er udfyldt.</p></div>{% endif %}
-<div class="actions noprint"><button class="btn" data-print>Udskriv</button></div>
+<p class="muted small">{{ _("Gennemsnit pr. kategori hver gang skemaet er udfyldt.") }}</p></div>{% endif %}
+<div class="actions noprint"><button class="btn" data-print>{{ _("Udskriv") }}</button></div>
 {% endblock %}

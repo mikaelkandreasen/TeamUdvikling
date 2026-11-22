@@ -1,27 +1,27 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Hold{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Hold") }}{% endblock %}
 {% block content %}
-<h1>Hold</h1>
-<form method="post" class="card">{{ csrf() }}<h2>Opret hold</h2>
-  {% if clubs|length > 1 %}<label for="cb">Klub</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
-  <div class="row"><div><label for="n">Holdnavn</label><input id="n" type="text" name="name" placeholder="fx U11 piger" required maxlength="80"></div>
-  <div><label for="s">Sæson (valgfri)</label><input id="s" type="text" name="season" placeholder="2026/27" maxlength="20"></div></div>
-  <div class="actions"><button class="btn">Opret</button></div></form>
+<h1>{{ _("Hold") }}</h1>
+<form method="post" class="card">{{ csrf() }}<h2>{{ _("Opret hold") }}</h2>
+  {% if clubs|length > 1 %}<label for="cb">{{ _("Klub") }}</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
+  <div class="row"><div><label for="n">{{ _("Holdnavn") }}</label><input id="n" type="text" name="name" placeholder="{{ _("fx U11 piger") }}" required maxlength="80"></div>
+  <div><label for="s">{{ _("Sæson (valgfri)") }}</label><input id="s" type="text" name="season" placeholder="2026/27" maxlength="20"></div></div>
+  <div class="actions"><button class="btn">{{ _("Opret") }}</button></div></form>
 {% for t in teams %}
-<div class="card"><h2>{{ t['name'] }}{% if t['archived'] %} <span class="badge">arkiveret</span>{% endif %}{% if t['season'] %} <span class="muted">({{ t['season'] }})</span>{% endif %}</h2>
-  <p class="muted">{% if clubs|length > 1 %}{{ t['club_name'] or '(uden navn)' }} · {% endif %}{{ t['players'] }} spillere · {{ t['trainers'] }} tilknyttede trænere (administratorer har altid adgang)</p>
+<div class="card"><h2>{{ t['name'] }}{% if t['archived'] %} <span class="badge">{{ _("arkiveret") }}</span>{% endif %}{% if t['season'] %} <span class="muted">({{ t['season'] }})</span>{% endif %}</h2>
+  <p class="muted">{% if clubs|length > 1 %}{{ t['club_name'] or '(uden navn)' }} · {% endif %}{{ _("{t} spillere · {t2} tilknyttede trænere (administratorer har altid adgang)", t=t['players'], t2=t['trainers']) }}</p>
   <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='rename') }}">{{ csrf() }}
-    <div class="row"><div><input type="text" name="name" value="{{ t['name'] }}" aria-label="Holdnavn" maxlength="80"></div><div><input type="text" name="season" value="{{ t['season'] or '' }}" aria-label="Sæson" maxlength="20"></div></div>
-    <div class="actions"><button class="btn sec">Gem navn</button></div></form>
+    <div class="row"><div><input type="text" name="name" value="{{ t['name'] }}" aria-label="{{ _("Holdnavn") }}" maxlength="80"></div><div><input type="text" name="season" value="{{ t['season'] or '' }}" aria-label="{{ _("Sæson") }}" maxlength="20"></div></div>
+    <div class="actions"><button class="btn sec">{{ _("Gem navn") }}</button></div></form>
   <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='head') }}">{{ csrf() }}
-    <label>Chef-trænere (kan ændre holdindstillinger og evalueringsrunder og invitere trænere)</label>
-    {% for m in members.get(t['id'], []) %}<label class="check"><input type="checkbox" name="head_user" value="{{ m['id'] }}" {{ 'checked' if m['id'] in heads.get(t['id'], []) }}> {{ m['display_name'] }}</label>{% else %}<p class="muted small">Tilknyt først en træner til holdet.</p>{% endfor %}
-    <div class="actions"><button class="btn sec">Gem chef-træner</button></div></form>
+    <label>{{ _("Chef-trænere (kan ændre holdindstillinger og evalueringsrunder og invitere trænere)") }}</label>
+    {% for m in members.get(t['id'], []) %}<label class="check"><input type="checkbox" name="head_user" value="{{ m['id'] }}" {{ 'checked' if m['id'] in heads.get(t['id'], []) }}> {{ m['display_name'] }}</label>{% else %}<p class="muted small">{{ _("Tilknyt først en træner til holdet.") }}</p>{% endfor %}
+    <div class="actions"><button class="btn sec">{{ _("Gem chef-træner") }}</button></div></form>
   <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action=('unarchive' if t['archived'] else 'archive')) }}">{{ csrf() }}
     <button class="btn sec">{{ 'Genåbn hold' if t['archived'] else 'Arkivér hold (skrivebeskyttet)' }}</button></form>
-  <details><summary>Slet hold</summary>
+  <details><summary>{{ _("Slet hold") }}</summary>
     <form method="post" action="{{ url_for('admin.team_action', tid=t['id'], action='delete') }}">{{ csrf() }}
-      <p class="muted small">Sletter holdet og alle dets spillere, evalueringer, svar og udviklingsdata permanent. Skriv holdets navn for at bekræfte.</p>
-      <input type="text" name="confirm" placeholder="{{ t['name'] }}" autocomplete="off"><div class="actions"><button class="btn danger">Slet permanent</button></div></form></details>
+      <p class="muted small">{{ _("Sletter holdet og alle dets spillere, evalueringer, svar og udviklingsdata permanent. Skriv holdets navn for at bekræfte.") }}</p>
+      <input type="text" name="confirm" placeholder="{{ t['name'] }}" autocomplete="off"><div class="actions"><button class="btn danger">{{ _("Slet permanent") }}</button></div></form></details>
 </div>
-{% else %}<div class="card">Der er endnu ingen hold.</div>{% endfor %}
+{% else %}<div class="card">{{ _("Der er endnu ingen hold.") }}</div>{% endfor %}
 {% endblock %}

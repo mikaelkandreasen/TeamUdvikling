@@ -1,27 +1,27 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Motivation{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Motivation") }}{% endblock %}
 {% block content %}
-<h1>Motivation og træningsønsker</h1>
-<p class="muted">Skala: {{ model.SCALE }}. Svarene bruges til at planlægge træningen – ikke til at rangere spillerne.</p>
+<h1>{{ _("Motivation og træningsønsker") }}</h1>
+<p class="muted">{{ _("Skala: {SCALE}. Svarene bruges til at planlægge træningen – ikke til at rangere spillerne.", SCALE=model.SCALE) }}</p>
 <div class="actions">
-  <a class="btn" href="{{ url_for('motivation.tablet_list') }}">Spillervisning (tablet/telefon)</a>
-  <a class="btn sec" href="{{ url_for('motivation.questions') }}">Ret spørgsmål</a>
+  <a class="btn" href="{{ url_for('motivation.tablet_list') }}">{{ _("Spillervisning (tablet/telefon)") }}</a>
+  <a class="btn sec" href="{{ url_for('motivation.questions') }}">{{ _("Ret spørgsmål") }}</a>
 </div>
-{% if not visible %}<div class="card">Der er ingen spørgsmål. <a href="{{ url_for('motivation.questions') }}">Tilføj spørgsmål</a>.</div>{% else %}
+{% if not visible %}<div class="card">{{ _("Der er ingen spørgsmål.") }} <a href="{{ url_for('motivation.questions') }}">{{ _("Tilføj spørgsmål") }}</a>.</div>{% else %}
 <form method="post">{{ csrf() }}
 <div class="scroll"><table class="matrix">
   <thead>
-    <tr><th rowspan="2">Spiller</th>
+    <tr><th rowspan="2">{{ _("Spiller") }}</th>
       {% for c, title in cats.items() %}{% set n = visible|selectattr('cat', 'equalto', c)|list|length %}{% if n %}<th colspan="{{ n }}" class="num">{{ title }}</th>{% endif %}{% endfor %}
-      <th colspan="{{ cats|length }}" class="num">Gennemsnit</th></tr>
+      <th colspan="{{ cats|length }}" class="num">{{ _("Gennemsnit") }}</th></tr>
     <tr>{% for q in visible %}<th class="q">{{ q['text'] }}</th>{% endfor %}{% for c, title in cats.items() %}<th class="q">{{ title }}</th>{% endfor %}</tr>
   </thead>
   <tbody>
   {% for p in players %}<tr><td>{{ p['name'] }}</td>
     {% for q in visible %}<td class="q"><input type="number" min="1" max="5" inputmode="numeric" name="a_{{ p['id'] }}_{{ q['qidx'] }}" value="{{ ans.get(p['id'], {}).get(q['qidx'], '') }}" aria-label="{{ p['name'] }}: {{ q['text'] }}"></td>{% endfor %}
     {% for c in cats %}<td class="score" style="background:{{ cat_avg[p['id']][c]|heat }};color:{{ cat_avg[p['id']][c]|heat_fg }}">{{ cat_avg[p['id']][c]|dk }}</td>{% endfor %}</tr>
-  {% else %}<tr><td>Ingen spillere.</td></tr>{% endfor %}
-  {% if players %}<tr class="avg"><td>Holdgennemsnit</td>{% for q in visible %}<td class="num">{{ col_avg[q['qidx']]|dk }}</td>{% endfor %}<td colspan="{{ cats|length }}"></td></tr>{% endif %}
+  {% else %}<tr><td>{{ _("Ingen spillere.") }}</td></tr>{% endfor %}
+  {% if players %}<tr class="avg"><td>{{ _("Holdgennemsnit") }}</td>{% for q in visible %}<td class="num">{{ col_avg[q['qidx']]|dk }}</td>{% endfor %}<td colspan="{{ cats|length }}"></td></tr>{% endif %}
   </tbody></table></div>
-<div class="stickybar"><button class="btn">Gem svar</button></div>
+<div class="stickybar"><button class="btn">{{ _("Gem svar") }}</button></div>
 </form>{% endif %}
 {% endblock %}

@@ -52,7 +52,7 @@ def test_every_text_marked_for_translation_in_templates_exists():
     root = pathlib.Path(__file__).resolve().parent.parent / "app" / "templates"
     used = set()
     for f in root.glob("*.html"):
-        used |= {m.group(2) for m in re.finditer(r"""_\((['"])(.+?)\1\)""", f.read_text())}
+        used |= {m.group(2) for m in re.finditer(r"""_\((['"])((?:(?!\1).)+)\1""", f.read_text())}
     missing = sorted(used - set(i18n._T))
     assert used and not missing, missing
 
@@ -67,3 +67,19 @@ def test_daily_pages_switch_language(app, admin):
     assert "Ingen spillere endnu." not in page
     admin.post("/sprog", {"lang": "da", "next": "/"}, page="/")
     assert "Ingen spillere endnu." in admin.get("/players/").get_data(as_text=True)
+
+
+def test_translations_keep_placeholders():
+    """B-09: {pladsholdere} skal være de samme i alle sprog, ellers kan teksten ikke indsættes."""
+    for da, tr in i18n._T.items():
+        ph = set(re.findall(r"\{(\w+)\}", da))
+        for lang, x in zip(("en", "de", "sv", "no"), tr):
+            assert set(re.findall(r"\{(\w+)\}", x)) == ph, (lang, da)
+            assert x.strip(), (lang, da)
+
+
+def test_placeholder_text_is_inserted_after_translation(app):
+    from flask import g
+    with app.test_request_context("/", headers={"Cookie": "lang=en"}):
+        assert i18n.gettext("Periode {per}", per=2) == "Period 2"
+        assert i18n.gettext("Ukendt tekst {x}", x=1) == "Ukendt tekst 1"

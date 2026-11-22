@@ -1,31 +1,31 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Holdindstillinger{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Holdindstillinger") }}{% endblock %}
 {% block content %}
-<h1>Holdindstillinger – {{ team['name'] }}</h1>
-<p class="muted">Chef-træner{% if heads %}: <b>{{ heads|join(', ') }}</b>{% else %}: <i>ikke valgt (vælges af klubadministratoren under Administration → Hold)</i>{% endif %}. Chef-træneren og administratorer kan ændre disse indstillinger.</p>
+<h1>{{ _("Holdindstillinger – {team}", team=team['name']) }}</h1>
+<p class="muted">{{ _("Chef-træner") }}{% if heads %}: <b>{{ heads|join(', ') }}</b>{% else %}: <i>{{ _("ikke valgt (vælges af klubadministratoren under Administration → Hold)") }}</i>{% endif %}{{ _(". Chef-træneren og administratorer kan ændre disse indstillinger.") }}</p>
 <form method="post" class="card">{{ csrf() }}
-  <h2>Holdprofil</h2>
-  <div class="row"><div><label for="gt">Kamptype (spillere på banen)</label><select id="gt" name="game_type">{% for k, n in types.items() %}<option value="{{ k }}" {{ 'selected' if k == prof['game_type'] }}>{{ k }} ({{ n }} på banen)</option>{% endfor %}</select></div>
-  <div><label for="sb">Antal udskiftere</label><input id="sb" type="number" name="subs" min="0" max="10" value="{{ prof['subs'] }}"></div></div>
-  <p class="muted small">Bruges til at dele truppen i A/B/C-hold: holdstørrelse = spillere på banen + udskiftere.</p>
-  <h2>Beregnet niveau</h2>
-  <div class="row"><div><label for="la">Øverste andel = A (%)</label><input id="la" type="number" name="level_share_a" min="0" max="45" value="{{ shares[0] }}"></div>
-  <div><label for="lc">Nederste andel = C (%)</label><input id="lc" type="number" name="level_share_c" min="0" max="45" value="{{ shares[1] }}"></div></div>
-  <p class="muted small">Trænernes niveauvurderinger fordeles automatisk efter score: de øverste {{ shares[0] }} % bliver A, de nederste {{ shares[1] }} % C, og resten ({{ 100 - shares[0] - shares[1] }} %) B. Standard er 25 / 50 / 25.</p>
-  <label for="sl">Holdets slogan</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="fx Sammen er vi stærkest">
-  <label for="mn">Mascot (navn)</label><input id="mn" type="text" name="mascot_name" maxlength="40" value="{{ team['mascot_name'] or '' }}" placeholder="fx Bamse">
-  <label for="ic">Kalenderadresse (iCal, valgfri)</label><input id="ic" type="url" name="ical_url" maxlength="500" value="{{ ical_url }}" placeholder="https://…/kalender.ics">
-  <p class="muted small">Fx holdets kalender-link fra KampKlar eller klubbens kalender. Kun https; hentes kun når en træner trykker «Hent» under Kalender.</p>
-  <h2>Funktioner</h2>
-  <p class="muted small">Vælg hvad holdet vil bruge. Slåede-fra funktioner skjules, og data bevares.</p>
+  <h2>{{ _("Holdprofil") }}</h2>
+  <div class="row"><div><label for="gt">{{ _("Kamptype (spillere på banen)") }}</label><select id="gt" name="game_type">{% for k, n in types.items() %}<option value="{{ k }}" {{ 'selected' if k == prof['game_type'] }}>{{ _("{k} ({n} på banen)", k=k, n=n) }}</option>{% endfor %}</select></div>
+  <div><label for="sb">{{ _("Antal udskiftere") }}</label><input id="sb" type="number" name="subs" min="0" max="10" value="{{ prof['subs'] }}"></div></div>
+  <p class="muted small">{{ _("Bruges til at dele truppen i A/B/C-hold: holdstørrelse = spillere på banen + udskiftere.") }}</p>
+  <h2>{{ _("Beregnet niveau") }}</h2>
+  <div class="row"><div><label for="la">{{ _("Øverste andel = A (%)") }}</label><input id="la" type="number" name="level_share_a" min="0" max="45" value="{{ shares[0] }}"></div>
+  <div><label for="lc">{{ _("Nederste andel = C (%)") }}</label><input id="lc" type="number" name="level_share_c" min="0" max="45" value="{{ shares[1] }}"></div></div>
+  <p class="muted small">{{ _("Trænernes niveauvurderinger fordeles automatisk efter score: de øverste {shares} % bliver A, de nederste {shares2} % C, og resten ({shares3} %) B. Standard er 25 / 50 / 25.", shares=shares[0], shares2=shares[1], shares3=100 - shares[0] - shares[1]) }}</p>
+  <label for="sl">{{ _("Holdets slogan") }}</label><input id="sl" type="text" name="slogan" maxlength="80" value="{{ team['slogan'] or '' }}" placeholder="{{ _("fx Sammen er vi stærkest") }}">
+  <label for="mn">{{ _("Mascot (navn)") }}</label><input id="mn" type="text" name="mascot_name" maxlength="40" value="{{ team['mascot_name'] or '' }}" placeholder="{{ _("fx Bamse") }}">
+  <label for="ic">{{ _("Kalenderadresse (iCal, valgfri)") }}</label><input id="ic" type="url" name="ical_url" maxlength="500" value="{{ ical_url }}" placeholder="{{ _("https://…/kalender.ics") }}">
+  <p class="muted small">{{ _("Fx holdets kalender-link fra KampKlar eller klubbens kalender. Kun https; hentes kun når en træner trykker «Hent» under Kalender.") }}</p>
+  <h2>{{ _("Funktioner") }}</h2>
+  <p class="muted small">{{ _("Vælg hvad holdet vil bruge. Slåede-fra funktioner skjules, og data bevares.") }}</p>
   {% for k, label, d in FEATURES %}<label class="check"><input type="checkbox" name="feat_{{ k }}" value="1" {{ 'checked' if feats[k] }}> {{ label }}</label>{% endfor %}
-  <p class="muted small">Evalueringsrunder ({{ n_rounds }} nu) tilføjes og fjernes under <a href="{{ url_for('admin.evaluations') }}">Evalueringsrunder</a>.</p>
-  <div class="actions"><button class="btn">Gem</button></div></form>
-<div class="card"><h2>Farver for score</h2><p class="muted small">Vælg egne farver og forklaringer til tallene 1–5.</p><a class="btn sec" href="{{ url_for('team.colors') }}">Ret farver</a></div>
+  <p class="muted small">{{ _("Evalueringsrunder ({n_rounds} nu) tilføjes og fjernes under", n_rounds=n_rounds) }} <a href="{{ url_for('admin.evaluations') }}">{{ _("Evalueringsrunder") }}</a>.</p>
+  <div class="actions"><button class="btn">{{ _("Gem") }}</button></div></form>
+<div class="card"><h2>{{ _("Farver for score") }}</h2><p class="muted small">{{ _("Vælg egne farver og forklaringer til tallene 1–5.") }}</p><a class="btn sec" href="{{ url_for('team.colors') }}">{{ _("Ret farver") }}</a></div>
 <form method="post" class="card" enctype="multipart/form-data" action="{{ url_for('team.mascot_image_save') }}">{{ csrf() }}
-  <h2>Maskotbillede</h2>
-  <p class="muted small">Vises på forældrerapporten sammen med logo og slogan. Brug en tegning eller et billede uden børn.</p>
+  <h2>{{ _("Maskotbillede") }}</h2>
+  <p class="muted small">{{ _("Vises på forældrerapporten sammen med logo og slogan. Brug en tegning eller et billede uden børn.") }}</p>
   {% if has_mascot_img %}<img src="{{ url_for('team.mascot_image') }}" alt="" style="max-width:160px;max-height:160px;object-fit:contain">{% endif %}
-  <label for="mi">Vælg billede (JPEG, PNG eller WebP)</label><input id="mi" type="file" name="image" accept="image/jpeg,image/png,image/webp">
-  <div class="actions"><button class="btn">Gem billede</button></div></form>
-{% if has_mascot_img %}<form method="post" action="{{ url_for('team.mascot_image_delete') }}">{{ csrf() }}<button class="btn sec">Fjern maskotbillede</button></form>{% endif %}
+  <label for="mi">{{ _("Vælg billede (JPEG, PNG eller WebP)") }}</label><input id="mi" type="file" name="image" accept="image/jpeg,image/png,image/webp">
+  <div class="actions"><button class="btn">{{ _("Gem billede") }}</button></div></form>
+{% if has_mascot_img %}<form method="post" action="{{ url_for('team.mascot_image_delete') }}">{{ csrf() }}<button class="btn sec">{{ _("Fjern maskotbillede") }}</button></form>{% endif %}
 {% endblock %}

@@ -1,8 +1,8 @@
-{% extends "base.html" %}{% block title %}Ugyldigt link{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Ugyldigt link") }}{% endblock %}
 {% block content %}
 <div class="login card">
-  <h1>Linket virker ikke</h1>
-  <p>Linket er brugt, udløbet eller forkert. Bed din administrator om at sende et nyt.</p>
-  <div class="actions"><a class="btn block" href="{{ url_for('auth.login') }}">Til login</a></div>
+  <h1>{{ _("Linket virker ikke") }}</h1>
+  <p>{{ _("Linket er brugt, udløbet eller forkert. Bed din administrator om at sende et nyt.") }}</p>
+  <div class="actions"><a class="btn block" href="{{ url_for('auth.login') }}">{{ _("Til login") }}</a></div>
 </div>
 {% endblock %}

@@ -1,22 +1,22 @@
-{% extends "base.html" %}{% block title %}Hold{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Hold") }}{% endblock %}
 {% block content %}
 <h1>{{ team['name'] }}</h1>
 {% if team['slogan'] %}<p class="muted"><i>“{{ team['slogan'] }}”</i></p>{% endif %}
-<p class="muted">{{ n_players }} aktive spillere · {{ prof['game_type'] }} (spillere på banen: {{ prof['size'] }}) + {{ prof['subs'] }} udskiftere</p>
+<p class="muted">{{ _("{n_players} aktive spillere · {prof} (spillere på banen: {prof2}) + {prof3} udskiftere", n_players=n_players, prof=prof['game_type'], prof2=prof['size'], prof3=prof['subs']) }}</p>
 <div class="tiles">
-  {% if features['matches'] and 'matches.index' not in nav_hidden %}<a class="tile" href="{{ url_for('matches.index') }}">Kampe og spilletid<small>spillere på positioner</small></a>{% endif %}
-  {% if features['lineup'] and 'lineup.index' not in nav_hidden %}<a class="tile" href="{{ url_for('lineup.split_view') }}">Del i A/B/C-hold<small>automatisk efter niveau</small></a>{% endif %}
-  <a class="tile" href="{{ url_for('team.focus') }}">Træningsfokus<small>holdets svageste områder</small></a>
-  <a class="tile alt" href="{{ url_for('team.calendar') }}">Kalender<small>kampe og aktiviteter</small></a>
-  {% if features['levels'] %}<a class="tile" href="{{ url_for('team.levels') }}">Spillerniveau<small>A+, A, B, C, D, nystartet</small></a>{% endif %}
-  {% if features['notes'] %}<a class="tile alt" href="{{ url_for('team.notes') }}">Noter<small>holdets noter</small></a>{% endif %}
-  {% if features['mascot'] %}<a class="tile alt" href="{{ url_for('team.mascot') }}">Mascot{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}<small>hvem har den med hjem</small></a>
-  <a class="tile alt" href="{{ url_for('team.mascot_report') }}">Mascot-rapport<small>hvem, hvor mange gange og hvorfor</small></a>{% endif %}
-  {% if can_configure() %}<a class="tile alt" href="{{ url_for('team.season') }}">Sæsonskifte<small>nyt hold til ny sæson</small></a>
-  <a class="tile alt" href="{{ url_for('invites_admin.index') }}">Invitér trænere<small>send link på e-mail</small></a>
-  <a class="tile alt" href="{{ url_for('team.settings') }}">Holdindstillinger<small>kamptype, funktioner, slogan</small></a>
-  <a class="tile alt" href="{{ url_for('team.criteria') }}">Kriterietekster<small>egne formuleringer</small></a>
-  <a class="tile alt" href="{{ url_for('admin.evaluations') }}">Evalueringsrunder<small>{{ rounds|length }} runder · tilføj/fjern</small></a>
-  <a class="tile alt" href="{{ url_for('admin.settings') }}">Rundenavne og datoer<small>{{ team['name'] }}</small></a>{% endif %}
+  {% if features['matches'] and 'matches.index' not in nav_hidden %}<a class="tile" href="{{ url_for('matches.index') }}">{{ _("Kampe og spilletid") }}<small>{{ _("spillere på positioner") }}</small></a>{% endif %}
+  {% if features['lineup'] and 'lineup.index' not in nav_hidden %}<a class="tile" href="{{ url_for('lineup.split_view') }}">{{ _("Del i A/B/C-hold") }}<small>{{ _("automatisk efter niveau") }}</small></a>{% endif %}
+  <a class="tile" href="{{ url_for('team.focus') }}">{{ _("Træningsfokus") }}<small>{{ _("holdets svageste områder") }}</small></a>
+  <a class="tile alt" href="{{ url_for('team.calendar') }}">{{ _("Kalender") }}<small>{{ _("kampe og aktiviteter") }}</small></a>
+  {% if features['levels'] %}<a class="tile" href="{{ url_for('team.levels') }}">{{ _("Spillerniveau") }}<small>{{ _("A+, A, B, C, D, nystartet") }}</small></a>{% endif %}
+  {% if features['notes'] %}<a class="tile alt" href="{{ url_for('team.notes') }}">{{ _("Noter") }}<small>{{ _("holdets noter") }}</small></a>{% endif %}
+  {% if features['mascot'] %}<a class="tile alt" href="{{ url_for('team.mascot') }}">{{ _("Mascot") }}{% if team['mascot_name'] %}: {{ team['mascot_name'] }}{% endif %}<small>{{ _("hvem har den med hjem") }}</small></a>
+  <a class="tile alt" href="{{ url_for('team.mascot_report') }}">{{ _("Mascot-rapport") }}<small>{{ _("hvem, hvor mange gange og hvorfor") }}</small></a>{% endif %}
+  {% if can_configure() %}<a class="tile alt" href="{{ url_for('team.season') }}">{{ _("Sæsonskifte") }}<small>{{ _("nyt hold til ny sæson") }}</small></a>
+  <a class="tile alt" href="{{ url_for('invites_admin.index') }}">{{ _("Invitér trænere") }}<small>{{ _("send link på e-mail") }}</small></a>
+  <a class="tile alt" href="{{ url_for('team.settings') }}">{{ _("Holdindstillinger") }}<small>{{ _("kamptype, funktioner, slogan") }}</small></a>
+  <a class="tile alt" href="{{ url_for('team.criteria') }}">{{ _("Kriterietekster") }}<small>{{ _("egne formuleringer") }}</small></a>
+  <a class="tile alt" href="{{ url_for('admin.evaluations') }}">{{ _("Evalueringsrunder") }}<small>{{ _("{rounds} runder · tilføj/fjern", rounds=rounds|length) }}</small></a>
+  <a class="tile alt" href="{{ url_for('admin.settings') }}">{{ _("Rundenavne og datoer") }}<small>{{ team['name'] }}</small></a>{% endif %}
 </div>
 {% endblock %}

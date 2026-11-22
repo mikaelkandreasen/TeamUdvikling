@@ -1,33 +1,33 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Brugere<h2>Sendte invitationer</h2>
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Brugere") }}<h2>{{ _("Sendte invitationer") }}</h2>
 {% for r in invs[:15] %}
 <a class="pcard" href="{{ url_for('invites_admin.index') }}" style="display:block;text-decoration:none;color:inherit">
   <div><b>{{ r['email'] }}</b> <span class="badge">{{ r['state'] }}</span></div>
-  <div class="muted small">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else ('assistent' if r['as_readonly'] else 'træner')) }}{% if clubs|length > 1 %} · {{ r['club_name'] }}{% endif %} · sendt af {{ r['created_by'] }} · {{ r['sent'] }}</div>
+  <div class="muted small">{{ 'klubadministrator' if r['role'] == 'clubadmin' else ('chef-træner' if r['as_head'] else ('assistent' if r['as_readonly'] else 'træner')) }}{% if clubs|length > 1 %} · {{ r['club_name'] }}{% endif %} {{ _("· sendt af {r} · {r2}", r=r['created_by'], r2=r['sent']) }}</div>
 </a>
-{% else %}<div class="card muted">Ingen invitationer sendt endnu.</div>{% endfor %}
-<div class="actions"><a class="btn sec" href="{{ url_for('invites_admin.index') }}">Invitér ny / se alle{{ ' (' ~ invs|length ~ ')' if invs|length > 15 }}</a></div>
+{% else %}<div class="card muted">{{ _("Ingen invitationer sendt endnu.") }}</div>{% endfor %}
+<div class="actions"><a class="btn sec" href="{{ url_for('invites_admin.index') }}">{{ _("Invitér ny / se alle{invs}", invs=' (' ~ invs|length ~ ')' if invs|length > 15) }}</a></div>
 {% endblock %}
 {% block content %}
-<h1>Brugere</h1>
-<details class="card"><summary><b>+ Opret bruger</b></summary>
+<h1>{{ _("Brugere") }}</h1>
+<details class="card"><summary><b>{{ _("+ Opret bruger") }}</b></summary>
 <form method="post">{{ csrf() }}
-  <div class="row"><div><label for="u">Brugernavn</label><input id="u" type="text" name="username" autocapitalize="none" required></div>
-  <div><label for="n">Navn</label><input id="n" type="text" name="display_name"></div></div>
-  <label for="em">E-mail (valgfri – bruges kun til nulstilling efter din godkendelse)</label><input id="em" type="email" name="email" autocomplete="off" autocapitalize="none" maxlength="254">
-  {% if sysadmin %}<label for="r">Rolle</label><select id="r" name="role"><option value="trainer">Træner (kun tildelte hold)</option><option value="clubadmin">Klubadministrator (egen klub)</option><option value="admin">Systemadministrator (alle klubber)</option></select>{% endif %}
-  {% if clubs|length > 1 %}<label for="cb">Klub (ikke for systemadministratorer)</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
-  <label class="check"><input type="checkbox" name="readonly" value="1"> Assistent (kan se og evaluere; tæller kun med, hvis cheftræneren vælger det)</label>
-  <label>Hold (kun for trænere – vælg ét eller flere i brugerens klub)</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">Opret først et hold.</p>{% endfor %}
-  <div class="actions"><button class="btn">Opret bruger</button></div></form></details>
-<form method="get" class="card noprint"><div class="row"><div><label for="q">Søg (navn, brugernavn, e-mail)</label><input id="q" type="search" name="q" value="{{ q }}"></div>
-  {% if clubs|length > 1 %}<div><label for="f">Klub</label><select id="f" name="club" data-autosubmit><option value="">Alle</option>{% for k in clubs %}<option value="{{ k['id'] }}" {{ 'selected' if club_filter == k['id'] }}>{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select></div>{% endif %}</div>
-  <div class="actions"><button class="btn sec">Søg</button></div></form>
-<p class="muted">{{ rows|length }}{% if rows|length != total %} af {{ total }}{% endif %} brugere</p>
+  <div class="row"><div><label for="u">{{ _("Brugernavn") }}</label><input id="u" type="text" name="username" autocapitalize="none" required></div>
+  <div><label for="n">{{ _("Navn") }}</label><input id="n" type="text" name="display_name"></div></div>
+  <label for="em">{{ _("E-mail (valgfri – bruges kun til nulstilling efter din godkendelse)") }}</label><input id="em" type="email" name="email" autocomplete="off" autocapitalize="none" maxlength="254">
+  {% if sysadmin %}<label for="r">{{ _("Rolle") }}</label><select id="r" name="role"><option value="trainer">{{ _("Træner (kun tildelte hold)") }}</option><option value="clubadmin">{{ _("Klubadministrator (egen klub)") }}</option><option value="admin">{{ _("Systemadministrator (alle klubber)") }}</option></select>{% endif %}
+  {% if clubs|length > 1 %}<label for="cb">{{ _("Klub (ikke for systemadministratorer)") }}</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
+  <label class="check"><input type="checkbox" name="readonly" value="1"> {{ _("Assistent (kan se og evaluere; tæller kun med, hvis cheftræneren vælger det)") }}</label>
+  <label>{{ _("Hold (kun for trænere – vælg ét eller flere i brugerens klub)") }}</label>{% for t in all_teams %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}"> {% if clubs|length > 1 %}{{ t['club_name'] }}: {% endif %}{{ t['name'] }}</label>{% else %}<p class="muted">{{ _("Opret først et hold.") }}</p>{% endfor %}
+  <div class="actions"><button class="btn">{{ _("Opret bruger") }}</button></div></form></details>
+<form method="get" class="card noprint"><div class="row"><div><label for="q">{{ _("Søg (navn, brugernavn, e-mail)") }}</label><input id="q" type="search" name="q" value="{{ q }}"></div>
+  {% if clubs|length > 1 %}<div><label for="f">{{ _("Klub") }}</label><select id="f" name="club" data-autosubmit><option value="">{{ _("Alle") }}</option>{% for k in clubs %}<option value="{{ k['id'] }}" {{ 'selected' if club_filter == k['id'] }}>{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select></div>{% endif %}</div>
+  <div class="actions"><button class="btn sec">{{ _("Søg") }}</button></div></form>
+<p class="muted">{{ rows|length }}{% if rows|length != total %} af {{ total }}{% endif %} {{ _("brugere") }}</p>
 {% for r in rows %}{% set u = r['u'] %}
 <a class="pcard" href="{{ url_for('admin.user_detail', uid=u['id']) }}" style="display:block;text-decoration:none;color:inherit">
   <div><b>{{ u['display_name'] }}</b> <span class="muted">({{ u['username'] }})</span>
-    {% if u['locked_until'] %}<span class="badge">låst</span>{% endif %}{% if not u['totp_enabled'] %}<span class="badge">ingen 2FA</span>{% endif %}</div>
+    {% if u['locked_until'] %}<span class="badge">{{ _("låst") }}</span>{% endif %}{% if not u['totp_enabled'] %}<span class="badge">{{ _("ingen 2FA") }}</span>{% endif %}</div>
   <div class="muted small">{{ role_label[u['role']] }}{{ ' (assistent)' if u['readonly'] }}{% if u['club_name'] %} · {{ u['club_name'] }}{% endif %}{% if r['teams'] %} · {{ r['teams']|join(', ') }}{% endif %}</div>
 </a>
-{% else %}<div class="card muted">Ingen brugere matcher.</div>{% endfor %}
+{% else %}<div class="card muted">{{ _("Ingen brugere matcher.") }}</div>{% endfor %}
 {% endblock %}

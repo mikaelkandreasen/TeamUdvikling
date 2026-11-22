@@ -37,7 +37,7 @@
     </form>
     {% endif %}
     <span id="inbox-badge">{% if inbox_unread %}<a class="onl" href="{{ url_for('inbox.index') }}" title="{{ _('Nye beskeder') }}" aria-label="{{ inbox_unread|length }} {{ _('Nye beskeder')|lower }}" style="text-decoration:none">✉ <b>{{ inbox_unread|length }}</b></a>{% endif %}</span>
-    <span class="who"><span class="hide-sm">{{ user['display_name'] }}</span>{% if online %} <a class="onl" href="{{ url_for('main.activity_now') }}" title="Aktive nu – tryk for detaljer" aria-label="Aktive nu: {{ online['team']|length }} på holdet{% if online['total'] is not none %}, {{ online['total']|length }} i alt{% endif %}">({{ online['team']|length }}{% if online['total'] is not none %}/{{ online['total']|length }}{% endif %} aktive)</a>{% endif %}</span>
+    <span class="who"><span class="hide-sm">{{ user['display_name'] }}</span>{% if online %} <a class="onl" href="{{ url_for('main.activity_now') }}" title="{{ _("Aktive nu – tryk for detaljer") }}" aria-label="Aktive nu: {{ online['team']|length }} på holdet{% if online['total'] is not none %}, {{ online['total']|length }} i alt{% endif %}">({{ online['team']|length }}{% if online['total'] is not none %}/{{ online['total']|length }}{% endif %} {{ _("aktive)") }}</a>{% endif %}</span>
     <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>{{ _('Log ud') }}</button></form>
   {% endif %}
 </header>
@@ -52,11 +52,11 @@
 {% if viewing %}<div class="viewas" role="status"><span>{{ _('Du ser siden som') }} <b>{{ user['display_name'] }}</b> {{ _('(skrivebeskyttet)') }}</span>
   <form method="post" action="{{ url_for('auth.view_as_stop') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn sec">{{ _('Afslut') }}</button></form></div>{% endif %}
 <main>
-  {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" role="status">{{ m }}</div>{% endfor %}{% endwith %}
+  {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<div class="flash {{ cat }}" role="status">{{ _(m) }}</div>{% endfor %}{% endwith %}
   {% if authed and inbox_unread and ep in ('main.home','main.mobile') %}<div class="card" role="status" style="border-left:4px solid var(--navy2)"><h2>{{ _('Nye beskeder') }}</h2>
     {% for m in inbox_unread[:3] %}<p><b>{{ m['title'] }}</b><br><span class="muted small">{{ m['sender_name'] }} · {{ m['created_at'][:16] }}</span><br><span style="white-space:pre-wrap">{{ m['body'] }}</span></p>{% endfor %}
     {% if inbox_unread|length > 3 %}<p class="muted small">+ {{ inbox_unread|length - 3 }} {{ _('flere i indbakken.') }}</p>{% endif %}
-    <form method="post" action="{{ url_for('inbox.read_all') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ '/m' if ep == 'main.mobile' else '/' }}"><button class="btn sec">{{ _('Læst') }}</button> <a href="{{ url_for('inbox.index') }}">Åbn indbakken</a></form></div>{% endif %}
+    <form method="post" action="{{ url_for('inbox.read_all') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ '/m' if ep == 'main.mobile' else '/' }}"><button class="btn sec">{{ _('Læst') }}</button> <a href="{{ url_for('inbox.index') }}">{{ _("Åbn indbakken") }}</a></form></div>{% endif %}
   {% block content %}{% endblock %}
   {% if authed and g.get('heat_used') and g.get('heat_cfg') and ep not in ('main.home', 'main.mobile', 'team.colors') %}{% include "_heat_legend.html" %}{% endif %}
 </main>

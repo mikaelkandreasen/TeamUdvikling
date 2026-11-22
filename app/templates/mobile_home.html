@@ -1,24 +1,24 @@
-{% extends "base.html" %}{% block title %}Hjem{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Hjem") }}{% endblock %}
 {% block content %}
 {% if tfocus and tfocus['items'] %}<div class="card"><b>{{ _('Holdets fokus') }}</b> <a class="small" href="{{ url_for('team.focus') }}">{{ _('ret') }}</a><ul style="margin:.3rem 0 0">{% for x in tfocus['items'] %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
 <div class="tiles">
-  <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">Evaluér<small>{{ prog[cur-1]['label'] }}</small></a>
+  <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">{{ _("Evaluér") }}<small>{{ prog[cur-1]['label'] }}</small></a>
   {% if features['motivation'] and 'motivation.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('motivation.tablet_list') }}">{{ _('Spillerskema') }}<small>{{ _('til tablet/telefon') }}</small></a>{% endif %}
-  <a class="tile" href="{{ url_for('team.index') }}">Hold<small>{{ _('niveau, kalender, noter') }}</small></a>
+  <a class="tile" href="{{ url_for('team.index') }}">{{ _("Hold") }}<small>{{ _('niveau, kalender, noter') }}</small></a>
   {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">{{ _('Noter') }}<small>{{ _('del med trænerne') }}</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">{{ _('Overblik') }}<small>{{ _('hele holdet') }}</small></a>
-  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde<small>afkryds træning/kamp</small></a>{% endif %}
+  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">{{ _("Fremmøde") }}<small>{{ _("afkryds træning/kamp") }}</small></a>{% endif %}
 </div>
 <details class="role">
-<summary>Spillere og score ({{ cards|length }})</summary>
+<summary>{{ _("Spillere og score ({cards})", cards=cards|length) }}</summary>
 {% for c in cards %}
 <div class="pcard">
   <span class="badge" style="background:{{ c['samlet']|heat }};color:{{ c['samlet']|heat_fg }}">{{ c['samlet']|dk or '–' }}</span>
   <div class="nm"><a href="{{ url_for('evaluation.profile', pid=c['p']['id']) }}" style="text-decoration:none;color:inherit">{{ c['p']['name'] }}</a>
     <div class="sub">{{ c['p']['position'] or 'ingen position' }}</div></div>
   <div class="acts">
-    <a href="{{ url_for('evaluation.eval_form', rnd=cur, pid=c['p']['id']) }}" aria-label="Evaluér">✅</a>
-    {% if 'reports.index' not in nav_hidden %}<a href="{{ url_for('reports.report', pid=c['p']['id']) }}" aria-label="Rapport">📄</a>{% endif %}
+    <a href="{{ url_for('evaluation.eval_form', rnd=cur, pid=c['p']['id']) }}" aria-label="{{ _("Evaluér") }}">✅</a>
+    {% if 'reports.index' not in nav_hidden %}<a href="{{ url_for('reports.report', pid=c['p']['id']) }}" aria-label="{{ _("Rapport") }}">📄</a>{% endif %}
   </div>
 </div>
 {% else %}

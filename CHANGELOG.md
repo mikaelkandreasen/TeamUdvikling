@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- Hele appen (ca. 80 skabeller og ca. 75 beskeder) kan vises på engelsk, tysk, svensk og norsk; sætninger med links/fed tekst er oversat som helheder (B-09).
+- Noter gemmer uden sideskift med JavaScript (I-09).
+
+### Bemærk
+- Oversættelserne er maskinoversatte og bør læses igennem af modersmålstalende. Sysadmin-sider og Python-fejltekster med variable er stadig kun på dansk.
+
 ## [0.34.0] - 2026-11-22
 
 ### Tilføjet

@@ -1,35 +1,35 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Evalueringer{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Evalueringer") }}{% endblock %}
 {% block content %}
-<h1>Evalueringer – {{ team['name'] }}</h1>
-<div class="card"><h2>Runder</h2>
-  <p>Holdet har <b>{{ infos|length }}</b> evalueringsrunder. Hver runde lukkes 30 dage efter første indtastning.</p>
+<h1>{{ _("Evalueringer – {team}", team=team['name']) }}</h1>
+<div class="card"><h2>{{ _("Runder") }}</h2>
+  <p>{{ _("Holdet har") }} <b>{{ infos|length }}</b> {{ _("evalueringsrunder. Hver runde lukkes 30 dage efter første indtastning.") }}</p>
   {% for i in infos %}<div class="pcard"><div class="nm"><b>{{ i['label'] }}</b>{% if i['date'] %} <span class="muted small">{{ i['date']|date_dk }}</span>{% endif %}
-    <div class="sub">{% if i['closed'] %}Lukket {{ i['closes']|date_dk }}{% elif i['closes'] %}Åben til {{ i['closes']|date_dk }}{% elif i['has_data'] %}Åben{% else %}Ikke startet{% endif %}</div></div>
-    {% if i['closed'] %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="reopen_round"><input type="hidden" name="round" value="{{ i['no'] }}"><button class="btn sec">Genåbn i 30 dage</button></form>{% endif %}</div>{% endfor %}
-  <form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="add_round"><h3>Ny runde</h3>
-    <label for="nl">Navn</label><input id="nl" name="label" maxlength="60" required placeholder="fx Efterårsevaluering 2026">
-    <label for="nd">Dato</label><input id="nd" type="date" name="date" required>
-    <div class="actions"><button class="btn" {{ 'disabled' if not can_add }}>Tilføj runde</button></div></form>
+    <div class="sub">{% if i['closed'] %}{{ _("Lukket {date_dk}", date_dk=i['closes']|date_dk) }}{% elif i['closes'] %}{{ _("Åben til {date_dk}", date_dk=i['closes']|date_dk) }}{% elif i['has_data'] %}{{ _("Åben") }}{% else %}{{ _("Ikke startet") }}{% endif %}</div></div>
+    {% if i['closed'] %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="reopen_round"><input type="hidden" name="round" value="{{ i['no'] }}"><button class="btn sec">{{ _("Genåbn i 30 dage") }}</button></form>{% endif %}</div>{% endfor %}
+  <form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="add_round"><h3>{{ _("Ny runde") }}</h3>
+    <label for="nl">{{ _("Navn") }}</label><input id="nl" name="label" maxlength="60" required placeholder="{{ _("fx Efterårsevaluering 2026") }}">
+    <label for="nd">{{ _("Dato") }}</label><input id="nd" type="date" name="date" required>
+    <div class="actions"><button class="btn" {{ 'disabled' if not can_add }}>{{ _("Tilføj runde") }}</button></div></form>
   {% if can_remove %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="remove_round">
-    <p class="muted small">Fjerner den sidste runde ({{ infos[-1]['label'] }}) og sletter alle dens evalueringer for dette hold.</p>
-    <label><input type="checkbox" name="confirm" value="ja"> Ja, fjern sidste runde og slet dens evalueringer</label>
-    <div class="actions"><button class="btn danger">Fjern sidste runde</button></div></form>{% endif %}
-  <p class="muted small">Navn og dato på runderne ændres under Runder.</p>
+    <p class="muted small">{{ _("Fjerner den sidste runde ({infos}) og sletter alle dens evalueringer for dette hold.", infos=infos[-1]['label']) }}</p>
+    <label><input type="checkbox" name="confirm" value="ja"> {{ _("Ja, fjern sidste runde og slet dens evalueringer") }}</label>
+    <div class="actions"><button class="btn danger">{{ _("Fjern sidste runde") }}</button></div></form>{% endif %}
+  <p class="muted small">{{ _("Navn og dato på runderne ændres under Runder.") }}</p>
 </div>
-<div class="card"><h2>Registrerede evalueringer</h2>
-  {% if counts %}<div class="scroll"><table class="responsive"><thead><tr><th>Runde</th><th>Træner</th><th class="num">Spillere</th><th class="num">Scores</th></tr></thead><tbody>
+<div class="card"><h2>{{ _("Registrerede evalueringer") }}</h2>
+  {% if counts %}<div class="scroll"><table class="responsive"><thead><tr><th>{{ _("Runde") }}</th><th>{{ _("Træner") }}</th><th class="num">{{ _("Spillere") }}</th><th class="num">{{ _("Scores") }}</th></tr></thead><tbody>
   {% for c in counts %}<tr><td data-label="Runde">{{ infos[c['round'] - 1]['label'] }}</td><td data-label="Træner">{{ c['display_name'] }}</td><td class="num" data-label="Spillere">{{ c['players'] }}</td><td class="num" data-label="Scores">{{ c['n'] }}</td></tr>{% endfor %}
-  </tbody></table></div>{% else %}<p>Ingen evalueringer endnu.</p>{% endif %}
+  </tbody></table></div>{% else %}<p>{{ _("Ingen evalueringer endnu.") }}</p>{% endif %}
 </div>
-{% if assist %}<div class="card"><h2>Assistenters evalueringer</h2>
-  <p class="muted small">En assistents scores tæller kun med i holdets og spillernes samlede score (og niveau), hvis du markerer dem for den enkelte runde. Som standard er de ikke med.</p>
+{% if assist %}<div class="card"><h2>{{ _("Assistenters evalueringer") }}</h2>
+  <p class="muted small">{{ _("En assistents scores tæller kun med i holdets og spillernes samlede score (og niveau), hvis du markerer dem for den enkelte runde. Som standard er de ikke med.") }}</p>
   {% for a in assist %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="assist"><input type="hidden" name="round" value="{{ a['rnd'] }}"><b>{{ a['label'] }}</b>
-    {% for r in a['rows'] %}<label class="check"><input type="checkbox" name="inc" value="{{ r['id'] }}" {{ 'checked' if r['included'] }}> {{ r['name'] }} <span class="muted small">({{ r['players'] }} spillere)</span> – medtag</label>{% endfor %}
-    <div class="actions"><button class="btn sec">Gem valg</button></div></form>{% endfor %}</div>{% endif %}
-{% if counts %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="delete_evals"><h2>Slet evaluering</h2>
-  <div class="row"><div><label for="r">Runde</label><select id="r" name="round">{% for i in infos %}<option value="{{ i['no'] }}">{{ i['label'] }}</option>{% endfor %}</select></div>
-  <div><label for="t">Træner</label><select id="t" name="trainer">{% for t in trainers %}<option value="{{ t['id'] }}">{{ t['display_name'] }}</option>{% endfor %}</select></div></div>
-  <label for="p">Spiller</label><select id="p" name="player"><option value="">Alle spillere</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
-  <label><input type="checkbox" name="confirm" value="ja"> Ja, slet de valgte scores permanent</label>
-  <div class="actions"><button class="btn danger">Slet</button></div></form>{% endif %}
+    {% for r in a['rows'] %}<label class="check"><input type="checkbox" name="inc" value="{{ r['id'] }}" {{ 'checked' if r['included'] }}> {{ r['name'] }} <span class="muted small">{{ _("({r} spillere)", r=r['players']) }}</span> {{ _("– medtag") }}</label>{% endfor %}
+    <div class="actions"><button class="btn sec">{{ _("Gem valg") }}</button></div></form>{% endfor %}</div>{% endif %}
+{% if counts %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="delete_evals"><h2>{{ _("Slet evaluering") }}</h2>
+  <div class="row"><div><label for="r">{{ _("Runde") }}</label><select id="r" name="round">{% for i in infos %}<option value="{{ i['no'] }}">{{ i['label'] }}</option>{% endfor %}</select></div>
+  <div><label for="t">{{ _("Træner") }}</label><select id="t" name="trainer">{% for t in trainers %}<option value="{{ t['id'] }}">{{ t['display_name'] }}</option>{% endfor %}</select></div></div>
+  <label for="p">{{ _("Spiller") }}</label><select id="p" name="player"><option value="">{{ _("Alle spillere") }}</option>{% for p in players %}<option value="{{ p['id'] }}">{{ p['name'] }}</option>{% endfor %}</select>
+  <label><input type="checkbox" name="confirm" value="ja"> {{ _("Ja, slet de valgte scores permanent") }}</label>
+  <div class="actions"><button class="btn danger">{{ _("Slet") }}</button></div></form>{% endif %}
 {% endblock %}

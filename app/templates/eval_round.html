@@ -1,13 +1,13 @@
 {% extends "base.html" %}{% block title %}{{ info['label'] }}{% endblock %}
 {% block content %}
 <h1>{{ info['label'] }}</h1>
-{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>Evalueringen er lukket</b> – den lukkede {{ info['closes']|date_dk }} (30 dage efter første indtastning). Du kan se scorerne, men ikke rette dem.{% if can_configure() %} Under Evalueringsrunder kan du genåbne den.{% endif %}</div>{% endif %}
+{% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>{{ _("Evalueringen er lukket") }}</b> {{ _("– den lukkede {date_dk} (30 dage efter første indtastning). Du kan se scorerne, men ikke rette dem.", date_dk=info['closes']|date_dk) }}{% if can_configure() %} {{ _("Under Evalueringsrunder kan du genåbne den.") }}{% endif %}</div>{% endif %}
 <p class="muted">{% if info['date'] %}{{ info['date']|date_dk }} · {% endif %}{{ _('Vælg en spiller for at score.') }} {{ model.EVAL_SCALE }}.</p>
 {% for p in players %}
 {% set n = mine.get(p['id'], 0) %}
 <a class="pcard" href="{{ url_for('evaluation.eval_form', rnd=rnd, pid=p['id']) }}">
   <span class="badge" style="background:{{ '#c6efce' if n == 24 else ('#ffeb9c' if n else '#eee') }}">{{ n }}/24</span>
-  <div class="nm">{{ p['name'] }}<div class="sub">{{ p['position'] or '' }} · {{ others.get(p['id'], 0) }} træner(e) har scoret</div></div><span>›</span>
+  <div class="nm">{{ p['name'] }}<div class="sub">{{ _("{or} · {p} træner(e) har scoret", or=p['position'] or '', p=others.get(p['id'], 0)) }}</div></div><span>›</span>
 </a>
 {% else %}<div class="card">{{ _('Ingen spillere.') }} <a href="{{ url_for('players.new') }}">{{ _('Opret spillere først') }}</a>.</div>{% endfor %}
 {% endblock %}

@@ -1,11 +1,11 @@
-{% extends "base.html" %}{% block title %}Rapporter{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Rapporter") }}{% endblock %}
 {% block content %}
-<h1>Rapporter</h1>
-<div class="actions"><a class="btn" href="{{ url_for('reports.report_all') }}">Alle spillere (til print)</a> <a class="btn sec" href="{{ url_for('reports.parent_all') }}">Forældrerapporter – hele holdet</a></div>
+<h1>{{ _("Rapporter") }}</h1>
+<div class="actions"><a class="btn" href="{{ url_for('reports.report_all') }}">{{ _("Alle spillere (til print)") }}</a> <a class="btn sec" href="{{ url_for('reports.parent_all') }}">{{ _("Forældrerapporter – hele holdet") }}</a></div>
 {% for p in players %}
 <div class="pcard"><div class="nm">{{ p['name'] }}<div class="sub">{{ p['position'] or '' }}</div></div>
-  <div class="acts"><a href="{{ url_for('reports.report', pid=p['id']) }}" aria-label="Rapport">📄</a>
-  <a href="{{ url_for('reports.parent_report', pid=p['id']) }}" aria-label="Forældrerapport">👪</a>
-  {% if features['motivation'] %}<a href="{{ url_for('motivation.report', pid=p['id']) }}" aria-label="Motivation">💬</a>{% endif %}</div></div>
-{% else %}<div class="card">Ingen spillere endnu.</div>{% endfor %}
+  <div class="acts"><a href="{{ url_for('reports.report', pid=p['id']) }}" aria-label="{{ _("Rapport") }}">📄</a>
+  <a href="{{ url_for('reports.parent_report', pid=p['id']) }}" aria-label="{{ _("Forældrerapport") }}">👪</a>
+  {% if features['motivation'] %}<a href="{{ url_for('motivation.report', pid=p['id']) }}" aria-label="{{ _("Motivation") }}">💬</a>{% endif %}</div></div>
+{% else %}<div class="card">{{ _("Ingen spillere endnu.") }}</div>{% endfor %}
 {% endblock %}

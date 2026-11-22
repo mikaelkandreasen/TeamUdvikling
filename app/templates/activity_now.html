@@ -1,12 +1,12 @@
-{% extends "base.html" %}{% block title %}Aktive nu{% endblock %}
+{% extends "base.html" %}{% block title %}{{ _("Aktive nu") }}{% endblock %}
 {% block content %}
-<h1>Aktive nu</h1>
+<h1>{{ _("Aktive nu") }}</h1>
 <div class="card"><h2>{{ team['name'] if team else 'Dit hold' }} ({{ info['team']|length }})</h2>
-  {% for r in info['team'] %}<div>{{ r['display_name'] }} <span class="muted small">· {{ ago(r) }} ({{ fmt(r) }})</span></div>{% else %}<p class="muted">Ingen aktive.</p>{% endfor %}</div>
+  {% for r in info['team'] %}<div>{{ r['display_name'] }} <span class="muted small">· {{ ago(r) }} ({{ fmt(r) }})</span></div>{% else %}<p class="muted">{{ _("Ingen aktive.") }}</p>{% endfor %}</div>
 {% if info['total'] is not none %}
-<div class="card"><h2>Alle hold ({{ info['total']|length }})</h2>
-  {% for r in info['total'] %}<div>{{ r['display_name'] }}{% if r['team'] %} <span class="muted">· {{ r['team'] }}</span>{% endif %} <span class="muted small">· {{ ago(r) }} ({{ fmt(r) }})</span></div>{% else %}<p class="muted">Ingen aktive.</p>{% endfor %}
-  <p><a class="btn sec" href="{{ url_for('admin.usage') }}">Se brug over tid</a></p></div>
+<div class="card"><h2>{{ _("Alle hold ({info})", info=info['total']|length) }}</h2>
+  {% for r in info['total'] %}<div>{{ r['display_name'] }}{% if r['team'] %} <span class="muted">· {{ r['team'] }}</span>{% endif %} <span class="muted small">· {{ ago(r) }} ({{ fmt(r) }})</span></div>{% else %}<p class="muted">{{ _("Ingen aktive.") }}</p>{% endfor %}
+  <p><a class="btn sec" href="{{ url_for('admin.usage') }}">{{ _("Se brug over tid") }}</a></p></div>
 {% endif %}
-<p class="muted small">Aktiv = har brugt siden inden for de seneste {{ info['window'] }} minutter. Du kan kun se kolleger på dit eget hold.</p>
+<p class="muted small">{{ _("Aktiv = har brugt siden inden for de seneste {info} minutter. Du kan kun se kolleger på dit eget hold.", info=info['window']) }}</p>
 {% endblock %}

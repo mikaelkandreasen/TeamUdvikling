@@ -152,3 +152,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Spilletidsoversigten regnede spillere, der ikke var med, som «lidt tid» og med hvide pletter.
 **Valg:** Kobling på hold + dato + type «kamp» i fremmøde (ingen skemaændring). Er kampen ikke registreret i fremmøde, er alle med som før. «Lidt tid» måles pr. kamp, spilleren var med til.
 **Konsekvens:** Kampen skal registreres i Fremmøde samme dag for at få effekt.
+
+## D-035 · Oversættelse via `_()` med pladsholdere (2026-11-22)
+**Kontekst:** Sætninger med variable og links midt i kan ikke oversættes stykkevis, fordi ordstillingen er forskellig.
+**Valg:** `gettext(tekst, **værdier)` slår hele den danske sætning op og indsætter `{pladsholdere}` bagefter; HTML-værdier (Markup) flettes uden dobbelt-escaping. Python-beskeder slås op ved visning i `base.html`. Test sikrer, at alle sprog har samme pladsholdere som dansk.
+**Konsekvens:** Nye tekster skal tilføjes i `i18n_more.py`; uoversat tekst vises på dansk.
