@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-22
+
 ### Tilføjet
 - **Egne farver for score 1–5:** Holdindstillinger → Farver for score. Vælg farve og forklaring til hvert tal, og om gennemsnit vises glidende (3,4 = blanding) eller i faste blokke (afrundet). Gælder tabeller, bane og diagrammer for holdet; tekstfarven skifter automatisk, så tallet kan læses. Kun chef-træner/administrator kan ændre.
 - **Forklaring nederst** på alle sider med farvede scores (på motivation/udviklingsdata med skemaets egne betydninger: Slet ikke … Rigtig meget).
