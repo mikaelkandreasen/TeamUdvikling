@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-11-22
+
 ### Sikkerhed
 - Opgraderet Pillow til 13.x (kendte sårbarheder i billedafkodning), gunicorn til 26.x (request smuggling) og cryptography til ≥ 50; defusedxml tilføjet til Excel-import.
 - Billeder åbnes kun med JPEG-, PNG- og WebP-parsere.
