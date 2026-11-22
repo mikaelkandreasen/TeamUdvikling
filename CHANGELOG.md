@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-22
+
 ### Ændret
 - **Links uden adgang skjules:** «Del i A/B/C-hold» og «Spillerniveau» viser ikke længere et link til Holdindstillinger, hvis man ikke har adgang til dem som træner.
 - **Hold-knappen er flyttet fra menuen til Hjem** (både mobil- og fuld version), sammen med en ny **Noter**-knap.
