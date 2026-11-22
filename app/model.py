@@ -149,12 +149,25 @@ def compute_round(rows):
     return out
 
 
+def excluded_assistants(db, team_id):
+    """{runde: {bruger-id'er}} – assistenter (users.readonly=1), hvis evalueringer IKKE tæller med i holdets/spillernes samlede score i runden.
+    Cheftræneren vælger pr. runde, hvilke assistenter der medtages (indstilling assist_ok_<runde>); standard er ikke med."""
+    assistants = {r[0] for r in db.execute("SELECT id FROM users WHERE readonly=1")}
+    ok = {}
+    for r in db.execute("SELECT key, value FROM settings WHERE key LIKE ?", (f"t{team_id}:assist_ok_%",)):
+        n = r["key"].rsplit("_", 1)[-1]
+        if n.isdigit():
+            ok[int(n)] = {int(x) for x in (r["value"] or "").split(",") if x.isdigit()}
+    return {n: assistants - ok.get(n, set()) for n in range(1, MAX_ROUNDS + 1)}
+
+
 def load_rounds(db, team_id):
     """Returnerer {runde: {player_id: resultat}} for alle fire runder – kun for ét hold."""
     grouped = {r: [] for r in ROUNDS}
+    skip = excluded_assistants(db, team_id)
     for row in db.execute("SELECT e.round, e.player_id, e.trainer_id, e.crit, e.score FROM evaluations e "
                           "JOIN players p ON p.id=e.player_id WHERE p.team_id=?", (team_id,)):
-        if row["round"] in grouped:
+        if row["round"] in grouped and row["trainer_id"] not in skip.get(row["round"], ()):
             grouped[row["round"]].append((row["player_id"], row["trainer_id"], row["crit"], row["score"]))
     return {r: compute_round(rows) for r, rows in grouped.items()}
 

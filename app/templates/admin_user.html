@@ -7,7 +7,7 @@
   <p class="muted small">Oprettet {{ u['created_at'] }} · senest logget ind {{ last_login or '–' }}</p>
   <p class="muted">{{ role_label[u['role']] }}{{ ' (assistent)' if u['readonly'] }}{% if u['club_name'] and clubs|length > 1 %} · {{ u['club_name'] }}{% endif %} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
   {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='readonly') }}">{{ csrf() }}
-    <label class="check"><input type="checkbox" name="readonly" value="1" {{ 'checked' if u['readonly'] }}> Assistent (kun læseadgang)</label><button class="btn sec">Gem</button></form>{% endif %}
+    <label class="check"><input type="checkbox" name="readonly" value="1" {{ 'checked' if u['readonly'] }}> Assistent (kan se og evaluere)</label><button class="btn sec">Gem</button></form>{% endif %}
   <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='email') }}">{{ csrf() }}
     <label for="e{{ u['id'] }}">E-mail</label>
     <div class="row"><input id="e{{ u['id'] }}" type="email" name="email" value="{{ u['email'] or '' }}" placeholder="ingen" autocomplete="off" autocapitalize="none" maxlength="254">

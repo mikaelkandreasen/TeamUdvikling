@@ -3,6 +3,7 @@
 <h1>{{ p['name'] }}</h1>
 <p class="muted">{{ info['label'] }} · {{ p['position'] or 'ingen position' }} · {{ model.EVAL_SCALE }}. Lad et felt stå tomt, hvis du ikke kan vurdere det.</p>
 {% if info['closed'] %}<div class="card" style="border-color:#c0392b"><b>{{ info['label'] }} er lukket</b> (lukkede {{ info['closes']|date_dk }}). Du kan se scorerne, men ikke rette dem.</div>{% endif %}
+{% if user['readonly'] %}<div class="card small">Du er assistent. Din evaluering gemmes, men tæller først med i holdets og spillernes samlede score, hvis cheftræneren vælger det for runden{{ ' (er medtaget i denne runde)' if assist_in else '' }}.</div>{% endif %}
 <form method="post"><fieldset {{ 'disabled' if info['closed'] }} style="border:0;padding:0;margin:0;min-width:0">{{ csrf() }}<input type="hidden" name="open" value="" data-open-roles>
 {% for role in ROLES %}
 <details class="role" data-role="{{ loop.index0 }}" {{ 'open' if (open_roles is none and loop.first) or (open_roles is not none and loop.index0 in open_roles) }}>

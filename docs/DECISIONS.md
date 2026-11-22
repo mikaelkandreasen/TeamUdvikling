@@ -102,3 +102,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** `matches` + `match_slots` (periode × plads → spiller). Pladserne kommer fra de eksisterende opstillinger (`formations`). Spilletid = antal perioder × minutter pr. periode; positionerne samles i fem grupper (Målmand, Forsvar, Midtbane, Kant, Angreb). En spiller uden plads i en kamp regnes som «ikke med» (ingen bænketid beregnes), indtil fremmøde kobles på.
 **Konsekvens:** Ved holdskifte slettes spillerens spilletid fra det gamle hold (følger ikke med som historik). Spilletid indgår i spillereksport og slettes med spilleren.
 
+## D-025 · Assistenters evalueringer (2026-11-22)
+**Kontekst:** Assistenter skal kunne evaluere, men deres vurdering må ikke automatisk påvirke holdets tal.
+**Valg:** Assistent = `users.readonly=1`. Evaluering er det eneste skrive-endpoint, de må bruge (`evaluation.eval_form`; samt læst/svar i indbakken). `model.excluded_assistants()` fjerner assistenters rækker fra `load_rounds` og niveauberegningen, medmindre cheftræneren har medtaget dem for runden (`assist_ok_<runde>` = bruger-id'er). Standard: ikke med.
+**Konsekvens:** Rådata gemmes altid; valget kan ændres bagefter og beregnes løbende. Ved holdskifte kopieres kun medtagne assistenters evalueringer til historikken.
+

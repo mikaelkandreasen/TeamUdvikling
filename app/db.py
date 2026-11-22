@@ -249,6 +249,11 @@ def _migrate_team_features(con):
         con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
 
 
+def _migrate_assistants(con):
+    """Stoppede brugere var tidligere sat til readonly; det betyder nu «assistent» – ryd det (idempotent)."""
+    con.execute("UPDATE users SET readonly=0 WHERE stopped_at IS NOT NULL AND readonly=1")
+
+
 def _migrate_v20(con):
     """v20: messages.to_user_id/reply_to (ADD COLUMN) + udgangspunkt for motivation over tid (idempotent)."""
     cols = {r["name"] for r in con.execute("PRAGMA table_info(messages)")}
@@ -313,6 +318,7 @@ def init_db(path):
     _migrate_stopped_users(con)
     _migrate_club_motto(con)
     _migrate_v20(con)
+    _migrate_assistants(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

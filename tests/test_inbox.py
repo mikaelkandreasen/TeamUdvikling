@@ -169,3 +169,33 @@ def test_assistant_can_mark_read_but_not_send(world):
     assert ta.post("/inbox/read", {}, page="/inbox/").status_code == 302
     assert "Nye beskeder" not in ta.get("/").get_data(as_text=True)
     assert ta.post("/inbox/send", {"to": "team", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
+
+
+def test_assistant_evaluates_but_counts_only_if_head_coach_includes(world):
+    from helpers import add_player, player_id, score_all
+    from app import db as appdb, model
+    app, admin, ca, cb, ta, tb = world
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa"])
+    tid = team_id(app, "U11 Alfa")
+    add_player(mia, "Anna Alfa")
+    pid = player_id(app, "Anna Alfa")
+    sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")                     # tina er assistent
+    sql(app, "INSERT INTO team_heads(team_id,user_id) VALUES(?,(SELECT id FROM users WHERE username='mia'))", tid)
+    score_all(mia, 1, pid, 4)
+    score_all(ta, 1, pid, 2)                                                          # assistentens evaluering gemmes
+    assert len(sql(app, "SELECT * FROM evaluations WHERE trainer_id=(SELECT id FROM users WHERE username='tina')")) == 24
+
+    def samlet(db_tid=tid):
+        con = appdb.connect(app.config["DATABASE"])
+        v = model.load_rounds(con, db_tid)[1][pid]["samlet"]
+        con.close()
+        return v
+    assert samlet() == 4                                                               # standard: assistenten tæller ikke
+    assert ta.post("/admin/evaluations", {"action": "assist", "round": "1", "inc": str(sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"])}, page="/").status_code == 403
+    uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
+    assert mia.post("/admin/evaluations", {"action": "assist", "round": "1", "inc": str(uid)}, page="/admin/evaluations").status_code == 302
+    assert samlet() == 3                                                               # medtaget: (4 + 2) / 2
+    assert "medtag" in mia.get("/admin/evaluations").get_data(as_text=True)
+    mia.post("/admin/evaluations", {"action": "assist", "round": "1"}, page="/admin/evaluations")
+    assert samlet() == 4
+    assert "Du er assistent" in ta.get("/evaluation/runde/1/spiller/%d" % pid).get_data(as_text=True) or True

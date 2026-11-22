@@ -105,7 +105,7 @@ def eval_form(rnd, pid):
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
     mylevel = db.execute("SELECT level FROM level_ratings WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"])).fetchone()
     dbu = {r["item"] for r in db.execute("SELECT item FROM dbu_checks WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}
-    return render_template("eval_form.html", rnd=rnd, p=p, scores=scores, dbu=dbu, dbu_done={x.split(".")[0] for x in dbu}, dbu_res=model.dbu_result(dbu), mylevel=mylevel["level"] if mylevel else None, info=info,
+    return render_template("eval_form.html", assist_in=g.user["id"] not in model.excluded_assistants(db, team_id()).get(rnd, ()), rnd=rnd, p=p, scores=scores, dbu=dbu, dbu_done={x.split(".")[0] for x in dbu}, dbu_res=model.dbu_result(dbu), mylevel=mylevel["level"] if mylevel else None, info=info,
                            prev_id=prev_id, next_id=next_id, criteria=team_criteria(db, team_id()),
                            open_roles=_open_roles(request.args.get("open")))
 

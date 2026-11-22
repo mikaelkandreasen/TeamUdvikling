@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Assistenter kan evaluere spillere** (scores, niveau og DBU-vurdering). Assistentens evaluering gemmes, men tæller **ikke** med i holdets og spillerens samlede score, medmindre cheftræneren vælger det: Administration → Evalueringsrunder → «Assistenters evalueringer», pr. runde og pr. assistent. Ændringen slår igennem i teamoversigt, profil, rapporter og niveauberegning med det samme. Assistenter kan stadig ikke ændre andet.
+### Ændret
+- Stoppede trænere markeres ikke længere som assistent (tidligere læseadgang-flag ryddes ved opstart).
+
 ## [0.23.0] - 2026-11-22
 
 ### Tilføjet

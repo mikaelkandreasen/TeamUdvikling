@@ -21,6 +21,11 @@
   {% for c in counts %}<tr><td data-label="Runde">{{ infos[c['round'] - 1]['label'] }}</td><td data-label="Træner">{{ c['display_name'] }}</td><td class="num" data-label="Spillere">{{ c['players'] }}</td><td class="num" data-label="Scores">{{ c['n'] }}</td></tr>{% endfor %}
   </tbody></table></div>{% else %}<p>Ingen evalueringer endnu.</p>{% endif %}
 </div>
+{% if assist %}<div class="card"><h2>Assistenters evalueringer</h2>
+  <p class="muted small">En assistents scores tæller kun med i holdets og spillernes samlede score (og niveau), hvis du markerer dem for den enkelte runde. Som standard er de ikke med.</p>
+  {% for a in assist %}<form method="post">{{ csrf() }}<input type="hidden" name="action" value="assist"><input type="hidden" name="round" value="{{ a['rnd'] }}"><b>{{ a['label'] }}</b>
+    {% for r in a['rows'] %}<label class="check"><input type="checkbox" name="inc" value="{{ r['id'] }}" {{ 'checked' if r['included'] }}> {{ r['name'] }} <span class="muted small">({{ r['players'] }} spillere)</span> – medtag</label>{% endfor %}
+    <div class="actions"><button class="btn sec">Gem valg</button></div></form>{% endfor %}</div>{% endif %}
 {% if counts %}<form method="post" class="card">{{ csrf() }}<input type="hidden" name="action" value="delete_evals"><h2>Slet evaluering</h2>
   <div class="row"><div><label for="r">Runde</label><select id="r" name="round">{% for i in infos %}<option value="{{ i['no'] }}">{{ i['label'] }}</option>{% endfor %}</select></div>
   <div><label for="t">Træner</label><select id="t" name="trainer">{% for t in trainers %}<option value="{{ t['id'] }}">{{ t['display_name'] }}</option>{% endfor %}</select></div></div>

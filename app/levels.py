@@ -24,10 +24,13 @@ def calc(db, players, rounds):
     tid = players[0]["team_id"]
     # pr. spiller, runde og træner: valgt niveau (dropdown) eller – hvis intet er valgt – niveauet fra DBU-valg
     sel, ticks = {}, {}
+    skip = model.excluded_assistants(db, tid)
     for r in db.execute("SELECT round, player_id, trainer_id, level FROM level_ratings WHERE player_id IN (SELECT id FROM players WHERE team_id=?)", (tid,)):
-        if r["level"] in model.LEVEL_ORD:
+        if r["level"] in model.LEVEL_ORD and r["trainer_id"] not in skip.get(r["round"], ()):
             sel[(r["player_id"], r["round"], r["trainer_id"])] = r["level"]
     for r in db.execute("SELECT round, player_id, trainer_id, item FROM dbu_checks WHERE player_id IN (SELECT id FROM players WHERE team_id=?)", (tid,)):
+        if r["trainer_id"] in skip.get(r["round"], ()):
+            continue
         ticks.setdefault((r["player_id"], r["round"], r["trainer_id"]), set()).add(r["item"])
     per_player = {}
     for key in set(sel) | set(ticks):

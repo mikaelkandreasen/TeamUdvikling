@@ -758,9 +758,19 @@ def evaluations():
                 db.execute("DELETE FROM level_ratings WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
                 db.execute("DELETE FROM dbu_checks WHERE round=? AND player_id IN (SELECT id FROM players WHERE team_id=?)", (n, tid))
                 db.execute("DELETE FROM settings WHERE key IN (?,?,?)", (f"t{tid}:round_label_{n}", f"t{tid}:round_date_{n}", f"t{tid}:round_opened_{n}"))
+                db.execute("DELETE FROM settings WHERE key=?", (f"t{tid}:assist_ok_{n}",))
                 set_setting(db, tid, "rounds_n", str(n - 1))
                 audit(db, g.user["username"], "runde_fjernet", f"{g.team['name']}: runde {n}")
                 flash(f"Runde {n} og dens evalueringer er slettet.", "ok")
+        elif action == "assist":
+            rnd = request.form.get("round", type=int)
+            if rnd not in g.rounds:
+                abort(404)
+            valid = {r[0] for r in db.execute("SELECT id FROM users WHERE readonly=1")}
+            inc = sorted({int(x) for x in request.form.getlist("inc") if x.isdigit()} & valid)
+            set_setting(db, tid, f"assist_ok_{rnd}", ",".join(map(str, inc)))
+            audit(db, g.user["username"], "assistent_medtaget", f"{g.team['name']}: runde {rnd}, brugere={inc}")
+            flash("Valget er gemt. Holdets og spillernes samlede score er opdateret.", "ok")
         elif action == "reopen_round":
             rnd = request.form.get("round", type=int)
             if rnd not in g.rounds:
@@ -790,13 +800,19 @@ def evaluations():
                 flash(f"{cur.rowcount} scores slettet.", "ok")
         db.commit()
         return redirect(url_for("admin.evaluations"))
-    counts = db.execute("SELECT e.round, e.trainer_id, u.display_name, COUNT(DISTINCT e.player_id) players, COUNT(*) n FROM evaluations e "
+    counts = db.execute("SELECT e.round, e.trainer_id, u.display_name, u.readonly, COUNT(DISTINCT e.player_id) players, COUNT(*) n FROM evaluations e "
                         "JOIN players p ON p.id=e.player_id JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? "
                         "GROUP BY e.round, e.trainer_id ORDER BY e.round, u.display_name", (tid,)).fetchall()
     trainers = db.execute("SELECT DISTINCT u.id, u.display_name FROM evaluations e JOIN players p ON p.id=e.player_id "
                           "JOIN users u ON u.id=e.trainer_id WHERE p.team_id=? ORDER BY u.display_name", (tid,)).fetchall()
     players = db.execute("SELECT id, name FROM players WHERE team_id=? ORDER BY name COLLATE NOCASE", (tid,)).fetchall()
-    return render_template("admin_evaluations.html", counts=counts, trainers=trainers, players=players, infos=round_info(db),
+    skip = model.excluded_assistants(db, tid)
+    assist = []
+    for rnd in sorted({c["round"] for c in counts if c["readonly"]}):
+        assist.append(dict(rnd=rnd, label=round_info(db)[rnd - 1]["label"],
+                           rows=[dict(id=c["trainer_id"], name=c["display_name"], players=c["players"], included=c["trainer_id"] not in skip.get(rnd, ()))
+                                 for c in counts if c["round"] == rnd and c["readonly"]]))
+    return render_template("admin_evaluations.html", counts=counts, assist=assist, trainers=trainers, players=players, infos=round_info(db),
                            can_add=n < model.MAX_ROUNDS, can_remove=n > 2)
 
 

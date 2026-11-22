@@ -115,8 +115,8 @@ def create_app(config=None):
                 "auth.view_as_stop", "auth.logout", "main.switch_team"):
             abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
         if (g.get("user") and g.user["readonly"] and request.method not in ("GET", "HEAD", "OPTIONS")
-                and not (request.endpoint or "").startswith("auth.") and request.endpoint not in ("main.switch_team", "inbox.read_all", "inbox.reply")):
-            abort(403, "Du har læseadgang (assistent) og kan ikke ændre noget.")
+                and not (request.endpoint or "").startswith("auth.") and request.endpoint not in ("main.switch_team", "inbox.read_all", "inbox.reply", "evaluation.eval_form")):
+            abort(403, "Du er assistent: du kan se og evaluere, men ikke ændre andet.")
         if teams.archived_write_blocked(request.endpoint, request.method):
             abort(403, "Holdet er arkiveret og skrivebeskyttet. Genåbn det under Administration → Hold, hvis det skal ændres.")
         activity.touch()

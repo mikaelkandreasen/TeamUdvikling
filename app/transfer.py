@@ -13,7 +13,7 @@ def stop_user(db, u):
     for tbl in ("user_teams", "team_heads", "user_profiles", "recovery_codes", "remember_tokens", "reset_tokens", "presence", "activity", "login_fails"):
         db.execute(f"DELETE FROM {tbl} WHERE user_id=?", (uid,))
     db.execute("UPDATE users SET username=?, display_name=?, pw_hash='!stoppet', totp_secret=NULL, totp_enabled=0, email=NULL, must_change_pw=0, "
-               "readonly=1, role='trainer', stopped_at=? WHERE id=?", (f"stoppet-{uid}", name, int(time.time()), uid))
+               "role='trainer', stopped_at=? WHERE id=?", (f"stoppet-{uid}", name, int(time.time()), uid))
 
 
 def has_evaluations(db, uid):
@@ -29,16 +29,20 @@ def move_player(db, p, to_team, actor):
     labels = {r: (get_setting(db, frm, f"round_label_{r}") or f"Evaluering {r}", get_setting(db, frm, f"round_date_{r}") or None) for r in team_rounds(db, frm)}
     now = time.strftime("%Y-%m-%d")
 
-    def put(rnd, trainer, kind, k, v):
+    ex = model.excluded_assistants(db, frm)
+
+    def put(uid, rnd, trainer, kind, k, v):
+        if uid in ex.get(rnd, ()):
+            return                                              # assistent der ikke blev medtaget i holdets score
         lab, day = labels.get(rnd, (f"Evaluering {rnd}", None))
         db.execute("INSERT INTO eval_history(player_id,team_name,moved_at,round_no,round_label,round_date,trainer_name,kind,k,v) VALUES(?,?,?,?,?,?,?,?,?,?)",
                    (pid, team_name, now, rnd, lab, day, trainer, kind, str(k), str(v)))
-    for r in db.execute("SELECT e.round, u.display_name n, e.crit, e.score FROM evaluations e JOIN users u ON u.id=e.trainer_id WHERE e.player_id=?", (pid,)).fetchall():
-        put(r["round"], r["n"], "crit", r["crit"], r["score"])
-    for r in db.execute("SELECT l.round, u.display_name n, l.level FROM level_ratings l JOIN users u ON u.id=l.trainer_id WHERE l.player_id=?", (pid,)).fetchall():
-        put(r["round"], r["n"], "level", "", r["level"])
-    for r in db.execute("SELECT d.round, u.display_name n, d.item FROM dbu_checks d JOIN users u ON u.id=d.trainer_id WHERE d.player_id=?", (pid,)).fetchall():
-        put(r["round"], r["n"], "dbu", r["item"], 1)
+    for r in db.execute("SELECT e.round, u.display_name n, u.id uid, e.crit, e.score FROM evaluations e JOIN users u ON u.id=e.trainer_id WHERE e.player_id=?", (pid,)).fetchall():
+        put(r["uid"], r["round"], r["n"], "crit", r["crit"], r["score"])
+    for r in db.execute("SELECT l.round, u.display_name n, u.id uid, l.level FROM level_ratings l JOIN users u ON u.id=l.trainer_id WHERE l.player_id=?", (pid,)).fetchall():
+        put(r["uid"], r["round"], r["n"], "level", "", r["level"])
+    for r in db.execute("SELECT d.round, u.display_name n, u.id uid, d.item FROM dbu_checks d JOIN users u ON u.id=d.trainer_id WHERE d.player_id=?", (pid,)).fetchall():
+        put(r["uid"], r["round"], r["n"], "dbu", r["item"], 1)
     for tbl in ("evaluations", "level_ratings", "dbu_checks"):
         db.execute(f"DELETE FROM {tbl} WHERE player_id=?", (pid,))
     db.execute("DELETE FROM lineup_slots WHERE player_id=?", (pid,))
