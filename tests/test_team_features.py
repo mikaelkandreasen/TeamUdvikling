@@ -356,7 +356,7 @@ def test_team_criteria_override_and_isolation(app, admin):
     admin.post("/team/criteria", data, page="/team/criteria")
     assert "Vores egen tekst om teknik" in admin.get("/criteria").get_data(as_text=True)
     assert "Vores egen tekst om teknik" in admin.get(f"/eval/1/{pa}").get_data(as_text=True)
-    assert sql(app, "SELECT COUNT(*) c FROM settings WHERE key LIKE 't%:crit_desc_%' AND value<>''")[0]["c"] == 1          # kun ændrede tekster gemmes
+    assert sql(app, "SELECT COUNT(*) c FROM team_criteria")[0]["c"] == 1          # kun ændrede tekster gemmes
     switch(admin, team_id(app, "B"))
     assert "Vores egen tekst om teknik" not in admin.get("/criteria").get_data(as_text=True)                                # andet hold urørt
     switch(admin, team_id(app, "A"))

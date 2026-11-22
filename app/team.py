@@ -4,7 +4,7 @@ import json
 
 from flask import Blueprint, Response, abort, flash, g, redirect, render_template, request, url_for
 
-from . import photos, features, formations, ical, levels as levelcalc, model, motivation, scope
+from . import criteria as criteria_mod, photos, features, formations, ical, levels as levelcalc, model, motivation, scope
 from .db import audit, get_db, get_setting, set_setting
 from .helpers import active_players, int_in, round_info, team_id
 
@@ -418,12 +418,7 @@ def season():
 
 # ----------------------------------------------------------------------------- egne kriterietekster
 def team_criteria(db, tid):
-    """De 24 kriterier med holdets egne beskrivelser (standardtekster hvor intet er overskrevet)."""
-    out = []
-    for c in model.CRITERIA:
-        custom = (get_setting(db, tid, f"crit_desc_{c['idx']}") or "").strip()
-        out.append(dict(c, desc=custom or c["desc"], custom=bool(custom)))
-    return out
+    return criteria_mod.for_team(db, tid)
 
 
 @bp.route("/criteria", methods=["GET", "POST"])
@@ -432,14 +427,7 @@ def criteria():
     db = get_db()
     tid = team_id()
     if request.method == "POST":
-        n = 0
-        for c in model.CRITERIA:
-            v = (request.form.get(f"desc_{c['idx']}") or "").strip()[:300]
-            if v == c["desc"]:
-                v = ""
-            if v != (get_setting(db, tid, f"crit_desc_{c['idx']}") or ""):
-                n += 1
-            set_setting(db, tid, f"crit_desc_{c['idx']}", v)
+        n = criteria_mod.save_texts(db, tid, {c["idx"]: request.form.get(f"desc_{c['idx']}") for c in model.CRITERIA})
         audit(db, g.user["username"], "kriterietekster_gemt", f"{g.team['name']}: {n} ændret")
         db.commit()
         flash("Kriterietekster gemt. Tomme felter bruger standardteksten.", "ok")

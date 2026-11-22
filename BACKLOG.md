@@ -20,7 +20,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 ## Teknisk gæld og forbedringer (P1)
 - **B-041b · Fast adgangslag i koden** · M – restpunkt: selve laget (repository), så rå SQL på spillerdata samles ét sted. Den automatiske rutetest (v0.26.0) fanger allerede glemte afgrænsninger.
-- **B-042 · Evalueringskriterier som tabeller** · L – roller, nøglefærdigheder og kriterier (i dag 24 faste indeks i `model.py`) flyttes til tabeller pr. hold med standardsæt som udgangspunkt. Accept: eksisterende hold ser præcis de samme kriterier og tal; et hold kan omdøbe/skjule et kriterium uden kodeændring; beregninger og rapporter bruger tabellerne; migration uden tab af scores.
+- **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a).
 
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
@@ -38,6 +38,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **B-042a · Kriterietekster i tabel** – færdig (v0.27.0), migration 013.
 - **B-043 · Delvise opdateringer** – færdig (v0.27.0) som eget `data-swap`-script (D-028). Idé: udvid til evalueringsskema og noter.
 - **Opstillingsforslag med prioritet på hvide pletter** – færdig (v0.27.0).
 - **Kampforslag fra iCal-link** – færdig (v0.26.0). Idé: vis ændringer (flyttet/aflyst) for allerede oprettede kampe ved næste hentning.

@@ -68,3 +68,25 @@ def test_new_migration_runs_once_and_failure_rolls_back(tmp_path):
 def test_no_backup_for_empty_new_database(tmp_path):
     appdb.init_db(str(tmp_path / "n.db"), backup_dir=str(tmp_path / "bk"))
     assert not (tmp_path / "bk").exists()
+
+
+def test_013_moves_criteria_texts_from_settings_to_table(tmp_path):
+    p = str(tmp_path / "c.db")
+    appdb.init_db(p)
+    con = sqlite3.connect(p)
+    con.row_factory = sqlite3.Row
+    cid = con.execute("SELECT id FROM clubs LIMIT 1").fetchone()
+    con.execute("INSERT INTO teams(name, club_id, created_at) VALUES('Hold A', ?, '2026-01-01')", (cid["id"] if cid else 1,))
+    tid = con.execute("SELECT id FROM teams WHERE name='Hold A'").fetchone()["id"]
+    con.execute("INSERT INTO settings(key,value) VALUES(?,?)", (f"t{tid}:crit_desc_3", "Egen tekst"))
+    con.execute("INSERT INTO settings(key,value) VALUES(?,?)", (f"t{tid}:crit_desc_4", ""))
+    con.execute("INSERT INTO settings(key,value) VALUES(?,?)", ("t9999:crit_desc_1", "Forældreløs"))
+    con.execute("DELETE FROM schema_migrations WHERE id='013_team_kriterier'")
+    con.execute("DROP TABLE team_criteria")
+    con.commit()
+    appdb._m013_team_criteria(con); con.commit()
+    assert [(r["team_id"], r["idx"], r["description"]) for r in con.execute("SELECT * FROM team_criteria")] == [(tid, 3, "Egen tekst")]
+    assert con.execute("SELECT COUNT(*) FROM settings WHERE key LIKE '%crit_desc%'").fetchone()[0] == 0
+    appdb._m013_team_criteria(con); con.commit()                                              # idempotent
+    assert con.execute("SELECT COUNT(*) FROM team_criteria").fetchone()[0] == 1
+    con.close()

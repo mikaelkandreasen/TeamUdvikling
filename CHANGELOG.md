@@ -6,6 +6,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [0.26.0] - 2026-11-22
 
+### Ændret
+- **Kriterietekster i egen tabel (B-042a):** holdets egne tekster ligger nu i `team_criteria` i stedet for i indstillinger (migration 013 flytter dem; ingen ændring for brugerne). Al læsning går via `app/criteria.py`.
+
 ### Tilføjet
 - **Delvise opdateringer uden sideskift (B-043):** indbakken (læst, svar, send, slet, tælleren i topbjælken) og kampopstillingen (forslag, kopiér, gem) opdaterer kun de dele, der ændres. Virker uden JavaScript som før.
 - **Opstillingsforslag (Kampe):** *Foreslå opstilling* fordeler spilletiden jævnt og giver først spillerne de positioner, de aldrig har prøvet (hvide pletter). Vælg hvem der ikke er med, og om målmandspladsen indgår. Forslaget gemmes først, når du trykker Gem kamp.
