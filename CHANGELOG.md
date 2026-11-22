@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 ## [0.26.0] - 2026-11-22
 
 ### Tilføjet
+- **Opstillingsforslag (Kampe):** *Foreslå opstilling* fordeler spilletiden jævnt og giver først spillerne de positioner, de aldrig har prøvet (hvide pletter). Vælg hvem der ikke er med, og om målmandspladsen indgår. Forslaget gemmes først, når du trykker Gem kamp.
 - **Kampforslag fra iCal-link:** bruger holdets eksisterende kalenderlink (Holdindstillinger). Knappen *Hent kampforslag* under Kampe viser kommende aftaler (dato, tid, sted, gættet modstander), som kan rettes og oprettes som kamp med ét tryk. Kampe der ligner en kamp er forvalgt; allerede oprettede (samme UID) springes over. Migration 012 (skema 23).
 - **E-mail-kø (B-044):** invitationer og indbakkebeskeder lægges i en kø og sendes af en baggrundstråd med op til 6 genforsøg; brugeren venter ikke på SMTP. Ny side Administration → E-mail-kø (sendt/i kø/mislykket, uden indhold; mislykkede kan sættes i kø igen). Indholdet slettes efter udsendelse/opgivelse. Migration 011 (skema 22).
 - **Automatisk isolationstest af alle ruter med id (B-041):** hver rute testes som træner fra et andet hold i samme klub og fra en anden klub og skal afvises. Tilføjes en ny rute med id uden at stå i testen, fejler testen. Positiv kontrol sikrer, at ejerholdet stadig kan nå sine egne data.

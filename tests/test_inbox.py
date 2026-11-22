@@ -255,3 +255,35 @@ def test_match_suggestions_import_no_duplicates(world, monkeypatch):
     assert "Beta, BK" not in ta.get("/kampe/forslag").get_data(as_text=True)                 # oprettede vises ikke igen
     assert sql(app, "SELECT COUNT(*) n FROM matches WHERE team_id<>?", tid)[0]["n"] == 0     # intet landede på andre hold
     assert tb.get("/kampe/forslag").status_code == 302                                       # andet hold: intet link, intet at se
+
+
+def test_suggest_algorithm_prioritises_white_spots_and_balances_time():
+    from app import suggest
+    slots = [dict(i=0, tag="Målmand"), dict(i=1, tag="Forsvar"), dict(i=2, tag="Midtbane"), dict(i=3, tag="Angreb")]
+    grp = {"Målmand": "GK", "Forsvar": "DEF", "Midtbane": "MID", "Angreb": "ATT"}.get
+    ids = [1, 2, 3, 4, 5]
+    hist = {1: {"DEF": 48, "MID": 24}, 2: {"DEF": 24, "ATT": 24}, 3: {"MID": 48}, 4: {"ATT": 48, "GK": 12}, 5: {}}
+    assign, filled = suggest.suggest(slots, grp, ids, hist, 4, 12)
+    per_player = {}
+    for (per, i), pid in assign.items():
+        per_player[pid] = per_player.get(pid, 0) + 1
+    assert len(assign) == 16 and max(per_player.values()) - min(per_player.values()) <= 1      # spilletid jævnt (5 spillere på 4 pladser)
+    for per in range(4):
+        assert len({pid for (p, i), pid in assign.items() if p == per}) == 4                    # ingen spiller to steder i samme periode
+    assert (1, "ATT") in filled and (3, "DEF") in filled                                        # hvide pletter udfyldes
+    a2, _ = suggest.suggest(slots, grp, ids, hist, 4, 12, absent={5}, use_gk=False)
+    assert 5 not in a2.values() and all(i != 0 for (_p, i) in a2)                               # fraværende og målmandsplads udeladt
+
+
+def test_suggest_route_does_not_save_until_gem(world):
+    app, admin, ca, cb, ta, tb = world
+    tid = team_id(app, "U11 Alfa")
+    for n in ("Anna", "Bo", "Cille", "Dina", "Ella", "Fie", "Gry", "Hanne"):
+        sql(app, "INSERT INTO players(team_id,name,active) VALUES(?,?,1)", tid, n)
+    ta.post("/kampe/ny", {"day": "2030-05-01", "opponent": "X"}, page="/kampe/")
+    mid = sql(app, "SELECT id FROM matches WHERE team_id=?", tid)[0]["id"]
+    r = ta.post(f"/kampe/{mid}", {"action": "suggest", "use_gk": "1"}, page=f"/kampe/{mid}")
+    assert r.status_code == 200 and "Forslag lavet" in r.get_data(as_text=True)
+    assert sql(app, "SELECT COUNT(*) n FROM match_slots WHERE match_id=?", mid)[0]["n"] == 0
+    other = sql(app, "SELECT id FROM players WHERE team_id=? LIMIT 1", tid)[0]["id"]
+    assert tb.post(f"/kampe/{mid}", {"action": "suggest"}, page="/kampe/").status_code in (302, 403, 404)

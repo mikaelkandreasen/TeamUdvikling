@@ -4,7 +4,7 @@ import re
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import club, formations, ical, model
+from . import club, formations, ical, model, suggest
 from .db import audit, get_db, get_setting
 from .helpers import active_players, int_in, team_id
 from .team import profile
@@ -137,7 +137,20 @@ def new():
     return redirect(url_for("matches.edit", mid=cur.lastrowid))
 
 
-def _view(db, m, assign, players):
+def _history(db, tid, players, exclude_mid):
+    """Minutter pr. spiller og positionsgruppe i tidligere kampe (uden den aktuelle)."""
+    ids = {p["id"] for p in players}
+    hist = {p["id"]: {} for p in players}
+    for m in db.execute("SELECT * FROM matches WHERE team_id=? AND id<>?", (tid, exclude_mid)).fetchall():
+        labels = formations.slots(m["game_type"], m["formation"])
+        for r in db.execute("SELECT slot, player_id FROM match_slots WHERE match_id=?", (m["id"],)):
+            if r["player_id"] in ids and r["slot"] < len(labels):
+                k = group_of(labels[r["slot"]]["tag"])
+                hist[r["player_id"]][k] = hist[r["player_id"]].get(k, 0) + m["period_min"]
+    return hist
+
+
+def _view(db, m, assign, players, absent=(), use_gk=True):
     sl = formations.slots(m["game_type"], m["formation"])
     labels = _labels(sl)
     pmin = m["period_min"]
@@ -146,7 +159,7 @@ def _view(db, m, assign, players):
         if pid in minutes:
             minutes[pid] += pmin
     bench = {per: [p for p in players if p["id"] not in {pid for (pp, _s), pid in assign.items() if pp == per}] for per in range(m["periods"])}
-    return render_template("match_edit.html", m=m, sl=sl, labels=labels, assign=assign, players=players, minutes=minutes, bench=bench, total=m["periods"] * pmin)
+    return render_template("match_edit.html", m=m, sl=sl, labels=labels, assign=assign, players=players, minutes=minutes, bench=bench, total=m["periods"] * pmin, absent=set(absent), use_gk=use_gk)
 
 
 @bp.route("/<int:mid>", methods=["GET", "POST"])
@@ -174,6 +187,17 @@ def edit(mid):
                 problem = f"Samme spiller er valgt to gange i periode {per + 1}. Ret og gem igen."
             used.add(pid)
             assign[(per, s["i"])] = pid
+    if action == "suggest":
+        absent = {pid for pid in (int_in(x, 1, 2 ** 31) for x in request.form.getlist("absent")) if pid in pmap}
+        use_gk = bool(request.form.get("use_gk"))
+        hist = _history(db, team_id(), players, mid)
+        assign, filled = suggest.suggest(sl, group_of, [p["id"] for p in players], hist, m["periods"], m["period_min"], absent, use_gk)
+        names, labels = {p["id"]: p["name"] for p in players}, dict(GROUPS)
+        msg = "Forslag lavet – tryk Gem kamp, hvis du vil beholde det."
+        if filled:
+            msg += " Nye positioner: " + ", ".join(f"{names[pid]} ({labels.get(k, k).lower()})" for pid, k in filled[:12]) + "."
+        flash(msg, "ok")
+        return _view(db, m, assign, players, absent, use_gk)
     if action == "copy1":
         assign = {(per, i): pid for (p0, i), pid in assign.items() if p0 == 0 for per in range(m["periods"])}
         flash("Periode 1 er kopieret til alle perioder. Ret frit, og tryk Gem.", "ok")
