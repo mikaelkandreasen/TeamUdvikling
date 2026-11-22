@@ -55,3 +55,22 @@ def test_sysadmin_message_reaches_everyone(world):
     mid = sql(app, "SELECT id FROM messages")[0]["id"]
     assert ca.post(f"/inbox/{mid}/delete", {}, page="/inbox/").status_code == 403
     assert admin.post(f"/inbox/{mid}/delete", {}, page="/inbox/").status_code == 302
+
+
+def test_team_focus_saved_shown_and_scoped(world):
+    from helpers import add_player, player_id, score_all
+    from app import model
+    app, admin, ca, cb, ta, tb = world
+    add_player(ta, "Anna Alfa")
+    score_all(ta, 1, player_id(app, "Anna Alfa"), 3)
+    c0 = model.CRITERIA[0]
+    nm = f"{c0['skill']} som {c0['role'].lower()}"
+    ta.post("/team/focus", {"pick": [nm, "opfundet"], "own": "Aflevering med indersiden"}, page="/team/focus")
+    page = ta.get("/team/focus").get_data(as_text=True)
+    assert nm in page and "Aflevering med indersiden" in page and "opfundet" not in page      # kun kendte forslag gemmes
+    assert "<b>Holdets fokus</b>" in ta.get("/").get_data(as_text=True) and "Aflevering med indersiden" in ta.get("/").get_data(as_text=True)
+    assert "Aflevering med indersiden" not in tb.get("/").get_data(as_text=True)               # andet hold ser det ikke
+    rep = ta.get("/report/%d/foraeldre" % player_id(app, "Anna Alfa")).get_data(as_text=True)
+    assert "Hele holdet træner på" in rep and "Aflevering med indersiden" in rep
+    ta.post("/team/focus", {}, page="/team/focus")
+    assert "<b>Holdets fokus</b>" not in ta.get("/").get_data(as_text=True)

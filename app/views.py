@@ -5,7 +5,7 @@ from flask import Blueprint, abort, flash, g, redirect, render_template, request
 
 from . import activity, club, model, teams
 from .db import get_db
-from .team import team_criteria
+from .team import team_criteria, team_focus
 from .helpers import active_players, default_round, round_info, round_window, team_id
 
 bp = Blueprint("main", __name__)
@@ -33,7 +33,7 @@ def home():
         return redirect(url_for("main.mobile"))
     db = get_db()
     players, rounds, prog = _dashboard_data(db)
-    return render_template("home.html", players=players, prog=prog)
+    return render_template("home.html", players=players, prog=prog, tfocus=team_focus(db, team_id()) if g.get("team") else None)
 
 
 @bp.route("/m")
@@ -46,7 +46,7 @@ def mobile():
         r, res = model.latest(rounds, p["id"])
         cards.append(dict(p=p, round=r, samlet=res["samlet"] if res else None))
     cur = default_round(rounds)
-    return render_template("mobile_home.html", cards=cards, prog=prog, cur=cur)
+    return render_template("mobile_home.html", cards=cards, prog=prog, cur=cur, tfocus=team_focus(db, team_id()) if g.get("team") else None)
 
 
 @bp.route("/aktivitet")

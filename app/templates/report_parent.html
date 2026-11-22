@@ -14,6 +14,7 @@
   {% if b['has'] %}
   {% if b['strengths'] %}<h2>Det er {{ p['name'].split(' ')[0] }} god til</h2><ul>{% for x in b['strengths'] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
   {% if b['progress'] %}<h2>Her er {{ p['name'].split(' ')[0] }} gået frem</h2><ul>{% for x in b['progress'] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+  {% if b['team_focus'] %}<h2>Hele holdet træner på</h2><ul>{% for x in b['team_focus'] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
   {% if b['focus'] %}<h2>Det træner vi på nu</h2><ul>{% for x in b['focus'] %}<li>{{ x }}</li>{% endfor %}</ul>
     <p class="muted small">Det hjælper at øve lidt ad gangen derhjemme – fx at spille med bolden i haven.</p>{% endif %}
   {% else %}<p class="muted">Vi har endnu ikke en færdig evaluering af hele holdet. Rapporten fyldes ud, når den er klar.</p>

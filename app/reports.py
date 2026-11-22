@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, request
 
 from . import devdata, evaluation, model, motivation
+from .team import team_focus
 from .db import get_db
 from .helpers import active_players, get_player, team_id
 
@@ -28,11 +29,12 @@ def _parent_data(db, p, rounds, ids):
     res = prof["res"]
     name = lambda c: f"{c['skill']} som {c['role'].lower()}"
     strengths = [name(c) for c, _ in prof["strongest"]] if res else []
+    tf = team_focus(db, team_id())["items"]
     focus = [f for f in (p["focus1"], p["focus2"]) if f] or ([name(c) for c, _ in prof["weakest"][:2] if c] if res else [])
     progress = [name(c) for c, _ in prof["changes"]["up"]] if prof["changes"] else []
     interests = [dict(title=c["title"], top=c["top"]) for c in motivation.report_data(db, p["id"], ids) if c["top"]]
     label = next((i["label"] for i in prof["infos"] if i["no"] == prof["rnd"]), "")
-    return dict(p=p, has=bool(res), strengths=strengths, focus=focus, progress=progress, interests=interests, label=label)
+    return dict(p=p, has=bool(res), strengths=strengths, focus=focus, team_focus=tf, progress=progress, interests=interests, label=label)
 
 
 @bp.route("/report/<int:pid>/foraeldre")

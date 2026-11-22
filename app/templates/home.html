@@ -2,6 +2,7 @@
 {% block content %}
 <h1>Hjem{% if team %} – {{ team['name'] }}{% endif %}</h1>
 {% if team and team['slogan'] %}<p class="muted"><i>“{{ team['slogan'] }}”</i></p>{% endif %}
+{% if tfocus and tfocus['items'] %}<div class="card"><b>Holdets fokus</b> <a class="small" href="{{ url_for('team.focus') }}">ret</a><ul style="margin:.3rem 0 0">{% for x in tfocus['items'] %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
 {% if not players %}
 <div class="card">
   <h2>Kom i gang</h2>

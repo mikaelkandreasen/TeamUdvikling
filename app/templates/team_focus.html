@@ -1,7 +1,9 @@
-{% extends "base.html" %}{% block title %}Træningsfokus{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Træningsfokus{% endblock %}
 {% block content %}
 <p><a href="{{ url_for('team.index') }}">‹ Hold</a></p>
-<h1>Forslag til træningsfokus</h1>
+<h1>Træningsfokus</h1>
+{% if current['items'] %}<div class="card"><h2>Holdets fokus nu</h2><ul>{% for x in current['items'] %}<li>{{ x }}</li>{% endfor %}</ul>
+  <p class="muted small">Valgt {{ current['updated']|date_dk }}. Vises på Hjem og på forældrerapporterne.</p></div>{% endif %}
 {% if not rnd %}<div class="card muted">Der er ikke evalueringer endnu. Når trænerne har scoret spillerne, vises holdets svageste områder her.</div>
 {% else %}
 <p class="muted">Ud fra {{ infos[rnd - 1]['label'] }} ({{ n }} spillere med score). Et oplæg til trænergruppen – ikke en facitliste.</p>
@@ -13,4 +15,9 @@
 {% if wishes %}<div class="card"><h2>Det spillerne selv scorer højest</h2>
   {% for w in wishes %}<div>{{ w['text'] }} <b>({{ w['avg']|dk }})</b> <span class="muted small">{{ w['cat'] }} · {{ w['n'] }} svar</span></div>{% endfor %}
   <p class="muted small">Brug det til at lave øvelser, børnene har lyst til – og som træner det, holdet har brug for.</p></div>{% endif %}
+{% if not user['readonly'] %}<form method="post" class="card">{{ csrf() }}<h2>Vælg holdets fokus</h2>
+  <p class="muted small">Vælg op til fire ting, trænerne er enige om at øve på i den kommende periode.</p>
+  {% for c, v in lowest + highest %}{% set nm = c['skill'] ~ ' som ' ~ c['role']|lower %}<label class="check"><input type="checkbox" name="pick" value="{{ nm }}" {{ 'checked' if nm in current['items'] }}> {{ nm }}</label>{% endfor %}
+  <label for="own">Eget fokus (valgfrit)</label><input id="own" name="own" maxlength="80" placeholder="fx Aflevering med indersiden" value="{{ own_prev }}">
+  <div class="actions"><button class="btn">Gem holdets fokus</button></div></form>{% endif %}
 {% endblock %}

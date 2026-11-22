@@ -66,10 +66,33 @@ def focus_data(db, tid, players):
     return dict(rnd=rnd, n=n, lowest=crit[:5], highest=list(reversed(crit[-3:])), wishes=wishes[:5])
 
 
-@bp.route("/focus")
+def team_focus(db, tid):
+    """Det fokus trænerne har valgt for holdet: {items: [tekst, …], updated: dato}. Tom liste hvis intet er valgt."""
+    raw = get_setting(db, tid, "focus_items") or ""
+    return dict(items=[x for x in raw.split("\n") if x.strip()][:4], updated=get_setting(db, tid, "focus_updated") or "")
+
+
+@bp.route("/focus", methods=["GET", "POST"])
 def focus():
     db = get_db()
-    return render_template("team_focus.html", infos=round_info(db), **focus_data(db, team_id(), active_players(db)))
+    tid = team_id()
+    data = focus_data(db, tid, active_players(db))
+    if request.method == "POST":
+        if g.user["readonly"]:
+            abort(403)
+        names = {f"{c['skill']} som {c['role'].lower()}" for c, _ in data["lowest"] + data["highest"]}
+        picked = [x for x in request.form.getlist("pick") if x in names]
+        own = (request.form.get("own") or "").strip().replace("\n", " ")[:80]
+        items = (picked + ([own] if own else []))[:4]
+        set_setting(db, tid, "focus_items", "\n".join(items))
+        set_setting(db, tid, "focus_updated", datetime.date.today().isoformat() if items else "")
+        audit(db, g.user["username"], "holdfokus_gemt", g.team["name"])
+        db.commit()
+        flash("Holdets fokus er gemt." if items else "Holdets fokus er ryddet.", "ok")
+        return redirect(url_for("team.focus"))
+    cur = team_focus(db, tid)
+    names = {f"{c['skill']} som {c['role'].lower()}" for c, _ in data["lowest"] + data["highest"]}
+    return render_template("team_focus.html", infos=round_info(db), current=cur, own_prev=next((x for x in cur["items"] if x not in names), ""), **data)
 
 
 @bp.route("/settings", methods=["GET", "POST"])
