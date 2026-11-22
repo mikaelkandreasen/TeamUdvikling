@@ -37,7 +37,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 3. **Alle POST-formularer indeholder CSRF-token** (`{{ csrf() }}` eller `<input name="csrf_token" ...>`).
 4. **Nye endpoints er låst som standard** (global `gate()` i `auth.py`). Gør kun noget offentligt via `PUBLIC` – og kun med god grund.
 5. **Admin-sider** ligger i `admin.py` (blueprint er beskyttet af `admin_required`). Trænere må ikke kunne slette spillere, eksportere eller administrere brugere.
-6. **Skemaændringer**: øg `SCHEMA_VERSION` i `db.py` og tilføj en migration (idempotent). Slet aldrig brugerdata i en migration uden backup.
+6. **Skemaændringer**: tilføj en nummereret migration nederst i `MIGRATIONS` i `db.py` (se `docs/MIGRATIONS.md`), øg `SCHEMA_VERSION` og opdatér versionstesten. Runneren tager backup før og kører hver migration én gang i en transaktion. Slet aldrig brugerdata i en migration.
 7. **Aldrig hemmeligheder, databaser eller `.env` i git.** Revisionsloggen må ikke indeholde scores eller adgangskoder.
 8. **Beregninger** (samlet, enighed, relativ alder, tolkningstekster) ligger i `model.py`/`devdata.py` og skal have enhedstests, når de ændres.
 9. **Mobile-first**: alt skal kunne bruges på en 360–430 px bred telefon (min. 44–48 px trykflader). Tjek nye sider i det format.

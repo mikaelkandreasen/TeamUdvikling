@@ -305,20 +305,77 @@ def _migrate_dbu_levels(con):
         con.execute("DROP TABLE level_ratings_old")
 
 
-def init_db(path):
+# ------------------------------------------------------------------ migrationer
+# Hver ændring af eksisterende tabeller/data er en migration med et fast id. Den kører præcis én gang pr. database og logges i schema_migrations.
+# Tredje felt False = kører uden ydre transaktion (de ældste migrationer er idempotente og styrer selv commit/PRAGMA). Nye migrationer er som standard transaktionelle.
+# Nye migrationer tilføjes NEDERST i MIGRATIONS (aldrig ændre eller omsortere eksisterende) – se docs/MIGRATIONS.md.
+MIGRATIONS = [
+    ("001_baseline", lambda con: _migrate(con), False),
+    ("002_klubber", lambda con: _migrate_clubs(con), False),
+    ("003_holdfunktioner", lambda con: _migrate_team_features(con), False),
+    ("004_dbu_niveauer", lambda con: _migrate_dbu_levels(con), False),
+    ("005_holdnoter", lambda con: _migrate_team_notes(con), False),
+    ("006_rundeaabning", lambda con: _migrate_round_opening(con), False),
+    ("007_stoppede_brugere", lambda con: _migrate_stopped_users(con), False),
+    ("008_klubmotto", lambda con: _migrate_club_motto(con), False),
+    ("009_beskeder_samtaler_motivation", lambda con: _migrate_v20(con), False),
+    ("010_assistenter", lambda con: _migrate_assistants(con), False),
+]
+
+
+class MigrationError(RuntimeError):
+    pass
+
+
+def pending_migrations(con, migrations=None):
+    migrations = MIGRATIONS if migrations is None else migrations
+    have = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations'").fetchone()
+    done = {r[0] for r in con.execute("SELECT id FROM schema_migrations")} if have else set()
+    return [m for m in migrations if m[0] not in done]
+
+
+def pre_migration_backup(path, backup_dir, keep=5):
+    """Kopi af databasen FØR migrationer køres (egne filer, der ikke fortrænger de daglige backups)."""
+    os.makedirs(backup_dir, exist_ok=True)
+    dest = os.path.join(backup_dir, time.strftime("pre-migration-%Y%m%d-%H%M%S.db"))
+    src, dst = sqlite3.connect(path), sqlite3.connect(dest)
+    with dst:
+        src.backup(dst)
+    src.close(); dst.close()
+    files = sorted(f for f in os.listdir(backup_dir) if f.startswith("pre-migration-") and f.endswith(".db"))
+    for old in files[:-keep]:
+        os.remove(os.path.join(backup_dir, old))
+    return dest
+
+
+def run_migrations(con, migrations=None):
+    """Kører ventende migrationer i rækkefølge, hver i sin egen transaktion. Fejler en, rulles den tilbage, og opstarten stoppes."""
+    con.execute("CREATE TABLE IF NOT EXISTS schema_migrations(id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)")
+    con.commit()
+    for mid, fn, *rest in pending_migrations(con, migrations):
+        tx = rest[0] if rest else True
+        try:
+            if tx:
+                con.execute("BEGIN IMMEDIATE")
+            fn(con)
+            con.execute("INSERT INTO schema_migrations(id, applied_at) VALUES(?, datetime('now'))", (mid,))
+            con.commit()
+        except Exception as exc:
+            if tx:
+                con.rollback()
+            raise MigrationError(f"Migration {mid} fejlede" + (" og er rullet tilbage" if tx else "") + f": {exc}") from exc
+
+
+def init_db(path, backup_dir=None, migrations=None):
+    existed = os.path.exists(path) and os.path.getsize(path) > 0
     con = connect(path)
     con.execute("PRAGMA journal_mode=WAL")
+    if existed and backup_dir and pending_migrations(con, migrations):
+        has_data = con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='users'").fetchone()
+        if has_data:
+            pre_migration_backup(path, backup_dir)
     con.executescript(SCHEMA)
-    _migrate(con)
-    _migrate_clubs(con)
-    _migrate_team_features(con)
-    _migrate_dbu_levels(con)
-    _migrate_team_notes(con)
-    _migrate_round_opening(con)
-    _migrate_stopped_users(con)
-    _migrate_club_motto(con)
-    _migrate_v20(con)
-    _migrate_assistants(con)
+    run_migrations(con, migrations)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

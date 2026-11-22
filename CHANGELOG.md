@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Rigtige migrationer (B-040):** skemaændringer kører nu via en migrationsrunner med log (`schema_migrations`). Hver migration kører én gang i en transaktion og rulles tilbage ved fejl. Før ventende migrationer på en eksisterende database tages en kopi `pre-migration-….db` i backupmappen. Se `docs/MIGRATIONS.md`.
+
 ## [0.24.0] - 2026-11-22
 
 ### Tilføjet

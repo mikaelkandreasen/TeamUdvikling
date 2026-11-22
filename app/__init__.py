@@ -73,7 +73,7 @@ def create_app(config=None):
     app.config.setdefault("SECRET_KEY", _secret_key(app.config["U11_DATA_DIR"]))
     if not app.config.get("SECRET_KEY"):
         app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
-    db.init_db(app.config["DATABASE"])
+    db.init_db(app.config["DATABASE"], backup_dir=app.config["BACKUP_DIR"])
     app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
     _con = db.connect(app.config["DATABASE"])
     secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
