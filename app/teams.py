@@ -18,7 +18,7 @@ def accessible_teams(db, user):
                       "ORDER BY t.name COLLATE NOCASE", (user["id"], user["club_id"])).fetchall()
 
 
-GUARDED = {"players", "evaluation", "motivation", "devdata", "lineup", "team"}
+GUARDED = {"players", "evaluation", "motivation", "devdata", "lineup", "team", "matches", "conv"}
 
 
 def archived_write_blocked(endpoint, method):

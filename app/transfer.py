@@ -42,6 +42,7 @@ def move_player(db, p, to_team, actor):
     for tbl in ("evaluations", "level_ratings", "dbu_checks"):
         db.execute(f"DELETE FROM {tbl} WHERE player_id=?", (pid,))
     db.execute("DELETE FROM lineup_slots WHERE player_id=?", (pid,))
+    db.execute("DELETE FROM match_slots WHERE player_id=?", (pid,))
     db.execute("DELETE FROM player_links WHERE player_id=?", (pid,))
     db.execute("UPDATE players SET team_id=? WHERE id=?", (to_team["id"], pid))
     audit(db, actor, "spiller_flyttet", f"id={pid}: {team_name} → {to_team['name']}")

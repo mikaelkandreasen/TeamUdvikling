@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Kamp{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('matches.index') }}">‹ Kampe</a></p>
+<h1>{{ m['day']|date_dk }} {{ '– ' ~ m['opponent'] if m['opponent'] }}</h1>
+<p class="muted small">{{ m['game_type'] }} {{ m['formation'] }} · {{ m['periods'] }} × {{ m['period_min'] }} min = {{ total }} min</p>
+<form method="post">{{ csrf() }}
+{% for per in range(m['periods']) %}<details class="role" {{ 'open' if per == 0 or assign }}><summary>Periode {{ per + 1 }} <span class="muted small">({{ m['period_min'] }} min)</span></summary>
+  {% for s in sl %}<label for="p{{ per }}s{{ s['i'] }}">{{ labels[s['i']] }}</label>
+  <select id="p{{ per }}s{{ s['i'] }}" name="p{{ per }}s{{ s['i'] }}"><option value="">–</option>{% for p in players %}<option value="{{ p['id'] }}" {{ 'selected' if assign.get((per, s['i'])) == p['id'] }}>{{ p['name'] }}</option>{% endfor %}</select>{% endfor %}
+  {% if bench[per] %}<p class="muted small">På bænken: {{ bench[per]|map(attribute='name')|join(', ') }}</p>{% endif %}</details>{% endfor %}
+{% if not user['readonly'] %}<div class="actions stickybar"><button class="btn">Gem kamp</button> <button class="btn sec" name="action" value="copy1">Kopiér periode 1 til alle</button></div>{% endif %}
+</form>
+<div class="card"><h2>Spilletid i kampen</h2>{% for p in players %}<div>{{ p['name'] }}: <b>{{ minutes[p['id']] }}</b> min</div>{% endfor %}</div>
+{% if not user['readonly'] %}<form method="post" action="{{ url_for('matches.meta', mid=m['id']) }}" class="card">{{ csrf() }}<h2>Ret kampen</h2>
+  <label for="d">Dato</label><input id="d" type="date" name="day" value="{{ m['day'] }}" required>
+  <label for="o">Modstander</label><input id="o" name="opponent" value="{{ m['opponent'] }}" maxlength="60">
+  <label for="pe">Perioder</label><input id="pe" type="number" name="periods" value="{{ m['periods'] }}" min="1" max="8">
+  <label for="pm">Minutter pr. periode</label><input id="pm" type="number" name="period_min" value="{{ m['period_min'] }}" min="1" max="60">
+  <div class="actions"><button class="btn sec">Gem ændringer</button></div></form>
+<form method="post" action="{{ url_for('matches.delete', mid=m['id']) }}">{{ csrf() }}<button class="btn sec">Slet kampen</button></form>{% endif %}
+{% endblock %}

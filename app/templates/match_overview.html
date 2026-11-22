@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% block title %}Spilletid{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('matches.index') }}">‹ Kampe</a></p>
+<h1>Spilletid og hvide pletter</h1>
+<div class="filters"><a href="{{ url_for('matches.overview') }}" class="{{ 'on' if not last }}">Alle</a>{% for n in (3, 5, 10) %}<a href="{{ url_for('matches.overview', sidste=n) }}" class="{{ 'on' if last == n }}">Seneste {{ n }}</a>{% endfor %}</div>
+{% if not n_matches %}<div class="card muted">Ingen kampe med opstilling endnu.</div>{% else %}
+<p class="muted small">{{ n_matches }} kampe · gennemsnit {{ avg }} min pr. spiller, der har spillet. Minutter på hver position; <span style="background:#fde2e2;padding:0 .3rem">rød</span> = ikke spillet der endnu.</p>
+<div class="scroll"><table><thead><tr><th>Spiller</th><th class="num">Kampe</th><th class="num">Min.</th>{% for k, lab in groups if k in used %}<th class="num">{{ lab }}</th>{% endfor %}</tr></thead><tbody>
+{% for s in rows %}<tr><td>{{ s['p']['name'] }}{% if s['low'] %} <span class="badge" title="Under 70 % af gennemsnittet">lidt tid</span>{% endif %}</td><td class="num">{{ s['n'] }}</td><td class="num">{{ s['total'] }}</td>
+ {% for k, lab in groups if k in used %}<td class="num" {% if s['by'][k] == 0 %}style="background:#fde2e2"{% endif %}>{{ s['by'][k] }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table></div>
+{% set gaps = rows|selectattr('missing')|list %}{% if gaps %}<div class="card"><h2>Hvide pletter</h2>{% for s in gaps %}<div><b>{{ s['p']['name'] }}</b> mangler: {{ s['missing']|join(', ') }}</div>{% endfor %}
+  <p class="muted small">Brug det som oplæg, når næste kamp skal sættes – ikke som en facitliste. Børn udvikler sig bedst ved at prøve flere positioner.</p></div>{% endif %}
+{% endif %}
+{% endblock %}

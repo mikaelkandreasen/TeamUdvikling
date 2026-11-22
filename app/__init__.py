@@ -115,7 +115,7 @@ def create_app(config=None):
                 "auth.view_as_stop", "auth.logout", "main.switch_team"):
             abort(403, "Skrivebeskyttet visning: afslut 'se som træner' for at ændre noget.")
         if (g.get("user") and g.user["readonly"] and request.method not in ("GET", "HEAD", "OPTIONS")
-                and not (request.endpoint or "").startswith("auth.") and request.endpoint != "main.switch_team"):
+                and not (request.endpoint or "").startswith("auth.") and request.endpoint not in ("main.switch_team", "inbox.read_all", "inbox.reply")):
             abort(403, "Du har læseadgang (assistent) og kan ikke ændre noget.")
         if teams.archived_write_blocked(request.endpoint, request.method):
             abort(403, "Holdet er arkiveret og skrivebeskyttet. Genåbn det under Administration → Hold, hvis det skal ændres.")
@@ -160,9 +160,9 @@ def create_app(config=None):
     from . import filters
     filters.register(app)
 
-    from . import admin, conversations, devdata, evaluation, invites, lineup, messages, motivation, players, reports, reset, team
+    from . import admin, conversations, devdata, matches, evaluation, invites, lineup, messages, motivation, players, reports, reset, team
     from .views import bp as main_bp
-    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp, team.bp, messages.bp, conversations.bp, motivation.public_bp):
+    for bp in (auth.bp, main_bp, players.bp, evaluation.bp, motivation.bp, devdata.bp, reports.bp, reset.bp, lineup.bp, admin.bp, invites.admin_bp, invites.bp, team.bp, messages.bp, conversations.bp, matches.bp, motivation.public_bp):
         app.register_blueprint(bp)
 
     @app.route("/healthz", endpoint="healthz")

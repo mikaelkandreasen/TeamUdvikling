@@ -10,12 +10,13 @@ FEATURES = (
     ("devdata", "Udviklingsdata: fremmøde, kampdeltagelse, trivsel, motorik og handleplan", True),
     ("motivation", "Motivation og træningsønsker", True),
     ("lineup", "Holdsætning (opstillinger og deling i A/B/C-hold)", True),
+    ("matches", "Kampe og spilletid (spillere på positioner pr. kamp)", True),
     ("levels", "Spillerniveau (A+, A, B, C, D, Nystartet)", True),
     ("notes", "Holdnoter", True),
     ("mascot", "Mascot (hvem har den med hjem)", False),
 )
 KEYS = [k for k, _l, _d in FEATURES]
-BLUEPRINT = {"devdata": "devdata", "motivation": "motivation", "lineup": "lineup"}
+BLUEPRINT = {"devdata": "devdata", "motivation": "motivation", "lineup": "lineup", "matches": "matches"}
 ENDPOINT = {"team.notes": "notes", "team.notes_add": "notes", "team.notes_new": "notes", "team.note_view": "notes", "team.note_edit": "notes", "team.notes_delete": "notes", "team.levels": "levels",
             "team.mascot": "mascot", "team.mascot_return": "mascot", "team.mascot_delete": "mascot", "team.mascot_report": "mascot"}
 

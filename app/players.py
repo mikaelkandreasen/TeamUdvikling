@@ -190,6 +190,7 @@ def export_json(pid):
     out["niveau_udsagn"] = [dict(r) for r in db.execute("SELECT round AS runde, trainer_id AS træner, item AS udsagn FROM dbu_checks WHERE player_id=?", (pid,))]
     out["motivation"] = [dict(r) for r in db.execute("SELECT qidx AS spørgsmål, score FROM motivation_answers WHERE player_id=?", (pid,))]
     out["motivation_over_tid"] = [dict(r) for r in db.execute("SELECT qidx AS spørgsmål, score, taken_on AS dato FROM motivation_log WHERE player_id=? ORDER BY taken_on", (pid,))]
+    out["spilletid"] = [dict(r) for r in db.execute("SELECT m.day AS dato, m.opponent AS modstander, s.period AS periode, s.slot AS plads, m.period_min AS minutter FROM match_slots s JOIN matches m ON m.id=s.match_id WHERE s.player_id=? ORDER BY m.day", (pid,))]
     out["samtaler"] = [dict(r) for r in db.execute("SELECT held_on AS dato, notes AS noter, agreements AS aftaler, homework AS hjemmeøvelse, trainer_name AS træner FROM conversations WHERE player_id=?", (pid,))]
     d = db.execute("SELECT * FROM devdata WHERE player_id=?", (pid,)).fetchone()
     out["udviklingsdata"] = dict(d) if d else {}

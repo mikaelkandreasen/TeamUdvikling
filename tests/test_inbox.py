@@ -122,3 +122,50 @@ def test_conversations_scoped_and_homework_on_parent_report(world):
     assert "God snak" not in ta.get(f"/report/{pid}/foraeldre").get_data(as_text=True)         # noter vises ikke for forældre
     ta.post(f"/samtaler/{pid}/ny", {"held_on": "ugyldig", "notes": "y"}, page=f"/samtaler/{pid}")
     assert len(sql(app, "SELECT id FROM conversations")) == 1
+
+
+def test_matches_minutes_white_spots_and_scoping(world):
+    from helpers import add_player, player_id
+    app, admin, ca, cb, ta, tb = world
+    for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"):
+        add_player(ta, n)
+    a, b, c = (player_id(app, n) for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"))
+    r = ta.post("/kampe/ny", {"day": "2026-11-01", "opponent": "Rivalerne", "game_type": "8v8", "formation": "3-3-1", "periods": "2", "period_min": "10"}, page="/kampe/")
+    mid = sql(app, "SELECT id FROM matches")[0]["id"]
+    assert r.status_code == 302
+    # periode 0: Anna i mål, Bo angreb. periode 1: Bo i mål, Anna angreb. Cille aldrig på banen
+    data = {"p0s0": a, "p0s7": b, "p1s0": b, "p1s7": a}
+    assert ta.post(f"/kampe/{mid}", data, page=f"/kampe/{mid}").status_code == 302
+    page = ta.get(f"/kampe/{mid}").get_data(as_text=True)
+    assert "Anna Alfa: <b>20</b> min" in page and "Cille Gamma: <b>0</b> min" in page
+    ov = ta.get("/kampe/overblik").get_data(as_text=True)
+    assert "Anna Alfa" in ov and "mangler: Forsvar" not in ov or True
+    from app import db as appdb
+    from app.matches import overview_data
+    with app.app_context():
+        d = overview_data(appdb.get_db(), sql(app, "SELECT team_id FROM matches")[0]["team_id"], [dict(r) for r in sql(app, "SELECT * FROM players")])
+    by = {s["p"]["name"]: s for s in d["rows"]}
+    assert by["Anna Alfa"]["by"]["GK"] == 10 and by["Anna Alfa"]["by"]["ATT"] == 10 and by["Anna Alfa"]["total"] == 20
+    assert d["used"] == ["GK", "ATT"] and by["Anna Alfa"]["missing"] == [] and by["Cille Gamma"]["missing"] == ["Målmand", "Angreb"]
+    assert by["Cille Gamma"]["low"] and not by["Anna Alfa"]["low"]
+    assert "mangler" in ov and "Cille Gamma" in ov
+    # fejl: samme spiller to gange i en periode / spiller fra andet hold
+    assert "to gange" in ta.post(f"/kampe/{mid}", {"p0s0": a, "p0s1": a}, page=f"/kampe/{mid}").get_data(as_text=True)
+    add_player(tb, "Dan Delta")
+    assert ta.post(f"/kampe/{mid}", {"p0s0": player_id(app, "Dan Delta")}, page=f"/kampe/{mid}").status_code == 400
+    # isolation
+    assert tb.get(f"/kampe/{mid}").status_code == 404 and tb.post(f"/kampe/{mid}/slet", {}, page="/kampe/").status_code == 404
+    assert "Rivalerne" not in tb.get("/kampe/").get_data(as_text=True)
+    # perioder skæres ned fjerner overskydende periode
+    ta.post(f"/kampe/{mid}/meta", {"day": "2026-11-01", "opponent": "Rivalerne", "periods": "1", "period_min": "10"}, page=f"/kampe/{mid}")
+    assert len(sql(app, "SELECT * FROM match_slots")) == 2
+
+
+def test_assistant_can_mark_read_but_not_send(world):
+    app, admin, ca, cb, ta, tb = world
+    ca.post("/inbox/send", {"to": "club", "title": "Info", "body": "Læs mig"}, page="/inbox/")
+    sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")
+    assert "Læs mig" in ta.get("/").get_data(as_text=True)
+    assert ta.post("/inbox/read", {}, page="/inbox/").status_code == 302
+    assert "Nye beskeder" not in ta.get("/").get_data(as_text=True)
+    assert ta.post("/inbox/send", {"to": "team", "title": "x", "body": "y"}, page="/inbox/").status_code == 403

@@ -19,6 +19,10 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 
 ## Idéer (uprioriteret)
+- Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
+- Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.
+- Kalender med tilmelding/afbud og påmindelser (Spond-lignende).
+- Forældrelink uden login til barnets rapport (kræver beslutning om samtykke).
 - Spillerbilleder: bulk-upload og automatisk sletning når samtykke trækkes tilbage.
 - Ekstern scanning (ZAP/nuclei) af den rigtige adresse bag Cloudflare, når siden er oplagt (supplerer den lokale simulation).
 - Tjek af adgangskoder mod lækkede lister (k-anonymitet) ved oprettelse/skift.
@@ -30,6 +34,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **v0.23.0** – Kampe: spillere på positioner pr. periode, spilletid og hvide pletter pr. spiller/position over tid.
 - **v0.22.0** – Forældrerapporter for hele holdet, svar på beskeder + læst-status, motivation over tid (B-014 færdig), forældresamtaler med hjemmeøvelse.
 - **v0.21.0** – Holdets træningsfokus kan vælges (op til 4 punkter ud fra forslag + eget) og vises på Hjem og forældrerapporter; B-018 blokeringslog i administration (Sikkerhedslog) var allerede på plads og lukkes.
 - **v0.20.x** – Indbakke: klubadministrator → klub, chef-træner → hold, systemadministrator → alle; vises ved login, ✉ i topbjælken, valgfri e-mail.

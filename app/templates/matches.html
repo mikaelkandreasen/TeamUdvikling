@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Kampe{% endblock %}
+{% block content %}
+<h1>Kampe og spilletid – {{ team['name'] }}</h1>
+<p class="muted small">Sæt spillerne på positioner periode for periode. Oversigten viser, hvor længe hver spiller har spillet på hver position – og hvor der er hvide pletter.</p>
+<div class="actions"><a class="btn sec" href="{{ url_for('matches.overview') }}">Spilletid og hvide pletter</a></div>
+{% for r in rows %}<a class="pcard" href="{{ url_for('matches.edit', mid=r['id']) }}"><div class="nm">{{ r['day']|date_dk }} {{ '– ' ~ r['opponent'] if r['opponent'] }}
+  <div class="sub">{{ r['game_type'] }} {{ r['formation'] }} · {{ r['periods'] }} × {{ r['period_min'] }} min · {{ 'ikke sat endnu' if not r['filled'] else 'opstilling gemt' }}</div></div><span>›</span></a>
+{% else %}<div class="card muted">Ingen kampe endnu.</div>{% endfor %}
+<form method="post" action="{{ url_for('matches.new') }}" class="card">{{ csrf() }}<h2>Ny kamp</h2>
+  <label for="d">Dato</label><input id="d" type="date" name="day" value="{{ today }}" required>
+  <label for="o">Modstander (valgfrit)</label><input id="o" name="opponent" maxlength="60">
+  <label for="gt">Kamptype</label><select id="gt" name="game_type">{% for k in types %}<option {{ 'selected' if k == default_type }}>{{ k }}</option>{% endfor %}</select>
+  <label for="fm">Opstilling</label><select id="fm" name="formation">{% for k, fl in options.items() %}{% for f in fl %}<option value="{{ f }}" {{ 'selected' if k == default_type and f == defaults[k] }}>{{ k }}: {{ f }}</option>{% endfor %}{% endfor %}</select>
+  <p class="muted small">Opstillingen skal passe til kamptypen (fx 8v8: 3-3-1).</p>
+  <label for="pe">Antal perioder</label><input id="pe" type="number" name="periods" value="4" min="1" max="8">
+  <label for="pm">Minutter pr. periode</label><input id="pm" type="number" name="period_min" value="12" min="1" max="60">
+  <div class="actions"><button class="btn">Opret og sæt spillere</button></div></form>
+{% endblock %}

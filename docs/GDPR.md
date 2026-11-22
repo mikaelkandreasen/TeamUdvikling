@@ -70,3 +70,5 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 - **Beskeder:** klub-/holdbeskeder (fri tekst, afsendernavn, tidspunkt) gemmes i indbakken, til de slettes af afsender/klubadministrator, og slettes med holdet. Valgfri e-mail sendes via den konfigurerede SMTP-udbyder til trænernes egne adresser.
 
 - **Forældresamtaler og motivation over tid:** samtalenoter og målinger tilhører spilleren (indgår i eksport, slettes med spilleren/ved opbevaringsfristen). Noter og aftaler vises aldrig for forældre; kun hjemmeøvelsen står på forældrerapporten.
+
+- **Spilletid:** kamp- og positionsdata pr. spiller indgår i eksport og slettes med spilleren; de følger ikke med ved holdskifte.

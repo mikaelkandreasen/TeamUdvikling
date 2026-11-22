@@ -97,3 +97,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** `messages` (klub eller hold) + `message_reads` pr. bruger. Modtagere findes ved læsning (klubbens brugere; holdets `user_teams`), så nye trænere ser eksisterende beskeder. Ulæste vises på forsiden og som tæller i topbjælken. E-mail er valgfrit og sendes pr. modtager. Afsender markeres automatisk som læst.
 **Konsekvens:** Klubadministratorer er ikke holdmodtagere. Beskeder er fri tekst: ingen følsomme børneoplysninger (påmindelse i formularen).
 
+## D-024 · Kampe og spilletid (2026-11-22)
+**Kontekst:** Trænerne vil kunne se, om nogle spillere ikke har prøvet bestemte positioner, og om spilletiden er fordelt retfærdigt.
+**Valg:** `matches` + `match_slots` (periode × plads → spiller). Pladserne kommer fra de eksisterende opstillinger (`formations`). Spilletid = antal perioder × minutter pr. periode; positionerne samles i fem grupper (Målmand, Forsvar, Midtbane, Kant, Angreb). En spiller uden plads i en kamp regnes som «ikke med» (ingen bænketid beregnes), indtil fremmøde kobles på.
+**Konsekvens:** Ved holdskifte slettes spillerens spilletid fra det gamle hold (følger ikke med som historik). Spilletid indgår i spillereksport og slettes med spilleren.
+
