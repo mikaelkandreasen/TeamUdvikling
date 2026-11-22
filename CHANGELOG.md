@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Klubmottoet vises under logoet på loginsiden** – kun på enheder, der husker klubben (samme regel som logoet); ellers er siden neutral.
+
 ## [0.19.1] - 2026-11-22
 
 ### Tilføjet

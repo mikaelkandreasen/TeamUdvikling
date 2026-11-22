@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block title %}Log ind{% endblock %}
 {% block content %}
-{% if club['has_logo'] %}<div class="login" style="text-align:center"><img src="{{ club['logo_url'] }}" alt="" style="max-height:90px;max-width:60%"></div>{% endif %}
-<div class="login card" style="{{ 'margin-top:1rem' if club['has_logo'] }}">
+{% if club['has_logo'] or club['motto'] %}<div class="login" style="text-align:center">{% if club['has_logo'] %}<img src="{{ club['logo_url'] }}" alt="" style="max-height:90px;max-width:60%">{% endif %}{% if club['motto'] %}<div class="muted"><i>{{ club['motto'] }}</i></div>{% endif %}</div>{% endif %}
+<div class="login card" style="{{ 'margin-top:1rem' if club['has_logo'] or club['motto'] }}">
   <h1>{{ club['name'] or 'Log ind' }}</h1>
   <form method="post" autocomplete="on">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

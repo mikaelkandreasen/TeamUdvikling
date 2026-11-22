@@ -4,6 +4,7 @@ import zlib
 
 import pytest
 
+from conftest import Client
 from helpers import add_player, make_team, make_trainer, player_id
 
 
@@ -113,3 +114,14 @@ def test_club_motto_and_team_slogan_both_on_parent_report(app, team):
     html = team.get("/report/%d/foraeldre" % player_id(app, "Anna Alfa")).get_data(as_text=True)
     assert "Sammen om fodbold" in html and "Hold sammen" in html
     assert "Sammen om fodbold" in team.get("/admin/club").get_data(as_text=True)
+
+
+def test_login_page_shows_motto_only_when_device_knows_club(app, team):
+    from app import remember
+    save(team, name="Virring Fodbold", motto="Sammen om fodbold")
+    anon = Client(app)
+    assert "Sammen om fodbold" not in anon.get("/login").get_data(as_text=True)          # neutral uden husket klub
+    with app.app_context():
+        name = remember.club_cookie_name()
+    anon.c.set_cookie(name, "1")
+    assert "Sammen om fodbold" in anon.get("/login").get_data(as_text=True)
