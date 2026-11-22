@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-22
+
 ### Tilføjet
 - **Evalueringer har navn og dato** (i stedet for «Evaluering 1»). Ny runde kræver begge dele. Hjem og Evaluering viser de 2 seneste og den næste; «Vis alle» åbner resten.
 - **Runder lukker 30 dage efter første indtastning.** Lukkede runder kan ses men ikke rettes; en holdansvarlig kan genåbne (30 dage). Eksisterende runder lukker 30 dage efter opdateringen.
