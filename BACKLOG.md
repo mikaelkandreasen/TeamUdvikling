@@ -19,7 +19,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 
 ## Teknisk gæld og forbedringer (P1)
-- **B-041b · Fast adgangslag i koden** · M – restpunkt: selve laget (repository), så rå SQL på spillerdata samles ét sted. Den automatiske rutetest (v0.26.0) fanger allerede glemte afgrænsninger.
+- **B-041c · Flyt rå SQL ind i et repository-lag** · M – de 68 gennemgåede forespørgsler på spillerdata samles i få funktioner (`access.py`), så afgrænsningen sker ét sted. Ratchet-testen (B-041b) forhindrer nye huller imens.
 - **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a).
 
 ## Idéer (uprioriteret)
@@ -38,6 +38,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **B-041b · SQL-afgrænsning kontrolleres automatisk** – færdig (v0.27.0): `tests/test_sql_scope.py` + `sql_scope_allow.txt`.
 - **B-042a · Kriterietekster i tabel** – færdig (v0.27.0), migration 013.
 - **B-043 · Delvise opdateringer** – færdig (v0.27.0) som eget `data-swap`-script (D-028). Idé: udvid til evalueringsskema og noter.
 - **Opstillingsforslag med prioritet på hvide pletter** – færdig (v0.27.0).

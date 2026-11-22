@@ -32,7 +32,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 0. **Klub-afgrænsning.** Roller: `admin` (system), `clubadmin`, `trainer` (`scope.py`). Alt der kan nås via admin-sider skal afgrænses til klubben via `scope.can_manage_*`/`_pick_club` – og svare 404 for andre klubber. Holdnavne er unikke pr. klub. Tilføj isolationstest i `tests/test_clubs_invites.py`.
 1. **Hold-afgrænsning.** Al adgang til spillerdata skal gå via `helpers.get_player()` / `helpers.active_players()` /
    `model.load_rounds(db, team_id())` eller en SQL med `players.team_id = ?`. Nye forespørgsler, der rører spillere,
-   evalueringer, svar eller udviklingsdata, skal afgrænses til `g.team`. Tilføj altid en isolationstest i `tests/test_teams.py`.
+   evalueringer, svar eller udviklingsdata, skal afgrænses til `g.team`. Tilføj altid en isolationstest i `tests/test_teams.py`. `tests/test_sql_scope.py` fejler på ny SQL mod team-afgrænsede tabeller uden `team_id`, indtil du har tjekket afgrænsningen og tilføjet linjen i `tests/sql_scope_allow.txt`.
 2. **Ingen indlejret JavaScript eller `on*=`-handlers** (CSP tillader kun scripts fra 'self'). Brug `static/app.js` med `data-*`-attributter.
 3. **Alle POST-formularer indeholder CSRF-token** (`{{ csrf() }}` eller `<input name="csrf_token" ...>`).
 4. **Nye endpoints er låst som standard** (global `gate()` i `auth.py`). Gør kun noget offentligt via `PUBLIC` – og kun med god grund.

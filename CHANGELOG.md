@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 - **Kriterietekster i egen tabel (B-042a):** holdets egne tekster ligger nu i `team_criteria` i stedet for i indstillinger (migration 013 flytter dem; ingen ændring for brugerne). Al læsning går via `app/criteria.py`.
 
 ### Tilføjet
+- **Automatisk kontrol af SQL-afgrænsning (B-041b):** en test gennemgår al SQL i koden og fejler, hvis en ny forespørgsel på spiller-/holddata mangler `team_id` uden at være gennemgået (liste i `tests/sql_scope_allow.txt`).
 - **Delvise opdateringer uden sideskift (B-043):** indbakken (læst, svar, send, slet, tælleren i topbjælken) og kampopstillingen (forslag, kopiér, gem) opdaterer kun de dele, der ændres. Virker uden JavaScript som før.
 - **Opstillingsforslag (Kampe):** *Foreslå opstilling* fordeler spilletiden jævnt og giver først spillerne de positioner, de aldrig har prøvet (hvide pletter). Vælg hvem der ikke er med, og om målmandspladsen indgår. Forslaget gemmes først, når du trykker Gem kamp.
 - **Kampforslag fra iCal-link:** bruger holdets eksisterende kalenderlink (Holdindstillinger). Knappen *Hent kampforslag* under Kampe viser kommende aftaler (dato, tid, sted, gættet modstander), som kan rettes og oprettes som kamp med ét tryk. Kampe der ligner en kamp er forvalgt; allerede oprettede (samme UID) springes over. Migration 012 (skema 23).
