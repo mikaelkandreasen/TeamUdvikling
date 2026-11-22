@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-22
+
 ### Sikkerhed
 - Engangslinks (nulstilling, invitation, spillerlink) skrives ikke længere i adgangsloggen (`gunicorn.conf.py`); CI kontrollerer det.
 - **Driftstjek** i Administration (og i loggen ved start): advarer om https uden `COOKIE_SECURE`/`TRUSTED_PROXIES`, nøgler i datavolumen, manglende backup og manglende off-site-kopi.
