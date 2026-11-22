@@ -91,3 +91,9 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** En separat rapport (`/report/<id>/foraeldre`) med kun positive/handlingsrettede formuleringer. Styrker = højeste kriterier, «træner på nu» = trænerens fokus (ellers laveste kriterier), fremgang = kun forbedringer. Baseret på færdige runder. Maskotbillede gemmes pr. hold i databasen (ingen filer).
 **Konsekvens:** Den fulde trænerrapport er uændret. Rapporten er hold-afgrænset og kun tilgængelig for trænere, som udleverer den.
 \n
+
+## D-023 · Indbakke og beskeder (2026-11-22)
+**Kontekst:** Klubadministrator og chef-trænere skal kunne nå alle i klubben/holdet, og beskeden skal ikke forsvinde.
+**Valg:** `messages` (klub eller hold) + `message_reads` pr. bruger. Modtagere findes ved læsning (klubbens brugere; holdets `user_teams`), så nye trænere ser eksisterende beskeder. Ulæste vises på forsiden og som tæller i topbjælken. E-mail er valgfrit og sendes pr. modtager. Afsender markeres automatisk som læst.
+**Konsekvens:** Klubadministratorer er ikke holdmodtagere. Beskeder er fri tekst: ingen følsomme børneoplysninger (påmindelse i formularen).
+

@@ -66,3 +66,5 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 - **DBU-niveauvalg** (trænerens A–D pr. kompetence, pr. spiller og runde) følger samme sletning som evalueringer og indgår i indsigtsudtrækket.
 
 - **Stoppede trænere og holdskifte:** en stoppet træners login, e-mail og 2FA fjernes; kun navn + «(stoppet)» og evalueringerne bevares som historik. Ved holdskifte gemmes tidligere evalueringer som historik på spilleren og slettes med spilleren.
+
+- **Beskeder:** klub-/holdbeskeder (fri tekst, afsendernavn, tidspunkt) gemmes i indbakken, til de slettes af afsender/klubadministrator, og slettes med holdet. Valgfri e-mail sendes via den konfigurerede SMTP-udbyder til trænernes egne adresser.
