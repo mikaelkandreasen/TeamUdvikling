@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-22
+
 ## [0.27.0] - 2026-11-22
 
 ## [0.26.0] - 2026-11-22
