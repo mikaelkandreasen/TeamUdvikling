@@ -55,3 +55,15 @@ def test_every_text_marked_for_translation_in_templates_exists():
         used |= {m.group(2) for m in re.finditer(r"""_\((['"])(.+?)\1\)""", f.read_text())}
     missing = sorted(used - set(i18n._T))
     assert used and not missing, missing
+
+
+def test_daily_pages_switch_language(app, admin):
+    from helpers import make_team, switch, team_id
+    make_team(admin, "Hold X")
+    switch(admin, team_id(app, "Hold X"))
+    admin.post("/sprog", {"lang": "en", "next": "/"}, page="/")
+    page = admin.get("/players/").get_data(as_text=True)
+    assert "+ New player" in page or "No players yet." in page
+    assert "Ingen spillere endnu." not in page
+    admin.post("/sprog", {"lang": "da", "next": "/"}, page="/")
+    assert "Ingen spillere endnu." in admin.get("/players/").get_data(as_text=True)

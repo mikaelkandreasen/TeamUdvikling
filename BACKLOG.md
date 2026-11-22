@@ -10,7 +10,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 ## Senere (P1)
 - ~~B-014 · Trivsel og motivation over tid~~ (færdig i v0.22.0) – · M – flere målinger (datoer) i stedet for én værdi; linjediagram i rapporten.
 
-- **B-021 · DBU KampKlar-integration** · M/L – Ingen officiel API. Undersøgt: uofficiel scraping af mit.dbu.dk (personligt DBU-login, kan gå i stykker, vilkår uafklarede) eller iCal-link til holdets kampe/aktiviteter. Uklart om andre spilleres tilmeldingsstatus er synlig. Claude API er ikke nødvendigt til hentning. Afventer brugerens valg – se docs/DECISIONS.md.
+- ~~B-021 · DBU KampKlar-integration~~ – dækket af holdets iCal-kalender og kampforslag (v0.26.0); ingen scraping af mit.dbu.dk.
 
 - **B-022 · Ekstern pentest/scan af udrullet system** · S – OWASP ZAP/nuclei mod HTTPS-adressen, før den åbnes på internettet. *Status: Kommandoer til ZAP/nuclei i docs/DRIFT.md – selve scanningen udføres af dig.*
 
@@ -19,10 +19,10 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 
 ## Teknisk gæld og forbedringer (P1)
-- **B-041c · Flyt rå SQL ind i et repository-lag** · M – de 68 gennemgåede forespørgsler på spillerdata samles i få funktioner (`access.py`), så afgrænsningen sker ét sted. Ratchet-testen (B-041b) forhindrer nye huller imens.
-- **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a).
+- **B-041c · Flyt rå SQL ind i et repository-lag** · M – de 68 gennemgåede forespørgsler på spillerdata samles i få funktioner (`access.py`), så afgrænsningen sker ét sted. Ratchet-testen (B-041b) forhindrer nye huller imens. *Vurdering: lav gevinst pr. indsats, så længe rutetesten og ratchet-testen fanger huller; tages, hvis ratchet-listen begynder at vokse.*
+- **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a). *Plan: (1) tabeller `crit_roles/crit_skills` pr. hold med standardsæt, (2) `model.py`-funktioner tager en kriteriestruktur i stedet for konstanter, (3) `evaluations.crit` bliver nøgle til kriterie-id, (4) diagrammer/niveauer/rapport læser antal fra strukturen, (5) UI til at redigere. Bør laves som egen session med omfattende regressionstest, fordi alle beregninger berøres.*
 
-- **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt.
+- **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt. *Status v0.28.0: menuer, login, Menu, Min konto, Hjem, spillerliste og evalueringsknapper er oversat; resten (især sætninger med fed tekst/links midt i, som skal skrives som hele sætninger) mangler.*
 
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
@@ -32,13 +32,12 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Spillerbilleder: bulk-upload og automatisk sletning når samtykke trækkes tilbage.
 - Ekstern scanning (ZAP/nuclei) af den rigtige adresse bag Cloudflare, når siden er oplagt (supplerer den lokale simulation).
 - Tjek af adgangskoder mod lækkede lister (k-anonymitet) ved oprettelse/skift.
-- Testmail-knap i Administration, så SMTP-opsætningen kan afprøves uden at nulstille en bruger.
 - Mulighed for at kræve admin-2FA-kode også til de direkte «Nulstil»-knapper (midlertidig kode).
-- ~~Import fra den gamle Excel-model~~ – der findes nu et admin-importværktøj (Administration → Import); selve spillerdata lægges stadig aldrig i repoet.
 - Playwright-/UI-tests af mobil-flowet; tilgængelighedstjek (kontrast, skærmlæser).
 - Eksport af rapport som billede til deling med forældre.
 
 ## Færdigt
+- **Testmail-knap og Excel-import** – var allerede lavet (Administration); fjernet fra idéer.
 - **Sprogvalg (da/en/de/sv/no)** – grundlag færdigt (v0.27.0): menuer, login, menu og Min konto oversat; resten under B-045.
 - **B-041b · SQL-afgrænsning kontrolleres automatisk** – færdig (v0.27.0): `tests/test_sql_scope.py` + `sql_scope_allow.txt`.
 - **B-042a · Kriterietekster i tabel** – færdig (v0.27.0), migration 013.
