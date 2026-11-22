@@ -18,6 +18,13 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 
+## Teknisk gæld og forbedringer (P1)
+- **B-040 · Rigtige migrationer** · M – nummererede migrationsfiler (egen lille runner eller Alembic) i stedet for `_migrate_*`-funktioner; hver ændring kører én gang og logges i en tabel. Accept: tom database og database fra v0.24 ender med samme skema; test af begge veje; backup tages før migration.
+- **B-041 · Fast adgangslag for hold** · M – ét lag (repository/`team_scope`) som alle spiller-, evaluerings-, svar- og udviklingsforespørgsler går igennem og som altid filtrerer på `g.team`. Accept: ingen rå SQL på spillerdata uden for laget; isolationstests kører automatisk over alle endpoints; en test fejler, hvis en ny rute glemmer afgrænsningen.
+- **B-042 · Evalueringskriterier som tabeller** · L – roller, nøglefærdigheder og kriterier (i dag 24 faste indeks i `model.py`) flyttes til tabeller pr. hold med standardsæt som udgangspunkt. Accept: eksisterende hold ser præcis de samme kriterier og tal; et hold kan omdøbe/skjule et kriterium uden kodeændring; beregninger og rapporter bruger tabellerne; migration uden tab af scores.
+- **B-043 · HTMX-frontend** · M – serverrenderede dele opdateres uden fuld sideindlæsning (evalueringsskema, indbakke, kampopstilling, noter). Accept: HTMX leveres fra `static/` (ingen CDN) og virker med den stramme CSP; alt virker stadig uden JavaScript; ingen indlejret JS/`on*=`; mobiltest på 360–430 px.
+- **B-044 · E-mail-kø** · S/M – udgående mails lægges i en tabel og sendes af en baggrundstråd/proces med genforsøg og fejllog; brugeren venter ikke på SMTP. Accept: indbakkebesked til mange modtagere returnerer straks; fejlede mails forsøges igen og kan ses (uden mailindhold) i administration; test med falsk SMTP-fejl.
+
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
 - Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.
