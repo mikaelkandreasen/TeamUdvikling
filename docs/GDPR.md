@@ -68,3 +68,5 @@ Ved mistanke om uautoriseret adgang: tag systemet offline, skift `SECRET_KEY` (l
 - **Stoppede trænere og holdskifte:** en stoppet træners login, e-mail og 2FA fjernes; kun navn + «(stoppet)» og evalueringerne bevares som historik. Ved holdskifte gemmes tidligere evalueringer som historik på spilleren og slettes med spilleren.
 
 - **Beskeder:** klub-/holdbeskeder (fri tekst, afsendernavn, tidspunkt) gemmes i indbakken, til de slettes af afsender/klubadministrator, og slettes med holdet. Valgfri e-mail sendes via den konfigurerede SMTP-udbyder til trænernes egne adresser.
+
+- **Forældresamtaler og motivation over tid:** samtalenoter og målinger tilhører spilleren (indgår i eksport, slettes med spilleren/ved opbevaringsfristen). Noter og aftaler vises aldrig for forældre; kun hjemmeøvelsen står på forældrerapporten.

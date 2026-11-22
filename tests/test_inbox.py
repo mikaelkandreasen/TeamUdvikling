@@ -74,3 +74,51 @@ def test_team_focus_saved_shown_and_scoped(world):
     assert "Hele holdet træner på" in rep and "Aflevering med indersiden" in rep
     ta.post("/team/focus", {}, page="/team/focus")
     assert "<b>Holdets fokus</b>" not in ta.get("/").get_data(as_text=True)
+
+
+def test_parent_reports_whole_team_and_motivation_history(world):
+    from helpers import add_player, player_id
+    app, admin, ca, cb, ta, tb = world
+    add_player(ta, "Anna Alfa"); add_player(ta, "Bo Beta")
+    add_player(tb, "Cille Gamma")
+    html = ta.get("/reports/foraeldre").get_data(as_text=True)
+    assert "Anna Alfas udvikling" in html and "Bo Betas udvikling" in html and "Cille" not in html
+    pid = player_id(app, "Anna Alfa")
+    sql(app, "INSERT INTO motivation_questions(team_id,qidx,cat,text) VALUES((SELECT team_id FROM players WHERE id=?),1,1,'Spørgsmål')", pid) if not sql(app, "SELECT 1 FROM motivation_questions WHERE team_id=(SELECT team_id FROM players WHERE id=?) AND qidx=1", pid) else None
+    sql(app, "INSERT OR REPLACE INTO motivation_answers(player_id,qidx,score) VALUES(?,1,3)", pid)
+    sql(app, "UPDATE motivation_log SET taken_on='2026-01-01' WHERE player_id=?", pid)
+    sql(app, "UPDATE motivation_answers SET score=5 WHERE player_id=? AND qidx=1", pid)
+    assert [r["score"] for r in sql(app, "SELECT score FROM motivation_log WHERE player_id=? ORDER BY taken_on", pid)] == [3, 5]
+
+
+def test_reply_private_and_read_stats(world):
+    app, admin, ca, cb, ta, tb = world
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa"])
+    ca.post("/inbox/send", {"to": "club", "title": "Møde", "body": "Torsdag?"}, page="/inbox/")
+    page = ca.get("/inbox/").get_data(as_text=True)
+    assert "Læst af 0 af 2" in page                                   # tina + mia (afsenderen tæller ikke)
+    ta.post("/inbox/read", {}, page="/inbox/")
+    assert "Læst af 1 af 2" in ca.get("/inbox/").get_data(as_text=True)
+    mid = sql(app, "SELECT id FROM messages")[0]["id"]
+    assert ta.post(f"/inbox/{mid}/reply", {"body": "Jeg kan godt"}, page="/inbox/").status_code == 302
+    assert "Jeg kan godt" in ca.get("/").get_data(as_text=True)         # afsenderen får svaret som ulæst
+    for other in (mia, tb, cb):
+        assert "Jeg kan godt" not in other.get("/inbox/").get_data(as_text=True)    # svaret er privat
+    assert tb.post(f"/inbox/{mid}/reply", {"body": "x"}, page="/inbox/").status_code == 404
+    rid = sql(app, "SELECT id FROM messages WHERE to_user_id IS NOT NULL")[0]["id"]
+    assert ca.post(f"/inbox/{rid}/delete", {}, page="/inbox/").status_code == 403    # modtager sletter ikke andres private svar
+
+
+def test_conversations_scoped_and_homework_on_parent_report(world):
+    from helpers import add_player, player_id
+    app, admin, ca, cb, ta, tb = world
+    add_player(ta, "Anna Alfa")
+    pid = player_id(app, "Anna Alfa")
+    ta.post(f"/samtaler/{pid}/ny", {"held_on": "2026-11-20", "notes": "God snak", "agreements": "Øver mere", "homework": "Aflever mod væg"}, page=f"/samtaler/{pid}")
+    assert "God snak" in ta.get(f"/samtaler/{pid}").get_data(as_text=True)
+    assert tb.get(f"/samtaler/{pid}").status_code == 404                                       # andet hold
+    assert tb.post(f"/samtaler/{pid}/ny", {"held_on": "2026-11-20", "notes": "x"}, page="/").status_code == 404
+    assert "Aflever mod væg" in ta.get(f"/report/{pid}/foraeldre").get_data(as_text=True)
+    assert "God snak" not in ta.get(f"/report/{pid}/foraeldre").get_data(as_text=True)         # noter vises ikke for forældre
+    ta.post(f"/samtaler/{pid}/ny", {"held_on": "ugyldig", "notes": "y"}, page=f"/samtaler/{pid}")
+    assert len(sql(app, "SELECT id FROM conversations")) == 1

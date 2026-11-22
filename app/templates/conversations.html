@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Samtaler – {{ p['name'] }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('evaluation.profile', pid=p['id']) }}">‹ {{ p['name'] }}</a></p>
+<h1>Forældresamtaler</h1>
+<p class="muted small">Kun for trænerne. Hjemmeøvelsen fra den seneste samtale vises på forældrerapporten.</p>
+{% if not user['readonly'] %}<form method="post" action="{{ url_for('conv.add', pid=p['id']) }}" class="card">{{ csrf() }}<h2>Ny samtale</h2>
+  <label for="d">Dato</label><input id="d" type="date" name="held_on" value="{{ today }}" required>
+  <label for="n">Hvad snakkede vi om?</label><textarea id="n" name="notes" rows="3" maxlength="1500"></textarea>
+  <label for="a">Aftaler</label><textarea id="a" name="agreements" rows="2" maxlength="1500"></textarea>
+  <label for="h">Hjemmeøvelse</label><textarea id="h" name="homework" rows="2" maxlength="1500" placeholder="fx Aflever mod en væg 10 min. 3 gange om ugen"></textarea>
+  <p class="muted small">Hold noterne faktuelle og positive – ingen vurderinger af barnets eller familiens forhold.</p>
+  <div class="actions"><button class="btn">Gem samtale</button></div></form>{% endif %}
+{% for c in rows %}<div class="card"><b>{{ c['held_on']|date_dk }}</b> <span class="muted small">{{ c['trainer_name'] }}</span>
+  {% if c['notes'] %}<p style="white-space:pre-wrap"><b>Samtale:</b> {{ c['notes'] }}</p>{% endif %}
+  {% if c['agreements'] %}<p style="white-space:pre-wrap"><b>Aftaler:</b> {{ c['agreements'] }}</p>{% endif %}
+  {% if c['homework'] %}<p style="white-space:pre-wrap"><b>Hjemmeøvelse:</b> {{ c['homework'] }}</p>{% endif %}
+  {% if not user['readonly'] and (c['trainer_id'] == user['id'] or can_configure()) %}<form method="post" action="{{ url_for('conv.delete', pid=p['id'], cid=c['id']) }}">{{ csrf() }}<button class="btn sec">Slet</button></form>{% endif %}</div>
+{% else %}<div class="card muted">Ingen samtaler endnu.</div>{% endfor %}
+{% endblock %}

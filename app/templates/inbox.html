@@ -11,8 +11,11 @@
   <div class="actions"><button class="btn">Send</button></div></form>{% endif %}
 {% for m in msgs %}<div class="card" {% if not m['is_read'] %}style="border-left:4px solid var(--navy2)"{% endif %}>
   <b>{{ m['title'] }}</b>{% if not m['is_read'] %} <span class="badge">ny</span>{% endif %}
-  <div class="muted small">{{ m['sender_name'] }} · {{ m['created_at'][:16] }} · {{ 'Alle brugere' if m['club_id'] == 0 else ('Hele klubben' if not m['team_id'] else 'Holdet ' ~ m['team_name']) }}</div>
+  <div class="muted small">{{ m['sender_name'] }} · {{ m['created_at'][:16] }} · {{ 'Privat svar' if m['to_user_id'] else 'Alle brugere' if m['club_id'] == 0 else ('Hele klubben' if not m['team_id'] else 'Holdet ' ~ m['team_name']) }}</div>
   <p style="white-space:pre-wrap">{{ m['body'] }}</p>
+  {% if m['id'] in stats %}<div class="muted small">Læst af {{ stats[m['id']][0] }} af {{ stats[m['id']][1] }}</div>{% endif %}
+  {% if m['sender_id'] and m['sender_id'] != user['id'] %}<details><summary class="small">Svar {{ m['sender_name'] }}</summary>
+    <form method="post" action="{{ url_for('inbox.reply', mid=m['id']) }}">{{ csrf() }}<textarea name="body" rows="3" maxlength="{{ MAX_BODY }}" required aria-label="Svar"></textarea><div class="actions"><button class="btn sec">Send svar</button></div></form></details>{% endif %}
   <div class="actions">{% if not m['is_read'] %}<form method="post" action="{{ url_for('inbox.read_all') }}">{{ csrf() }}<input type="hidden" name="id" value="{{ m['id'] }}"><button class="btn sec">Markér som læst</button></form>{% endif %}
   {% if m['sender_id'] == (user['id']) or can_configure() %}<form method="post" action="{{ url_for('inbox.delete', mid=m['id']) }}">{{ csrf() }}<button class="btn sec">Slet</button></form>{% endif %}</div></div>
 {% else %}<div class="card muted">Ingen beskeder endnu.</div>{% endfor %}

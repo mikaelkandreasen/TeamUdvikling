@@ -19,6 +19,7 @@
     <p class="muted small">Det hjælper at øve lidt ad gangen derhjemme – fx at spille med bolden i haven.</p>{% endif %}
   {% else %}<p class="muted">Vi har endnu ikke en færdig evaluering af hele holdet. Rapporten fyldes ud, når den er klar.</p>
   {% if b['focus'] %}<h2>Det træner vi på nu</h2><ul>{% for x in b['focus'] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}{% endif %}
+  {% if b['homework'] %}<h2>Hjemmeøvelse</h2><p style="white-space:pre-wrap">{{ b['homework'] }}</p>{% endif %}
   {% if b['interests'] %}<h2>Det er {{ p['name'].split(' ')[0] }} optaget af</h2><ul>{% for i in b['interests'] %}<li><b>{{ i['title'] }}:</b> {{ i['top'] }}</li>{% endfor %}</ul>{% endif %}
   <p class="muted small">Alle børn udvikler sig i forskelligt tempo. Rapporten er et oplæg til en god snak – ikke en sammenligning med andre.</p>
   {% if club['footer'] %}<p class="small">{{ club['footer'] }}</p>{% endif %}

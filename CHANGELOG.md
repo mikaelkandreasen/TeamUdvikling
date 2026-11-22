@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Forældrerapporter for hele holdet** (Rapporter → «Forældrerapporter – hele holdet»): én side pr. spiller til print/PDF.
+- **Indbakke:** private svar til afsenderen, og afsenderen ser «Læst af x af y».
+- **Motivation over tid:** hver udfyldelse af skemaet gemmes med dato; spillerens motivationsrapport viser gennemsnit pr. kategori over tid (fra to målinger).
+- **Forældresamtaler** (spillerprofil → Samtaler): dato, noter, aftaler og hjemmeøvelse. Hjemmeøvelsen fra den seneste samtale vises på forældrerapporten; noter og aftaler gør ikke. Medtages i spillereksport og slettes med spilleren. Skema v20.
+
 ## [0.21.0] - 2026-11-22
 
 ### Tilføjet

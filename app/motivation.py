@@ -43,6 +43,19 @@ def report_data(db, pid, player_ids):
     return out
 
 
+def history(db, pid):
+    """Motivation over tid: [{date, cats: {cat_titel: gennemsnit}}] – kun datoer hvor spilleren har svaret. Vises når der er mindst to målinger."""
+    cats, qs = load_questions(db)
+    qcat = {q["qidx"]: q["cat"] for q in qs if q["text"].strip()}
+    by = {}
+    for r in db.execute("SELECT qidx, score, taken_on FROM motivation_log WHERE player_id=? ORDER BY taken_on", (pid,)):
+        if r["qidx"] in qcat:
+            by.setdefault(r["taken_on"], {}).setdefault(qcat[r["qidx"]], []).append(r["score"])
+    titles = [(c, cats[c]) for c in sorted(cats)]
+    rows = [dict(date=d, vals=[model.mean(v.get(c)) if v.get(c) else None for c, _ in titles]) for d, v in sorted(by.items())]
+    return dict(titles=[t for _, t in titles], rows=rows) if len(rows) >= 2 else None
+
+
 @bp.route("/", methods=["GET", "POST"])
 def matrix():
     db = get_db()
@@ -112,7 +125,7 @@ def report(pid):
     db = get_db()
     p = get_player(db, pid)
     data = report_data(db, pid, [x["id"] for x in active_players(db)])
-    return render_template("motivation_report.html", p=p, data=data)
+    return render_template("motivation_report.html", p=p, data=data, over_tid=history(db, pid))
 
 
 # ----------------------------------------------------------------------------- spillerlink (engangslink til motivationsskemaet)

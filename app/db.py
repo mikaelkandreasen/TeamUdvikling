@@ -67,11 +67,24 @@ CREATE TABLE IF NOT EXISTS team_mascot_img(
   team_id INTEGER PRIMARY KEY REFERENCES teams(id) ON DELETE CASCADE, img BLOB NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS messages(
   id INTEGER PRIMARY KEY, club_id INTEGER NOT NULL, team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, sender_name TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);
+  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, sender_name TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL,
+  to_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, reply_to INTEGER);
 CREATE INDEX IF NOT EXISTS ix_messages_club ON messages(club_id, team_id, id);
 CREATE TABLE IF NOT EXISTS message_reads(
   message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   read_at TEXT NOT NULL, PRIMARY KEY(message_id, user_id));
+CREATE TABLE IF NOT EXISTS conversations(
+  id INTEGER PRIMARY KEY, player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, held_on TEXT NOT NULL,
+  notes TEXT NOT NULL DEFAULT '', agreements TEXT NOT NULL DEFAULT '', homework TEXT NOT NULL DEFAULT '',
+  trainer_id INTEGER REFERENCES users(id) ON DELETE SET NULL, trainer_name TEXT NOT NULL DEFAULT '');
+CREATE INDEX IF NOT EXISTS ix_conversations ON conversations(player_id, held_on);
+CREATE TABLE IF NOT EXISTS motivation_log(
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE, qidx INTEGER NOT NULL, score INTEGER NOT NULL, taken_on TEXT NOT NULL,
+  PRIMARY KEY(player_id, qidx, taken_on));
+CREATE TRIGGER IF NOT EXISTS trg_motlog_ins AFTER INSERT ON motivation_answers BEGIN
+  INSERT OR REPLACE INTO motivation_log(player_id,qidx,score,taken_on) VALUES(NEW.player_id,NEW.qidx,NEW.score,date('now','localtime')); END;
+CREATE TRIGGER IF NOT EXISTS trg_motlog_upd AFTER UPDATE OF score ON motivation_answers BEGIN
+  INSERT OR REPLACE INTO motivation_log(player_id,qidx,score,taken_on) VALUES(NEW.player_id,NEW.qidx,NEW.score,date('now','localtime')); END;
 CREATE TABLE IF NOT EXISTS lineups(
   id INTEGER PRIMARY KEY, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   name TEXT NOT NULL, game_type TEXT NOT NULL, formation TEXT NOT NULL, is_ideal INTEGER NOT NULL DEFAULT 0,
@@ -152,7 +165,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 19   # v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 20   # v20: messages.to_user_id/reply_to (svar), conversations (forældresamtaler), motivation_log + triggers (motivation over tid; IF NOT EXISTS/ADD COLUMN); v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -228,6 +241,15 @@ def _migrate_team_features(con):
         con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
 
 
+def _migrate_v20(con):
+    """v20: messages.to_user_id/reply_to (ADD COLUMN) + udgangspunkt for motivation over tid (idempotent)."""
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(messages)")}
+    for c, d in (("to_user_id", "INTEGER REFERENCES users(id) ON DELETE CASCADE"), ("reply_to", "INTEGER")):
+        if c not in cols:
+            con.execute(f"ALTER TABLE messages ADD COLUMN {c} {d}")
+    con.execute("INSERT OR IGNORE INTO motivation_log(player_id,qidx,score,taken_on) SELECT player_id,qidx,score,date('now','localtime') FROM motivation_answers")
+
+
 def _migrate_club_motto(con):
     """v18: clubs.motto (klubbens motto; idempotent)."""
     if "motto" not in {r["name"] for r in con.execute("PRAGMA table_info(clubs)")}:
@@ -282,6 +304,7 @@ def init_db(path):
     _migrate_round_opening(con)
     _migrate_stopped_users(con)
     _migrate_club_motto(con)
+    _migrate_v20(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

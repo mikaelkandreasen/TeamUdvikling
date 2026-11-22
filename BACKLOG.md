@@ -8,7 +8,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen). *Status: Backup kontrolleres automatisk; scripts/restore.sh + verify-backup.py; docs/BACKUP.md (off-site med rclone/rsync).*
 
 ## Senere (P1)
-- **B-014 · Trivsel og motivation over tid** · M – flere målinger (datoer) i stedet for én værdi; linjediagram i rapporten.
+- ~~B-014 · Trivsel og motivation over tid~~ (færdig i v0.22.0) – · M – flere målinger (datoer) i stedet for én værdi; linjediagram i rapporten.
 
 - **B-021 · DBU KampKlar-integration** · M/L – Ingen officiel API. Undersøgt: uofficiel scraping af mit.dbu.dk (personligt DBU-login, kan gå i stykker, vilkår uafklarede) eller iCal-link til holdets kampe/aktiviteter. Uklart om andre spilleres tilmeldingsstatus er synlig. Claude API er ikke nødvendigt til hentning. Afventer brugerens valg – se docs/DECISIONS.md.
 
@@ -19,10 +19,6 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
 
 ## Idéer (uprioriteret)
-- Samlet PDF med forældrerapporter til hele holdet (sæsonafslutning).
-- Svar på beskeder i indbakken og «sendt til»-oversigt for afsenderen (hvem har læst).
-- Motivation over tid (flere målinger) – resten af B-014.
-- Skema til forældresamtale: dato, aftaler og hjemmeøvelser pr. spiller.
 - Spillerbilleder: bulk-upload og automatisk sletning når samtykke trækkes tilbage.
 - Ekstern scanning (ZAP/nuclei) af den rigtige adresse bag Cloudflare, når siden er oplagt (supplerer den lokale simulation).
 - Tjek af adgangskoder mod lækkede lister (k-anonymitet) ved oprettelse/skift.
@@ -34,6 +30,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **v0.22.0** – Forældrerapporter for hele holdet, svar på beskeder + læst-status, motivation over tid (B-014 færdig), forældresamtaler med hjemmeøvelse.
 - **v0.21.0** – Holdets træningsfokus kan vælges (op til 4 punkter ud fra forslag + eget) og vises på Hjem og forældrerapporter; B-018 blokeringslog i administration (Sikkerhedslog) var allerede på plads og lukkes.
 - **v0.20.x** – Indbakke: klubadministrator → klub, chef-træner → hold, systemadministrator → alle; vises ved login, ✉ i topbjælken, valgfri e-mail.
 - **v0.19.x** – Tal-fri forældrerapport med logo, klubmotto, holdslogan og maskotbillede; klubmotto på loginsiden (husket enhed).

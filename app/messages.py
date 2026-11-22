@@ -10,9 +10,35 @@ MAX_TITLE, MAX_BODY = 120, 3000
 
 
 def _visible_sql(user):
-    """WHERE-del: klubbeskeder i brugerens klub + beskeder til hold brugeren er tilknyttet (user_teams)."""
-    return ("((m.club_id = ? AND (m.team_id IS NULL OR m.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?))) OR m.club_id = 0)",
-            (user["club_id"] or -1, user["id"]))          # club_id 0 = besked fra systemadministrator til alle
+    """WHERE-del: klubbeskeder i brugerens klub, beskeder til hold brugeren er tilknyttet (user_teams), beskeder til alle (club_id 0)
+    og private svar (til brugeren eller fra brugeren)."""
+    uid = user["id"]
+    return ("((m.to_user_id IS NULL AND ((m.club_id = ? AND (m.team_id IS NULL OR m.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?))) OR m.club_id = 0))"
+            " OR m.to_user_id = ? OR (m.to_user_id IS NOT NULL AND m.sender_id = ?))", (user["club_id"] or -1, uid, uid, uid))
+
+
+def audience(db, m):
+    """Modtagernes bruger-id'er for en klub-/hold-/alle-besked (afsenderen undtaget)."""
+    if m["to_user_id"]:
+        return [m["to_user_id"]]
+    if m["club_id"] == 0:
+        q, a = "SELECT id FROM users WHERE stopped_at IS NULL", ()
+    elif m["team_id"]:
+        q, a = "SELECT u.id FROM users u JOIN user_teams ut ON ut.user_id=u.id WHERE ut.team_id=? AND u.stopped_at IS NULL", (m["team_id"],)
+    else:
+        q, a = "SELECT id FROM users WHERE club_id=? AND stopped_at IS NULL", (m["club_id"],)
+    return [r["id"] for r in db.execute(q, a) if r["id"] != m["sender_id"]]
+
+
+def read_stats(db, msgs, uid):
+    """{besked-id: (læst, ialt)} for beskeder brugeren selv har sendt."""
+    out = {}
+    for m in msgs:
+        if m["sender_id"] == uid:
+            ids = audience(db, m)
+            n = db.execute(f"SELECT COUNT(*) FROM message_reads WHERE message_id=? AND user_id IN ({','.join('?' * len(ids)) or 'NULL'})", (m["id"], *ids)).fetchone()[0] if ids else 0
+            out[m["id"]] = (n, len(ids))
+    return out
 
 
 def for_user(db, user, only_unread=False, limit=200):
@@ -48,7 +74,8 @@ def _targets():
 @bp.route("/")
 def index():
     db = get_db()
-    return render_template("inbox.html", msgs=for_user(db, g.user), targets=_targets(), MAX_BODY=MAX_BODY)
+    msgs = for_user(db, g.user)
+    return render_template("inbox.html", msgs=msgs, targets=_targets(), MAX_BODY=MAX_BODY, stats=read_stats(db, msgs, g.real_user["id"]))
 
 
 @bp.route("/send", methods=["POST"])
@@ -125,12 +152,34 @@ def read_all():
     return redirect(request.form.get("next") if request.form.get("next") in ("/", "/m", "/inbox/") else url_for("inbox.index"))
 
 
+@bp.route("/<int:mid>/reply", methods=["POST"])
+def reply(mid):
+    """Privat svar til afsenderen af en besked."""
+    db = get_db()
+    m = _own(db, mid)
+    body = (request.form.get("body") or "").strip()[:MAX_BODY]
+    to = m["sender_id"]
+    if not to or to == g.real_user["id"]:
+        abort(400)
+    if not body:
+        flash("Skriv et svar.", "error")
+        return redirect(url_for("inbox.index"))
+    title = m["title"] if m["title"].startswith("Re: ") else ("Re: " + m["title"])[:MAX_TITLE]
+    cur = db.execute("INSERT INTO messages(club_id,team_id,sender_id,sender_name,title,body,created_at,to_user_id,reply_to) VALUES(?,?,?,?,?,?,datetime('now','localtime'),?,?)",
+                     (m["club_id"], None, g.real_user["id"], g.user["display_name"], title, body, to, mid))
+    db.execute("INSERT OR IGNORE INTO message_reads(message_id,user_id,read_at) VALUES(?,?,datetime('now','localtime'))", (cur.lastrowid, g.real_user["id"]))
+    audit(db, g.user["username"], "besked_svar", f"id={cur.lastrowid} → {mid}")
+    db.commit()
+    flash("Svaret er sendt til afsenderen.", "ok")
+    return redirect(url_for("inbox.index"))
+
+
 @bp.route("/<int:mid>/delete", methods=["POST"])
 def delete(mid):
     """Afsenderen, klubadministrator (egen klub) eller chef-træner (egne holdbeskeder) kan slette."""
     db = get_db()
     m = _own(db, mid)
-    ok = m["sender_id"] == g.real_user["id"] or scope.can_manage_club(g.user, m["club_id"])
+    ok = m["sender_id"] == g.real_user["id"] or (not m["to_user_id"] and scope.can_manage_club(g.user, m["club_id"]))
     if not ok:
         abort(403)
     db.execute("DELETE FROM messages WHERE id=?", (mid,))

@@ -13,5 +13,6 @@
 <div class="actions"><a class="btn" href="{{ url_for('reports.report', pid=p['id'], runde=rnd) }}">Åbn rapport</a>
   {% if features['devdata'] %}<a class="btn sec" href="{{ url_for('devdata.plan', pid=p['id']) }}">Handleplan</a>{% endif %}
   <a class="btn sec" href="{{ url_for('reports.parent_report', pid=p['id']) }}">Forældrerapport</a>
+  <a class="btn sec" href="{{ url_for('conv.index', pid=p['id']) }}">Samtaler</a>
   <a class="btn sec" href="{{ url_for('players.edit', pid=p['id']) }}">Ret spiller</a></div>
 {% endblock %}
