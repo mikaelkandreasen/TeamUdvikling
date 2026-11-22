@@ -12,7 +12,7 @@ RES = {
     "evaluation.eval_form": dict(rnd=1, pid="pid"), "evaluation.profile": dict(pid="pid"),
     "inbox.delete": dict(mid="msg"), "inbox.reply": dict(mid="msg"),
     "lineup.delete": dict(lid="lineup"), "lineup.edit": dict(lid="lineup"), "lineup.ideal": dict(lid="lineup"), "lineup.meta": dict(lid="lineup"),
-    "matches.delete": dict(mid="match"), "matches.edit": dict(mid="match"), "matches.meta": dict(mid="match"),
+    "matches.delete": dict(mid="match"), "matches.edit": dict(mid="match"), "matches.meta": dict(mid="match"), "matches.ical_update": dict(mid="match"),
     "motivation.link_revoke": dict(lid="plink"), "motivation.report": dict(pid="pid"), "motivation.tablet": dict(pid="pid"),
     "players.delete": dict(pid="pid"), "players.edit": dict(pid="pid"), "players.export_json": dict(pid="pid"), "players.move": dict(pid="pid"),
     "players.photo_delete": dict(pid="pid"), "players.photo_upload": dict(pid="pid"), "players.photo_view": dict(pid="pid"),

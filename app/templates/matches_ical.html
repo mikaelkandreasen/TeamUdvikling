@@ -2,6 +2,11 @@
 {% block content %}
 <h1>Kampforslag fra kalenderen</h1>
 <p class="muted small">Kommende aftaler fra holdets kalender, som ikke er oprettet som kamp endnu. Ret modstanderen, hvis gættet er forkert, og vælg de kampe, der skal oprettes. Kamptype og opstilling følger holdets indstilling.</p>
+{% if changes %}<div class="card" style="border-left:4px solid #e0a800"><h2>Ændret i kalenderen</h2>
+{% for c in changes %}<div class="row" style="padding:8px 0;border-bottom:1px solid #eee"><b>{{ c.m['day']|date_dk }}{% if c.m['opponent'] %} – {{ c.m['opponent'] }}{% endif %}</b>
+  {% if c.kind == 'moved' %}<br>Flyttet til <b>{{ c.day|date_dk }}{% if c.time %} kl. {{ c.time }}{% endif %}</b>
+  <form method="post" action="{{ url_for('matches.ical_update', mid=c.m['id']) }}" style="display:inline">{{ csrf() }}<button class="btn sec">Opdatér kampen</button></form>
+  {% else %}<br>Findes ikke længere i kalenderen (aflyst eller slettet). <a href="{{ url_for('matches.edit', mid=c.m['id']) }}">Åbn kampen</a>{% endif %}</div>{% endfor %}</div>{% endif %}
 {% if rows %}<form method="post" action="{{ url_for('matches.import_matches') }}" class="card">{{ csrf() }}
 {% for r in rows %}<div class="row" style="padding:10px 0;border-bottom:1px solid #eee">
   <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" name="pick" value="{{ loop.index0 }}" {{ 'checked' if r.looks_match and not r.same_day }}> <b>{{ r.day|date_dk }}</b>{% if r.time %} kl. {{ r.time }}{% endif %}</label>

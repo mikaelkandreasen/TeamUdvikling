@@ -8,7 +8,7 @@
   <p class="muted">{{ role_label[u['role']] }}{{ ' (assistent)' if u['readonly'] }}{% if u['club_name'] and clubs|length > 1 %} · {{ u['club_name'] }}{% endif %} · 2FA {{ 'aktiv' if u['totp_enabled'] else 'ikke sat op' }}{% if u['locked_until'] %} · <b>låst</b>{% endif %}{% if u['must_change_pw'] %} · skal skifte adgangskode{% endif %}</p>
   {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='readonly') }}">{{ csrf() }}
     <label class="check"><input type="checkbox" name="readonly" value="1" {{ 'checked' if u['readonly'] }}> Assistent (kan se og evaluere)</label><button class="btn sec">Gem</button></form>{% endif %}
-  <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='email') }}">{{ csrf() }}
+  <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='email') }}">{{ csrf() }}<label for="cdem">Din 2FA-kode</label><input id="cdem" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
     <label for="e{{ u['id'] }}">E-mail</label>
     <div class="row"><input id="e{{ u['id'] }}" type="email" name="email" value="{{ u['email'] or '' }}" placeholder="ingen" autocomplete="off" autocapitalize="none" maxlength="254">
     <button class="btn sec">Gem e-mail</button></div></form>
@@ -23,7 +23,7 @@
     <div class="actions"><button class="btn">Godkend og send e-mail</button></div></form>
   {% elif u['email'] %}<p class="muted small">E-mail kan ikke sendes endnu: mangler {{ mail_missing }} i stackens miljøvariable.</p>{% endif %}
   {% if sysadmin %}
-  <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='role') }}">{{ csrf() }}
+  <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='role') }}">{{ csrf() }}<label for="cdrole">Din 2FA-kode</label><input id="cdrole" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
     <div class="row"><select name="role" aria-label="Rolle">{% for r in ('trainer','clubadmin','admin') %}<option value="{{ r }}" {{ 'selected' if u['role'] == r }}>{{ role_label[r] }}</option>{% endfor %}</select>
     <select name="club" aria-label="Klub">{% for k in clubs %}<option value="{{ k['id'] }}" {{ 'selected' if u['club_id'] == k['id'] }}>{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
     <button class="btn sec">Gem rolle</button></div></form>{% endif %}
@@ -34,23 +34,23 @@
   {% if sysadmin %}<div class="card"><h2>Profiler</h2>
     <p class="muted small">Brugeren kan have flere profiler med samme login og vælger den aktive øverst på siden. Hovedprofilen er {{ role_label[u['role']]|lower }}{% if u['club_name'] %} i {{ u['club_name'] }}{% endif %}.</p>
     {% for p in extra_profiles %}<div class="card"><b>{{ p['label'] }}</b>
-      <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-remove') }}">{{ csrf() }}<input type="hidden" name="profile" value="{{ p['id'] }}"><button class="btn sec">Fjern profil</button></form>
+      <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-remove') }}">{{ csrf() }}<label for="cdprem">Din 2FA-kode</label><input id="cdprem" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required><input type="hidden" name="profile" value="{{ p['id'] }}"><button class="btn sec">Fjern profil</button></form>
       {% if p['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-teams') }}">{{ csrf() }}<input type="hidden" name="club" value="{{ p['club_id'] }}">
         {% for t in all_teams if t['club_id'] == p['club_id'] %}<label class="check"><input type="checkbox" name="teams" value="{{ t['id'] }}" {{ 'checked' if t['id'] in mem }}> {{ t['name'] }}</label>{% endfor %}
         <div class="actions"><button class="btn sec">Gem hold</button></div></form>{% endif %}</div>{% endfor %}
-    <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-add') }}">{{ csrf() }}
+    <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='profile-add') }}">{{ csrf() }}<label for="cdpadd">Din 2FA-kode</label><input id="cdpadd" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
       <div class="row"><select name="role" aria-label="Rolle"><option value="trainer">Træner</option><option value="clubadmin">Klubadministrator</option><option value="admin">Systemadministrator</option></select>
       <select name="club" aria-label="Klub">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>
       <button class="btn sec">Tilføj profil</button></div></form></div>{% endif %}
   <div class="actions">
     {% if u['role'] == 'trainer' %}<form method="post" action="{{ url_for('admin.view_as', uid=u['id']) }}">{{ csrf() }}<button class="btn">Se som træner</button></form>{% endif %}
-    <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='unlock') }}">{{ csrf() }}<button class="btn sec">Lås op</button></form>
+    <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='unlock') }}">{{ csrf() }}<label for="cdunl">Din 2FA-kode</label><input id="cdunl" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required><button class="btn sec">Lås op</button></form>
     <details><summary>Nulstil 2FA / adgangskode</summary>
       <p class="muted small">Kræver din egen friske 2FA-kode.</p>
       {% for act, label in [('reset-2fa','Nulstil 2FA'),('reset-password','Nulstil adgangskode')] %}
       <form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action=act) }}">{{ csrf() }}
         <label for="c{{ act }}{{ u['id'] }}">Din 2FA-kode</label><input id="c{{ act }}{{ u['id'] }}" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required>
         <div class="actions"><button class="btn sec">{{ label }}</button></div></form>{% endfor %}</details>
-    {% if u['id'] != user['id'] %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='delete') }}">{{ csrf() }}<button class="btn danger">Slet</button></form>{% endif %}
+    {% if u['id'] != user['id'] %}<form method="post" action="{{ url_for('admin.user_action', uid=u['id'], action='delete') }}">{{ csrf() }}<label for="cddel">Din 2FA-kode</label><input id="cddel" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required><button class="btn danger">Slet</button></form>{% endif %}
   </div></div>
 {% endblock %}

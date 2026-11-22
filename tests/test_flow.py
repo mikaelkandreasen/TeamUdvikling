@@ -154,3 +154,16 @@ def test_no_inline_scripts_or_handlers(team):
     for path in ("/?hold=1", "/reports", "/players/"):
         html = team.get(path).get_data(as_text=True)
         assert "onclick=" not in html and "<script>" not in html
+
+
+def test_eval_save_with_js_stays_on_player_and_without_js_goes_to_list(app, team):
+    from helpers import add_player
+    add_player(team, "Anna Alfa")
+    pid = player_id(app, "Anna Alfa")
+    data = {"c0": "3", "go": "stay"}
+    r = team.post(f"/eval/1/{pid}", data, page=f"/eval/1/{pid}")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/eval/1")                      # uden JavaScript: tilbage til listen
+    r = team.post(f"/eval/1/{pid}", data, page=f"/eval/1/{pid}", headers={"X-Requested-With": "fetch"})
+    assert r.status_code == 302 and r.headers["Location"].endswith(f"/eval/1/{pid}")               # med JavaScript: bliv på spilleren
+    page = team.get(f"/eval/1/{pid}").get_data(as_text=True)
+    assert 'data-swap="#evalform"' in page and 'name="go" value="next"' not in page or "data-noswap" in page

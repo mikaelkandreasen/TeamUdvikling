@@ -147,3 +147,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Alle roller så næsten samme menu. Administratorer så holdets spillerdata uden at have brug for det, og chef-trænere havde ingen synlig vej til at invitere hjælp.
 **Valg:** `nav.py` bygger sidemenu, mobilfaner og menuside pr. rolle (sysadmin, clubadmin, head, trainer, assistant). Administratorer lander på `/admin/`; holdsiderne åbnes med `?hold=1`. Chef-trænere kan invitere trænere og assistenter til egne hold, aldrig chef-trænere (`as_head` tvinges fra på serversiden).
 **Konsekvens:** Menuen er bekvemmelighed. Assistenters begrænsning håndhæves i `before_request` (`nav.LOCKED_FOR_ASSISTANTS`: kampe, holdsætning, motivation, udviklingsdata, rapporter → 403).
+
+## D-034 · Fraværende spillere i kampe følger fremmøde (2026-11-22)
+**Kontekst:** Spilletidsoversigten regnede spillere, der ikke var med, som «lidt tid» og med hvide pletter.
+**Valg:** Kobling på hold + dato + type «kamp» i fremmøde (ingen skemaændring). Er kampen ikke registreret i fremmøde, er alle med som før. «Lidt tid» måles pr. kamp, spilleren var med til.
+**Konsekvens:** Kampen skal registreres i Fremmøde samme dag for at få effekt.

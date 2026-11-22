@@ -100,6 +100,8 @@ def eval_form(rnd, pid):
         extra = {} if keep is None else {"open": ",".join(str(i) for i in keep)}
         if request.form.get("go") == "next" and next_id:
             return redirect(url_for("evaluation.eval_form", rnd=rnd, pid=next_id, **extra))
+        if request.headers.get("X-Requested-With") == "fetch":      # «Gem» med JavaScript: bliv på spilleren, kun skemaet opdateres (I-09)
+            return redirect(url_for("evaluation.eval_form", rnd=rnd, pid=pid, **extra))
         return redirect(url_for("evaluation.eval_round", rnd=rnd))
     scores = {r["crit"]: r["score"] for r in db.execute(
         "SELECT crit, score FROM evaluations WHERE round=? AND player_id=? AND trainer_id=?", (rnd, pid, g.user["id"]))}

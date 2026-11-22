@@ -262,12 +262,12 @@ def test_clubadmin_cannot_reach_system_pages(world):
 def test_sysadmin_changes_roles_but_keeps_one_sysadmin(world):
     app, admin, ca, cb, ta, tb = world
     uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
-    admin.post(f"/admin/users/{uid}/role", {"role": "clubadmin", "club": str(club_id(app, "Alfa Klub"))}, page="/admin/users")
+    admin.post(f"/admin/users/{uid}/role", {"code": code(app, admin, "admin"), "role": "clubadmin", "club": str(club_id(app, "Alfa Klub"))}, page="/admin/users")
     assert sql(app, "SELECT role FROM users WHERE id=?", uid)[0]["role"] == "clubadmin" and not sql(app, "SELECT 1 FROM user_teams WHERE user_id=?", uid)
     me = sql(app, "SELECT id FROM users WHERE username='admin'")[0]["id"]
-    r = admin.post(f"/admin/users/{me}/role", {"role": "trainer", "club": "1"}, page="/admin/users", follow_redirects=True)
+    r = admin.post(f"/admin/users/{me}/role", {"code": code(app, admin, "admin"), "role": "trainer", "club": "1"}, page="/admin/users", follow_redirects=True)
     assert sql(app, "SELECT role FROM users WHERE id=?", me)[0]["role"] == "admin"
-    assert admin.post(f"/admin/users/{me}/delete", {}, page="/admin/users", follow_redirects=True).status_code == 200
+    assert admin.post(f"/admin/users/{me}/delete", {"code": code(app, admin, "admin")}, page="/admin/users", follow_redirects=True).status_code == 200
     assert sql(app, "SELECT COUNT(*) c FROM users WHERE role='admin'")[0]["c"] == 1
 
 
@@ -383,9 +383,9 @@ def test_user_can_have_several_profiles_and_switch(world):
     uid = lambda n: sql(app, "SELECT id FROM users WHERE username=?", n)[0]["id"]
     beta = club_id(app, "Beta Klub")
     assert ta.get("/admin/users").status_code in (302, 403, 404)                       # træner: ingen adgang
-    assert ca.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page="/admin/users").status_code == 404   # kun sysadmin
-    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
-    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
+    assert ca.post(f"/admin/users/{uid('tina')}/profile-add", {"code": code(app, ca, "kaja"), "role": "clubadmin", "club": str(beta)}, page="/admin/users").status_code == 404   # kun sysadmin
+    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"code": code(app, admin, "admin"), "role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
+    assert admin.post(f"/admin/users/{uid('tina')}/profile-add", {"code": code(app, admin, "admin"), "role": "clubadmin", "club": str(beta)}, page=f"/admin/users/{uid('tina')}").status_code in (200, 302)
     prof = sql(app, "SELECT * FROM user_profiles")
     assert len(prof) == 1 and prof[0]["role"] == "clubadmin" and prof[0]["club_id"] == beta        # dublet afvist
     assert "Profiler" in admin.get(f"/admin/users/{uid('tina')}").get_data(as_text=True)
@@ -399,7 +399,7 @@ def test_user_can_have_several_profiles_and_switch(world):
     assert ta.get("/admin/users").status_code in (302, 403, 404)                              # tilbage som træner
     # fjernet profil mister virkning
     ta.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/")
-    admin.post(f"/admin/users/{uid('tina')}/profile-remove", {"profile": str(prof[0]["id"])}, page=f"/admin/users/{uid('tina')}")
+    admin.post(f"/admin/users/{uid('tina')}/profile-remove", {"code": code(app, admin, "admin"), "profile": str(prof[0]["id"])}, page=f"/admin/users/{uid('tina')}")
     assert ta.get("/admin/users").status_code in (302, 403, 404)
 
 
@@ -456,3 +456,17 @@ def test_clubadmin_has_club_admin_page_with_only_own_club_and_working_links(worl
         assert ca.get(h).status_code == 403, h                                                # kun systemadministrator
     sysp = admin.get("/admin/").get_data(as_text=True)
     assert "Driftstjek" in sysp and "Klubber" in sysp                                         # systemadmin har stadig fuld side
+
+
+def test_sensitive_user_actions_need_fresh_2fa_code(world):
+    """I-06: rolle, e-mail, slet, lås op og profiler ændres kun med en frisk 2FA-kode."""
+    app, admin, ca, cb, ta, tb = world
+    uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
+    admin.post(f"/admin/users/{uid}/email", {"email": "ny@example.dk"}, page="/admin/users")
+    admin.post(f"/admin/users/{uid}/role", {"role": "clubadmin", "club": str(club_id(app, "Alfa Klub"))}, page="/admin/users")
+    admin.post(f"/admin/users/{uid}/delete", {"code": "000000"}, page="/admin/users")
+    row = sql(app, "SELECT role, email FROM users WHERE id=?", uid)[0]
+    assert row["role"] == "trainer" and row["email"] != "ny@example.dk"
+    admin.post(f"/admin/users/{uid}/email", {"email": "ny@example.dk", "code": code(app, admin, "admin")}, page="/admin/users")
+    assert sql(app, "SELECT email FROM users WHERE id=?", uid)[0]["email"] == "ny@example.dk"
+    assert "Din 2FA-kode" in admin.get(f"/admin/users/{uid}").get_data(as_text=True)

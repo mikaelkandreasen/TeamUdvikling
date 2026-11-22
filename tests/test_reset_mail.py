@@ -8,6 +8,7 @@ import pytest
 from app import db as appdb, totp
 from conftest import PW, Client
 from helpers import make_team, make_trainer
+from test_clubs_invites import code as admin_code
 
 BASE = "https://t.example"
 
@@ -72,10 +73,10 @@ def test_email_validation_and_storage(setup):
     app, admin, _ = setup
     assert sql(app, "SELECT email FROM users WHERE username='anna'")[0]["email"] == "anna@example.dk"      # normaliseret
     for bad in ("ikke-en-mail", "a@b", "a b@c.dk", "x@y.dk\nBcc: evil@z.dk"):
-        r = admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"email": bad}, page="/admin/users", follow_redirects=True)
+        r = admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"code": admin_code(app, admin, "admin"), "email": bad}, page="/admin/users", follow_redirects=True)
         assert "Ugyldig e-mailadresse" in r.get_data(as_text=True)
     assert sql(app, "SELECT email FROM users WHERE username='anna'")[0]["email"] == "anna@example.dk"
-    admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"email": ""}, page="/admin/users")
+    admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"code": admin_code(app, admin, "admin"), "email": ""}, page="/admin/users")
     assert sql(app, "SELECT email FROM users WHERE username='anna'")[0]["email"] is None
 
 
@@ -219,7 +220,7 @@ def test_changing_email_or_password_kills_pending_links(setup):
     app, admin, tr = setup
     request_mail(app, admin, "anna")
     path = link_of(app)
-    admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"email": "ny@example.dk"}, page="/admin/users")
+    admin.post(f"/admin/users/{uid(app, 'anna')}/email", {"code": admin_code(app, admin, "admin"), "email": "ny@example.dk"}, page="/admin/users")
     assert Client(app).get(path).status_code == 400
     request_mail(app, admin, "anna")
     path = link_of(app)
@@ -236,7 +237,7 @@ def test_not_configured_or_no_email(app, admin):
     r = request_mail(app, admin, "bo")
     assert "ingen e-mailadresse" in r.get_data(as_text=True) and outbox(app) == []
     app.config.update(PUBLIC_URL="")
-    admin.post(f"/admin/users/{uid(app, 'bo')}/email", {"email": "bo@example.dk"}, page="/admin/users")
+    admin.post(f"/admin/users/{uid(app, 'bo')}/email", {"code": admin_code(app, admin, "admin"), "email": "bo@example.dk"}, page="/admin/users")
     r = request_mail(app, admin, "bo")
     assert "PUBLIC_URL" in r.get_data(as_text=True) and outbox(app) == []
 

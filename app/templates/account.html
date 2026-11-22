@@ -6,9 +6,9 @@
   <div class="muted small">{{ _('Hold') }}: {% for t in teams %}{{ t['name'] }}{{ ', ' if not loop.last }}{% else %}{{ _('ingen') }}{% endfor %}</div></div>
 <div class="card"><h2>{{ _('Skift adgangskode') }}</h2>
   <form method="post">{{ csrf() }}<input type="hidden" name="action" value="password">
-    <label>{{ _('Nuværende adgangskode') }}</label><input type="password" name="old" autocomplete="current-password" required>
-    <label>{{ _('Ny adgangskode (mindst 12 tegn)') }}</label><input type="password" name="new" autocomplete="new-password" required>
-    <label>{{ _('Gentag ny adgangskode') }}</label><input type="password" name="new2" autocomplete="new-password" required>
+    <label for="lf1">{{ _('Nuværende adgangskode') }}</label><input id="lf1" type="password" name="old" autocomplete="current-password" required>
+    <label for="lf2">{{ _('Ny adgangskode (mindst 12 tegn)') }}</label><input id="lf2" type="password" name="new" autocomplete="new-password" required>
+    <label for="lf3">{{ _('Gentag ny adgangskode') }}</label><input id="lf3" type="password" name="new2" autocomplete="new-password" required>
     <div class="actions"><button class="btn">{{ _('Skift') }}</button></div></form></div>
 <div class="card"><h2>{{ _('Husk-enheder') }}</h2>
   <p>{{ devices }} enhed{{ 'er' if devices != 1 }} husket (logger ind uden kode i op til 30 dage).</p>
@@ -16,6 +16,6 @@
 <div class="card"><h2>{{ _('Gendannelseskoder') }}</h2>
   <p class="muted">Du har {{ codes_left }} ubrugte gendannelseskoder.</p>
   <form method="post">{{ csrf() }}<input type="hidden" name="action" value="recovery">
-    <label>{{ _('Adgangskode (bekræftelse)') }}</label><input type="password" name="old" autocomplete="current-password" required>
+    <label for="lf4">{{ _('Adgangskode (bekræftelse)') }}</label><input id="lf4" type="password" name="old" autocomplete="current-password" required>
     <div class="actions"><button class="btn sec">{{ _('Opret nye koder (gamle ugyldiggøres)') }}</button></div></form></div>
 {% endblock %}

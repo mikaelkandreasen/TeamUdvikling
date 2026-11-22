@@ -346,3 +346,15 @@ def test_importer_accepts_position_3_and_4(app, admin):
     admin.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
     row = sql(app, "SELECT * FROM players")[0]
     assert [row[k] for k in ("position", "position2", "position3", "position4")] == ["Højre kant", "Angreb", "Midtbane", "Kant"]
+
+
+def test_png_and_webp_have_lower_pixel_limit_than_jpeg():
+    """B-11: højkomprimerbare formater (PNG/WebP) afvises ved færre pixels end JPEG."""
+    import io
+    from PIL import Image
+    from app import photos
+    assert photos.MAX_PIXELS_LOSSLESS < photos.MAX_PIXELS
+    buf = io.BytesIO()
+    Image.new("RGB", (4500, 4000), "white").save(buf, "PNG")           # 18 mio. pixels, lille fil
+    with pytest.raises(photos.PhotoError):
+        photos.process(buf.getvalue())

@@ -6,7 +6,7 @@
 <form method="post" id="matchform" data-swap="#matchform,#matchtime">{{ csrf() }}
 {% if not user['readonly'] %}<details class="card"><summary><b>Forslag til opstilling</b></summary>
   <p class="muted small">Fordeler spilletiden jævnt og prioriterer positioner, spillerne endnu ikke har prøvet (hvide pletter). Du kan rette frit, før du gemmer.</p>
-  <p class="small"><b>Ikke med i kampen</b></p>
+  <p class="small"><b>Ikke med i kampen</b>{% if away %} <span class="muted">(forudfyldt fra fremmøde: {{ away|map(attribute='name')|join(', ') }})</span>{% endif %}</p>
   {% for p in players %}<label class="check" style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" name="absent" value="{{ p['id'] }}" {{ 'checked' if p['id'] in absent }}> {{ p['name'] }}</label>{% endfor %}
   <label class="check" style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" name="use_gk" value="1" {{ 'checked' if use_gk }}> Lad målmandspladsen indgå</label>
   <div class="actions"><button class="btn" name="action" value="suggest">Foreslå opstilling</button></div></details>{% endif %}

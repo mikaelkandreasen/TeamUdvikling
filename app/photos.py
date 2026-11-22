@@ -5,6 +5,7 @@ import io
 from PIL import Image, ImageOps
 
 MAX_UPLOAD = 12 * 1024 * 1024        # bytes (en moderne telefonfoto)
+MAX_PIXELS_LOSSLESS = 16_000_000     # PNG/WebP komprimerer ekstremt godt og er derfor lettere at misbruge som dekompressionsbombe (B-11)
 MAX_PIXELS = 40_000_000              # afviser dekompressionsbomber, før billedet dekodes
 MIN_SIDE = 64
 FULL, THUMB = 480, 96
@@ -36,7 +37,7 @@ def process(data):
         raise PhotoError("Filen er ikke et billede, der kan læses.")
     if fmt not in ALLOWED:
         raise PhotoError("Kun JPEG-, PNG- og WebP-billeder kan bruges.")
-    if w * h > MAX_PIXELS:
+    if w * h > (MAX_PIXELS if fmt == "JPEG" else MAX_PIXELS_LOSSLESS):
         raise PhotoError("Billedet har for mange pixels.")
     if min(w, h) < MIN_SIDE:
         raise PhotoError("Billedet er for lille.")
@@ -71,7 +72,7 @@ def process_free(data, max_side=600):
         raise PhotoError("Filen er ikke et billede, der kan læses.")
     if fmt not in ALLOWED:
         raise PhotoError("Kun JPEG-, PNG- og WebP-billeder kan bruges.")
-    if w * h > MAX_PIXELS:
+    if w * h > (MAX_PIXELS if fmt == "JPEG" else MAX_PIXELS_LOSSLESS):
         raise PhotoError("Billedet har for mange pixels.")
     if min(w, h) < MIN_SIDE:
         raise PhotoError("Billedet er for lille.")

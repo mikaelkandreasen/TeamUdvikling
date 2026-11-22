@@ -55,6 +55,7 @@ document.addEventListener("click", function (e) {
   document.addEventListener("submit", function (e) {
     var f = e.target;
     if (!f || !f.matches || !f.matches("form[data-swap]") || e.defaultPrevented) { return; }
+    if (e.submitter && e.submitter.hasAttribute("data-noswap")) { return; }       // knap der skal til en anden side (fx «Gem & næste»)
     var sels = f.getAttribute("data-swap").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
     var body = new FormData(f);
     if (e.submitter && e.submitter.name) { body.append(e.submitter.name, e.submitter.value); }

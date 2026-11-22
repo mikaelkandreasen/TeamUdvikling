@@ -4,7 +4,6 @@ Prioriteret liste. Øverst = næste. Format: `ID · titel · størrelse (S/M/L) 
 Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye opdagelser nederst i "Idéer".
 
 ## Næste (P0 – før første rigtige brug)
-- **B-003 · Første rigtige gennemløb med trænere** · M – 1 hold, 2 trænere, 1 evalueringsrunde, motivationsskema på tablet; liste over friktionspunkter → nye backlog-punkter. *Status: Tjekliste i docs/DRIFT.md – selve gennemløbet udføres af dig.*
 - **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen). *Status: Backup kontrolleres automatisk; scripts/restore.sh + verify-backup.py; docs/BACKUP.md (off-site med rclone/rsync).*
 
 ## Senere (P1)
@@ -16,34 +15,28 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 > Bemærk: Administration → Backlog i appen er en separat, redigerbar liste i databasen. Denne fil er udviklerens reference; hold dem i takt ved større ændringer.
 
-- **B-030 · Verificér CI/GHCR-udgivelse af Docker-image ved tag** · S – push af `vX.Y.Z` bygger og udgiver image til GHCR; Dockhand kan trække det. *Status: CI har røgtest af Docker-imaget før udgivelse; docs/DRIFT.md beskriver verificering af GHCR/Dockhand. Resterer: din første kørsel af workflowet.*
-
 ## Teknisk gæld og forbedringer (P1)
-- **B-041c · Flyt rå SQL ind i et repository-lag** · M – de 68 gennemgåede forespørgsler på spillerdata samles i få funktioner (`access.py`), så afgrænsningen sker ét sted. Ratchet-testen (B-041b) forhindrer nye huller imens. *Vurdering: lav gevinst pr. indsats, så længe rutetesten og ratchet-testen fanger huller; tages, hvis ratchet-listen begynder at vokse.*
-- **B-042b · Hold med egne roller/færdigheder** · L – restpunkt af B-042: antal og navne på roller og nøglefærdigheder pr. hold (i dag fast 4 × 6 = 24 i `model.py`; beregninger, diagram, niveauer og rapporter bruger fast indeks 0–23). Kræver generalisering af `model.py`/`levels.py`/`charts` og migrering af `evaluations.crit`. Tabel til holdets tekster og adgangsfunktion findes (B-042a). *Plan: (1) tabeller `crit_roles/crit_skills` pr. hold med standardsæt, (2) `model.py`-funktioner tager en kriteriestruktur i stedet for konstanter, (3) `evaluations.crit` bliver nøgle til kriterie-id, (4) diagrammer/niveauer/rapport læser antal fra strukturen, (5) UI til at redigere. Bør laves som egen session med omfattende regressionstest, fordi alle beregninger berøres.*
-
 - **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt. *Status v0.28.0: menuer, login, Menu, Min konto, Hjem, spillerliste og evalueringsknapper er oversat; resten (især sætninger med fed tekst/links midt i, som skal skrives som hele sætninger) mangler.*
 
 - **B-046 · Off-site-backup og afprøvet gendannelse** · S (drift, din opgave) – restic/rclone crypt til ekstern placering, `BACKUP_OFFSITE=1` (A1/A12, se docs/ARKITEKTURGENNEMGANG.md).
 - **B-047 · Nøgler som miljøvariabler og lukket port** · S (drift) – `SECRET_KEY`/`TOTP_KEY` i Dockhand, `U11_BIND=127.0.0.1` eller ingen `ports:` (A2/A3).
-- **B-048 · Cloudflare Access foran /admin og rate-limit-regler** · S (drift) – (A8).
 - **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
-- **B-050 · Lavere pixelgrænse for PNG/WebP og opdeling af admin.py** · S/M – (A10/A13).
-
 
 ## Idéer (uprioriteret)
-- Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
-- Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.
-- Kalender med tilmelding/afbud og påmindelser (Spond-lignende).
-- Forældrelink uden login til barnets rapport (kræver beslutning om samtykke).
-- Spillerbilleder: bulk-upload og automatisk sletning når samtykke trækkes tilbage.
-- Ekstern scanning (ZAP/nuclei) af den rigtige adresse bag Cloudflare, når siden er oplagt (supplerer den lokale simulation).
-- Tjek af adgangskoder mod lækkede lister (k-anonymitet) ved oprettelse/skift.
-- Mulighed for at kræve admin-2FA-kode også til de direkte «Nulstil»-knapper (midlertidig kode).
-- Playwright-/UI-tests af mobil-flowet; tilgængelighedstjek (kontrast, skærmlæser).
-- Eksport af rapport som billede til deling med forældre.
+- **I-09 (rest)** Delvise opdateringer også i noter (evalueringsskemaet er lavet).
 
 ## Færdigt
+- [x] **B-01** Første gennemløb med trænere – udført af dig; nye ønsker er løbende lagt ind (lukket).
+- [x] **B-04** CI/GHCR-udgivelse bekræftet af dig (lukket).
+- [x] **B-07** Cloudflare Access og rate-limit-regler – lavet af dig (lukket).
+- [x] **B-11** PNG/WebP afvises ved flere end 16 mio. pixels (JPEG 40 mio.); `admin.py` delt i `admin.py` + `admin_more.py` (v0.34.0).
+- Fjernet uden at blive lavet: gammel B-042b (egne roller/færdigheder), gammel B-041c (repository-lag) og idéerne tilmelding/afbud, forældrelink, spillerbillede-bulk og rapport som billede.
+- [x] **I-01** Fremmøde kobles til kampe: fraværende tæller ikke som bænk/«lidt tid» (v0.34.0).
+- [x] **I-05** Tjek mod lækkede adgangskoder var lavet, men slået fra – tændt som standard i compose (v0.34.0).
+- [x] **I-06** Rolle, e-mail, slet, lås op og profiler kræver frisk 2FA-kode (v0.34.0).
+- [x] **I-07** Tilgængelighedstests (kontrast, labels, alt, trykflader); fandt og rettede manglende labels på Min konto (v0.34.0). Browser-test med Playwright er forberedt, men kræver installation.
+- [x] **I-09** Evalueringsskemaet gemmer uden sideskift (v0.34.0).
+- [x] **I-10** Kalenderændringer (flyttet/væk) vises for oprettede kampe, med knap til at opdatere (v0.34.0).
 - [x] **B-051** Assistenter låst ude af motivation, udviklingsdata, rapporter, kampe og holdsætning på serversiden (v0.33.1).
 - **Arkitekturgennemgang + komplet dokumentation** – færdig (v0.30.0): driftstjek, tokens fjernet fra log, backup uden login, docs/ARCHITECTURE, SWIMLANES, FUNKTIONER, ARKITEKTURGENNEMGANG.
 - **Testmail-knap og Excel-import** – var allerede lavet (Administration); fjernet fra idéer.

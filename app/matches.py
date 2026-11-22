@@ -121,7 +121,48 @@ def suggestions():
             continue
         opp, looks = guess_opponent(e["summary"], own)
         rows.append(dict(e, opp=opp, same_day=e["day"] in days, looks_match=looks or ical.kind_of(e["summary"]) == "match"))
-    return render_template("matches_ical.html", rows=rows[:40], total=len(rows))
+    return render_template("matches_ical.html", rows=rows[:40], total=len(rows), changes=_feed_changes(db, events, today))
+
+
+_NOTE_TIME = re.compile(r"kl\. (\d\d:\d\d)")
+
+
+def _feed_changes(db, events, today):
+    """Allerede oprettede kampe (fra kalenderen), hvor kalenderen siden er ændret: flyttet dag/tid, eller væk (aflyst) – I-10."""
+    feed = {e["uid"]: e for e in events}
+    out = []
+    for m in db.execute("SELECT id, day, opponent, note, ical_uid FROM matches WHERE team_id=? AND ical_uid IS NOT NULL AND day>=? ORDER BY day", (team_id(), today)):
+        e = feed.get(m["ical_uid"])
+        if e is None:
+            out.append(dict(kind="removed", m=m))
+            continue
+        old = _NOTE_TIME.search(m["note"] or "")
+        new_time = (e.get("time") or "")[:5]
+        if e["day"] != m["day"] or (old and new_time and old.group(1) != new_time):
+            out.append(dict(kind="moved", m=m, day=e["day"], time=new_time, old_time=old.group(1) if old else ""))
+    return out
+
+
+@bp.route("/<int:mid>/kalender", methods=["POST"])
+def ical_update(mid):
+    """Opdatér dato/tid på en oprettet kamp efter kalenderen. Værdierne slås op i kalenderen – formularen bestemmer dem ikke."""
+    db = get_db()
+    m = _get(db, mid)
+    url = get_setting(db, team_id(), "ical_url")
+    events = _feed_events(db, url) if url and m["ical_uid"] else None
+    e = next((x for x in events or [] if x["uid"] == m["ical_uid"]), None)
+    if not e or not model.parse_date(e["day"]):
+        flash("Kampen findes ikke længere i kalenderen – ret den selv eller slet den.", "error")
+        return redirect(url_for("matches.suggestions"))
+    note = m["note"] or ""
+    t = (e.get("time") or "")[:5]
+    if t:
+        note = _NOTE_TIME.sub(f"kl. {t}", note) if _NOTE_TIME.search(note) else " · ".join(x for x in (f"kl. {t}", note) if x)
+    db.execute("UPDATE matches SET day=?, note=? WHERE id=?", (e["day"], note[:300], mid))
+    audit(db, g.user["username"], "kamp_fra_kalender", f"id={mid}")
+    db.commit()
+    flash("Kampen er opdateret efter kalenderen.", "ok")
+    return redirect(url_for("matches.suggestions"))
 
 
 @bp.route("/importer", methods=["POST"])
@@ -178,6 +219,14 @@ def _history(db, tid, players, exclude_mid):
     return hist
 
 
+def attendance_absent(db, tid, day, pids):
+    """Spillere, der ikke var til stede ifølge fremmøde-registreringen af en kamp samme dag (tom, hvis kampen ikke er registreret) – I-01."""
+    if not db.execute("SELECT 1 FROM att_events WHERE team_id=? AND day=? AND kind='match'", (tid, day)).fetchone():
+        return set()
+    present = {r["player_id"] for r in db.execute("SELECT m.player_id FROM att_marks m JOIN att_events e ON e.id=m.event_id WHERE e.team_id=? AND e.day=? AND e.kind='match'", (tid, day))}
+    return {pid for pid in pids if pid not in present}
+
+
 def _view(db, m, assign, players, absent=(), use_gk=True):
     sl = formations.slots(m["game_type"], m["formation"])
     labels = _labels(sl)
@@ -186,8 +235,10 @@ def _view(db, m, assign, players, absent=(), use_gk=True):
     for (per, slot), pid in assign.items():
         if pid in minutes:
             minutes[pid] += pmin
-    bench = {per: [p for p in players if p["id"] not in {pid for (pp, _s), pid in assign.items() if pp == per}] for per in range(m["periods"])}
-    return render_template("match_edit.html", m=m, sl=sl, labels=labels, assign=assign, players=players, minutes=minutes, bench=bench, total=m["periods"] * pmin, absent=set(absent), use_gk=use_gk)
+    away = attendance_absent(db, m["team_id"], m["day"], minutes)
+    bench = {per: [p for p in players if p["id"] not in away and p["id"] not in {pid for (pp, _s), pid in assign.items() if pp == per}] for per in range(m["periods"])}
+    return render_template("match_edit.html", m=m, sl=sl, labels=labels, assign=assign, players=players, minutes=minutes, bench=bench, total=m["periods"] * pmin,
+                           absent=set(absent) | away, away=[p for p in players if p["id"] in away], use_gk=use_gk)
 
 
 @bp.route("/<int:mid>", methods=["GET", "POST"])
@@ -274,9 +325,11 @@ def overview_data(db, tid, players, last=None):
     if last:
         ms = ms[:last]
     ids = {p["id"] for p in players}
-    stat = {p["id"]: dict(p=p, games=set(), total=0, by={k: 0 for k, _ in GROUPS}) for p in players}
+    stat = {p["id"]: dict(p=p, games=set(), total=0, by={k: 0 for k, _ in GROUPS}, away=0) for p in players}
     team_by = {k: 0 for k, _ in GROUPS}
     for m in ms:
+        for pid in attendance_absent(db, tid, m["day"], ids):
+            stat[pid]["away"] += 1                      # var ikke med (fremmøde) – tæller ikke som bænk
         labels = formations.slots(m["game_type"], m["formation"])
         for r in db.execute("SELECT period, slot, player_id FROM match_slots WHERE match_id=?", (m["id"],)):
             if r["player_id"] not in ids or r["slot"] >= len(labels):
@@ -290,10 +343,14 @@ def overview_data(db, tid, players, last=None):
     rows = []
     played = [s for s in stat.values() if s["games"]]
     avg = (sum(s["total"] for s in played) / len(played)) if played else 0
+    per_game = [s["total"] / (len(ms) - s["away"]) for s in played if len(ms) - s["away"] > 0]
+    avg_pg = (sum(per_game) / len(per_game)) if per_game else 0
     for s in stat.values():
         s["n"] = len(s["games"])
-        s["missing"] = [lab for k, lab in GROUPS if k in used and s["by"][k] == 0]
-        s["low"] = bool(avg) and s["total"] < 0.7 * avg
+        avail = len(ms) - s["away"]                     # kampe spilleren var med til
+        s["avail"] = avail
+        s["missing"] = [lab for k, lab in GROUPS if k in used and s["by"][k] == 0 and avail > 0]
+        s["low"] = bool(avg_pg) and avail > 0 and s["total"] / avail < 0.7 * avg_pg
         rows.append(s)
     rows.sort(key=lambda s: s["p"]["name"])
     return dict(rows=rows, used=used, n_matches=len(ms), avg=round(avg), groups=GROUPS)

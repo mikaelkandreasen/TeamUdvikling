@@ -247,9 +247,9 @@ def test_match_suggestions_import_no_duplicates(world, monkeypatch):
     page = ta.get("/kampe/forslag").get_data(as_text=True)
     assert "Beta, BK" in page and "Gammel kamp" not in page and "Gamma" not in page          # fortid og aflyst udeladt
     day = f"{d1[:4]}-{d1[4:6]}-{d1[6:]}"
-    ta.post("/kampe/importer", {"pick": ["0"], "day0": day, "time0": "10:00", "loc0": "Bane 3", "opp0": "Beta, BK", "uid0": "a1@x"}, page="/kampe/forslag")
+    ta.post("/kampe/importer", {"pick": ["0"], "day0": day, "time0": "08:00", "loc0": "Bane 3", "opp0": "Beta, BK", "uid0": "a1@x"}, page="/kampe/forslag")
     m = sql(app, "SELECT * FROM matches WHERE team_id=?", tid)
-    assert len(m) == 1 and m[0]["opponent"] == "Beta, BK" and m[0]["note"] == "kl. 10:00 · Bane 3" and m[0]["ical_uid"] == "a1@x"
+    assert len(m) == 1 and m[0]["opponent"] == "Beta, BK" and m[0]["note"] == "kl. 08:00 · Bane 3" and m[0]["ical_uid"] == "a1@x"
     ta.post("/kampe/importer", {"pick": ["0"], "day0": day, "opp0": "x", "uid0": "a1@x"}, page="/kampe/forslag")
     assert len(sql(app, "SELECT * FROM matches WHERE team_id=?", tid)) == 1                  # samme uid oprettes ikke to gange
     assert "Beta, BK" not in ta.get("/kampe/forslag").get_data(as_text=True)                 # oprettede vises ikke igen
@@ -299,3 +299,42 @@ def test_partial_update_hooks_exist_and_pages_still_work_without_js(world):
     assert "form[data-swap]" in js
     # almindelig POST (uden JS) virker som før: redirect tilbage til indbakken
     assert ta.post("/inbox/read", {}, page="/inbox/").status_code == 302
+
+
+def test_match_attendance_link_and_ical_changes(world, monkeypatch):
+    import datetime
+    from helpers import add_player, player_id
+    from app import ical
+    app, admin, ca, cb, ta, tb = world
+    for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"):
+        add_player(ta, n)
+    a, b, c = (player_id(app, n) for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"))
+    tid = team_id(app, "U11 Alfa")
+    ta.post("/kampe/ny", {"day": "2026-11-01", "opponent": "Rivalerne", "game_type": "8v8", "formation": "3-3-1", "periods": "2", "period_min": "10"}, page="/kampe/")
+    mid = sql(app, "SELECT id FROM matches")[0]["id"]
+    ta.post(f"/kampe/{mid}", {"p0s0": a, "p0s7": b, "p1s0": b, "p1s7": a}, page=f"/kampe/{mid}")
+    # fremmøde: kun Anna og Bo til stede -> Cille er «ikke med», ikke bænk og ikke «lidt tid»
+    ev = ta.post("/devdata/fremmoede", {"kind": "match", "day": "2026-11-01"}, page="/devdata/fremmoede")
+    eid = sql(app, "SELECT id FROM att_events WHERE kind='match'")[0]["id"]
+    ta.post(f"/devdata/fremmoede/{eid}", {"present": [str(a), str(b)]}, page=f"/devdata/fremmoede/{eid}")
+    page = ta.get(f"/kampe/{mid}").get_data(as_text=True)
+    assert "forudfyldt fra fremmøde: Cille Gamma" in page and "På bænken: Cille" not in page
+    ov = ta.get("/kampe/overblik").get_data(as_text=True)
+    assert "ikke med i 1" in ov and "Cille Gamma</div>" not in ov                          # ingen «hvid plet»-anklage mod fraværende
+    # I-10: flyttet og væk-fra-kalender for oprettede kampe
+    d1 = (datetime.date.today() + datetime.timedelta(days=20)).strftime("%Y%m%d")
+    d_new = (datetime.date.today() + datetime.timedelta(days=22)).strftime("%Y%m%d")
+    sql(app, "INSERT INTO settings(key,value) VALUES(?,?)", f"t{tid}:ical_url", "https://x.example/a.ics")
+    day = f"{d1[:4]}-{d1[4:6]}-{d1[6:]}"
+    sql(app, "INSERT INTO matches(team_id,day,opponent,game_type,formation,periods,period_min,note,created_by,ical_uid) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        tid, day, "Beta", "8v8", "3-3-1", 4, 12, "kl. 08:00 · Bane 3", "x", "a1@x")
+    sql(app, "INSERT INTO matches(team_id,day,opponent,game_type,formation,periods,period_min,note,created_by,ical_uid) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        tid, day, "Væk", "8v8", "3-3-1", 4, 12, "", "x", "gone@x")
+    monkeypatch.setattr(ical, "fetch", lambda url: ICS.format(d1=d_new, d2=d_new))
+    page = ta.get("/kampe/forslag").get_data(as_text=True)
+    assert "Ændret i kalenderen" in page and "Flyttet til" in page and "Findes ikke længere" in page
+    m1 = sql(app, "SELECT id FROM matches WHERE ical_uid='a1@x'")[0]["id"]
+    ta.post(f"/kampe/{m1}/kalender", {"day": "2000-01-01"}, page="/kampe/forslag")           # formularen bestemmer ikke datoen
+    row = sql(app, "SELECT day, note FROM matches WHERE id=?", m1)[0]
+    assert row["day"] == f"{d_new[:4]}-{d_new[4:6]}-{d_new[6:]}" and "Bane 3" in row["note"]
+    assert tb.post(f"/kampe/{m1}/kalender", {}, page="/kampe/").status_code == 404           # andet hold

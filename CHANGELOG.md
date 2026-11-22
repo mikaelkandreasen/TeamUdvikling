@@ -4,6 +4,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- Fremmøde kobles til kampe: spillere, der ikke var med, forudfyldes som «ikke med», tæller ikke som bænk og ikke som «lidt tid» (I-01).
+- Kampforslag viser ændringer i kalenderen for allerede oprettede kampe (flyttet/væk) og kan opdatere dato og tid (I-10).
+- Evalueringsskemaet gemmer uden at skifte side (kun med JavaScript; ellers som før) (I-09).
+- Tilgængelighedstests (kontrast, labels, billedtekster, trykflader) (I-07).
+
+### Sikkerhed
+- Rolle, e-mail, slet, lås op og profiler på en bruger kræver nu en frisk 2FA-kode (I-06).
+- Tjek mod lækkede adgangskoder er slået til som standard i compose (`PWNED_CHECK=1`) (I-05).
+- PNG/WebP afvises ved over 16 mio. pixels (B-11).
+
+### Ændret
+- `admin.py` delt i `admin.py` og `admin_more.py` (samme adresser). Felter på Min konto har nu rigtige labels.
+
 ## [0.33.1] - 2026-11-22
 
 ## [0.33.0] - 2026-11-22

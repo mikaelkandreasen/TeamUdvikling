@@ -32,6 +32,8 @@ services:
       # 2FA-krypteringsnøgle. Tom = /data/totp_key. Flyt den hertil ved at kopiere INDHOLDET af /data/totp_key (en anden nøgle gør alles 2FA ugyldig!),
       # gem den også et sikkert sted uden for backupperne, og slet derefter filen.
       TOTP_KEY: ${TOTP_KEY:-}
+      # 1 = nye adgangskoder tjekkes mod kendte datalæk (Have I Been Pwned; kun de første 5 tegn af en hash sendes). Fejl/ingen net = tjekket springes over.
+      PWNED_CHECK: ${PWNED_CHECK:-1}
       # 1 når backupperne kopieres krypteret til et andet sted (fjerner påmindelsen i Administration).
       BACKUP_OFFSITE: ${BACKUP_OFFSITE:-0}
     volumes:

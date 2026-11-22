@@ -135,7 +135,7 @@ flowchart TB
 | `matches.py` · `suggest.py` · `ical.py` | Kampe, spilletid pr. position, hvide pletter, opstillingsforslag, kampforslag fra kalender | `/kampe/…` |
 | `conversations.py` | Forældre-/spillersamtaler pr. spiller | `/samtaler/<pid>` |
 | `messages.py` · `mail_queue.py` · `mailer.py` | Indbakke (klub/hold/alle/svar), e-mail-kø med genforsøg, SMTP | `/inbox/…`, `/admin/mail` |
-| `admin.py` | Brugere, hold, klubber, evalueringsrunder, import/eksport, backup, opbevaringsfrist, sikkerhedslog, revisionslog, brug, e-mail-kø, driftstjek | `/admin/…` |
+| `admin.py` + `admin_more.py` | Brugere, hold, klubber, driftsindstillinger, backup, eksport, brug, revisionslog, e-mail-kø, driftstjek (admin.py); klubprofil, sikkerhedslog, opbevaringsfrist, import, evalueringsrunder, backlog (admin_more.py) – samme blueprint `admin` | `/admin/…` |
 | `importer.py` | Import fra Excel/CSV (to trin: forhåndsvisning → bekræft) | `/admin/import` |
 | `photos.py` | Validering, EXIF-fjernelse, beskæring, miniaturer | – |
 | `activity.py` | «Aktive nu» og brugsstatistik pr. kvarter (uden indhold) | `/aktivitet`, `/admin/usage` |
