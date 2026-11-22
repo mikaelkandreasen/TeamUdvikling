@@ -30,7 +30,6 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
 - **B-050 · Lavere pixelgrænse for PNG/WebP og opdeling af admin.py** · S/M – (A10/A13).
 
-- [ ] **B-051** Lås også assistenters adgang til motivation, udviklingsdata og rapporter på serversiden (i dag kun skjult i menuen).
 
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
@@ -45,6 +44,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Eksport af rapport som billede til deling med forældre.
 
 ## Færdigt
+- [x] **B-051** Assistenter låst ude af motivation, udviklingsdata, rapporter, kampe og holdsætning på serversiden (v0.33.1).
 - **Arkitekturgennemgang + komplet dokumentation** – færdig (v0.30.0): driftstjek, tokens fjernet fra log, backup uden login, docs/ARCHITECTURE, SWIMLANES, FUNKTIONER, ARKITEKTURGENNEMGANG.
 - **Testmail-knap og Excel-import** – var allerede lavet (Administration); fjernet fra idéer.
 - **Sprogvalg (da/en/de/sv/no)** – grundlag færdigt (v0.27.0): menuer, login, menu og Min konto oversat; resten under B-045.

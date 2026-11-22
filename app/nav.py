@@ -19,6 +19,7 @@ COACH = [("main.home", "Hjem", ""), ("players.index", "Spillere", ""), ("evaluat
          ("devdata.matrix", "Udviklingsdata", "devdata"), ("reports.index", "Rapporter", ""), ("main.criteria", "Skala & kriterier", "")]
 ASSISTANT_HIDDEN = {"lineup.index", "matches.index", "motivation.matrix", "devdata.matrix", "reports.index"}
 TEAM_BLUEPRINTS = {"players", "evaluation", "motivation", "devdata", "lineup", "team", "matches", "conv", "reports"}
+LOCKED_FOR_ASSISTANTS = {"lineup", "matches", "motivation", "devdata", "reports"}   # blueprints: låst på serveren (B-051)
 TEAM_ENDPOINTS = {"main.home", "main.mobile", "main.criteria"}
 
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import activity, i18n, mail_queue, features, secrets_box, auth, charts, club, db, helpers, model, photos, remember, teams
+from . import activity, i18n, mail_queue, nav, features, secrets_box, auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -138,6 +138,8 @@ def create_app(config=None):
         if (g.get("user") and g.user["readonly"] and request.method not in ("GET", "HEAD", "OPTIONS")
                 and not (request.endpoint or "").startswith("auth.") and request.endpoint not in ("main.switch_team", "main.set_lang", "inbox.read_all", "inbox.reply", "evaluation.eval_form")):
             abort(403, "Du er assistent: du kan se og evaluere, men ikke ændre andet.")
+        if g.get("user") and g.user["readonly"] and (request.endpoint or "").split(".")[0] in nav.LOCKED_FOR_ASSISTANTS:
+            abort(403, "Assistenter har ikke adgang til denne del.")
         if teams.archived_write_blocked(request.endpoint, request.method):
             abort(403, "Holdet er arkiveret og skrivebeskyttet. Genåbn det under Administration → Hold, hvis det skal ændres.")
         activity.touch()
@@ -175,8 +177,7 @@ def create_app(config=None):
         from . import profiles as _pf
         from .db import get_db
         myprof = _pf.list_for(get_db(), g.real_user) if g.get("real_user") and not g.get("viewing") and session.get("stage") == "ok" else []
-        from . import nav as _nav
-        nv = _nav.context(get_db()) if g.get("user") and session.get("stage") == "ok" else dict(nav_kind=None, nav_hidden=set(), nav_items=lambda: [], nav_tabs=lambda: [])
+        nv = nav.context(get_db()) if g.get("user") and session.get("stage") == "ok" else dict(nav_kind=None, nav_hidden=set(), nav_items=lambda: [], nav_tabs=lambda: [])
         return dict(**nv, _=i18n.gettext, lang=i18n.current(), langs=i18n.LANGS, my_profiles=myprof if len(myprof) > 1 else [], csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)

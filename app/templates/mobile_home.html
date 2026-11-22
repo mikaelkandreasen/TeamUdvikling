@@ -3,11 +3,11 @@
 {% if tfocus and tfocus['items'] %}<div class="card"><b>{{ _('Holdets fokus') }}</b> <a class="small" href="{{ url_for('team.focus') }}">{{ _('ret') }}</a><ul style="margin:.3rem 0 0">{% for x in tfocus['items'] %}<li>{{ x }}</li>{% endfor %}</ul></div>{% endif %}
 <div class="tiles">
   <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">Evaluér<small>{{ prog[cur-1]['label'] }}</small></a>
-  {% if features['motivation'] %}<a class="tile" href="{{ url_for('motivation.tablet_list') }}">{{ _('Spillerskema') }}<small>{{ _('til tablet/telefon') }}</small></a>{% endif %}
+  {% if features['motivation'] and 'motivation.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('motivation.tablet_list') }}">{{ _('Spillerskema') }}<small>{{ _('til tablet/telefon') }}</small></a>{% endif %}
   <a class="tile" href="{{ url_for('team.index') }}">Hold<small>{{ _('niveau, kalender, noter') }}</small></a>
   {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">{{ _('Noter') }}<small>{{ _('del med trænerne') }}</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">{{ _('Overblik') }}<small>{{ _('hele holdet') }}</small></a>
-  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde<small>afkryds træning/kamp</small></a>{% endif %}
+  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde<small>afkryds træning/kamp</small></a>{% endif %}
 </div>
 <details class="role">
 <summary>Spillere og score ({{ cards|length }})</summary>
@@ -18,7 +18,7 @@
     <div class="sub">{{ c['p']['position'] or 'ingen position' }}</div></div>
   <div class="acts">
     <a href="{{ url_for('evaluation.eval_form', rnd=cur, pid=c['p']['id']) }}" aria-label="Evaluér">✅</a>
-    <a href="{{ url_for('reports.report', pid=c['p']['id']) }}" aria-label="Rapport">📄</a>
+    {% if 'reports.index' not in nav_hidden %}<a href="{{ url_for('reports.report', pid=c['p']['id']) }}" aria-label="Rapport">📄</a>{% endif %}
   </div>
 </div>
 {% else %}

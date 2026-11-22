@@ -109,16 +109,18 @@ def test_head_coach_permissions_and_invites(world):
     ca.post(f"/admin/teams/{tid}/head", {"head_user": [str(sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"])]}, page="/admin/teams")
     assert ta.get("/team/settings").status_code == 200 and ta.get("/admin/evaluations").status_code == 200
     assert ta.get("/admin/clubs").status_code == 403 and ta.get("/admin/users").status_code == 403
-    # chef-træner kan kun invitere assistenter (også selvom formularen forsøger andet) til eget hold
+    # chef-træner kan invitere trænere og assistenter (aldrig chef-trænere) til eget hold
     data = {"email": "chef@example.dk", "role": "trainer", "as_head": "1", "teams": [str(tid), str(team_id(app, "U11 Beta"))], "code": code(app, ta, "tina")}
     ta.post("/admin/invitations/", data, page="/admin/invitations/", follow_redirects=True)
     row = sql(app, "SELECT * FROM invitations WHERE email='chef@example.dk'")[0]
-    assert row["team_ids"] == str(tid) and row["as_head"] == 0 and row["as_readonly"] == 1   # kun eget hold, kun assistent
+    assert row["team_ids"] == str(tid) and row["as_head"] == 0 and row["as_readonly"] == 0   # kun eget hold, aldrig chef-træner
     n = Client(app)
     n.c.post(link(app), data={"csrf_token": n.token(link(app)), "username": "chefny", "display_name": "Chef", "password": PW, "password2": PW})
     uid = sql(app, "SELECT id FROM users WHERE username='chefny'")[0]["id"]
     assert not sql(app, "SELECT 1 FROM team_heads WHERE team_id=? AND user_id=?", tid, uid)
-    assert sql(app, "SELECT readonly FROM users WHERE id=?", uid)[0]["readonly"] == 1
+    assert sql(app, "SELECT readonly FROM users WHERE id=?", uid)[0]["readonly"] == 0
+    ta.post("/admin/invitations/", {"email": "ass2@example.dk", "role": "trainer", "as_readonly": "1", "teams": [str(tid)], "code": code(app, ta, "tina")}, page="/admin/invitations/")
+    assert sql(app, "SELECT as_readonly FROM invitations WHERE email='ass2@example.dk'")[0]["as_readonly"] == 1
     # chef-træner kan ikke invitere klubadministrator eller se andres invitationer
     ta.post("/admin/invitations/", {"email": "x@example.dk", "role": "clubadmin", "code": code(app, ta, "tina")}, page="/admin/invitations/")
     assert not sql(app, "SELECT 1 FROM invitations WHERE email='x@example.dk'")
@@ -682,3 +684,11 @@ def test_role_based_menus(world):
     sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")
     nav = ta.get("/").get_data(as_text=True).split('<nav class="side"')[1].split("</nav>")[0]
     assert "Evaluering" in nav and "Motivation" not in nav and "Udviklingsdata" not in nav and "Rapporter" not in nav and "Assistenter" not in nav
+
+
+def test_assistant_locked_out_of_sensitive_sections(world):
+    app, admin, ca, cb, ta, tb = world
+    sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")
+    for path in ("/motivation/", "/devdata/", "/reports", "/kampe/", "/lineup/"):
+        assert ta.get(path).status_code == 403, path
+    assert ta.get("/eval").status_code == 200 and ta.get("/players/").status_code == 200

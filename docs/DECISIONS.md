@@ -145,5 +145,5 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 
 ## D-033 · Rollebaseret menu og assistent-invitation (2026-11-22)
 **Kontekst:** Alle roller så næsten samme menu. Administratorer så holdets spillerdata uden at have brug for det, og chef-trænere havde ingen synlig vej til at invitere hjælp.
-**Valg:** `nav.py` bygger sidemenu, mobilfaner og menuside pr. rolle (sysadmin, clubadmin, head, trainer, assistant). Administratorer lander på `/admin/`; holdsiderne åbnes med `?hold=1`. Chef-trænere kan kun invitere assistenter (`as_readonly` tvinges på serversiden).
-**Konsekvens:** Menuen er kun bekvemmelighed – sidernes egne rolle-tjek er uændrede, så assistenter kan stadig nå skjulte sider via URL. Skal de låses, er det en separat ændring (B-051).
+**Valg:** `nav.py` bygger sidemenu, mobilfaner og menuside pr. rolle (sysadmin, clubadmin, head, trainer, assistant). Administratorer lander på `/admin/`; holdsiderne åbnes med `?hold=1`. Chef-trænere kan invitere trænere og assistenter til egne hold, aldrig chef-trænere (`as_head` tvinges fra på serversiden).
+**Konsekvens:** Menuen er bekvemmelighed. Assistenters begrænsning håndhæves i `before_request` (`nav.LOCKED_FOR_ASSISTANTS`: kampe, holdsætning, motivation, udviklingsdata, rapporter → 403).
