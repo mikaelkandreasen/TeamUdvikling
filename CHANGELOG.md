@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-22
+
 ### Tilføjet
 - Fremmøde kobles til kampe: spillere, der ikke var med, forudfyldes som «ikke med», tæller ikke som bænk og ikke som «lidt tid» (I-01).
 - Kampforslag viser ændringer i kalenderen for allerede oprettede kampe (flyttet/væk) og kan opdatere dato og tid (I-10).
