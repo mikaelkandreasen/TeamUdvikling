@@ -411,3 +411,30 @@ def test_trainer_does_not_see_links_to_pages_without_access(world):
         assert 'href="/team/settings"' not in page and 'href="/team/criteria"' not in page and 'href="/admin/' not in page, url
     assert ta.get("/team/settings").status_code in (302, 403, 404)                       # og siden er reelt låst
     assert 'href="/team/settings"' in ca.get("/team/").get_data(as_text=True)             # klubadministrator ser den
+
+
+def test_import_is_scoped_to_own_club(world):
+    """Klubadmin i Alfa importerer en fil med holdnavnet «U11 Beta» (Beta Klubs hold): må ikke røre Beta Klub."""
+    import io, re
+    app, admin, ca, cb, ta, tb = world
+    switch(tb, team_id(app, "U11 Beta"))
+    player(tb, "Bea Beta")
+    csv = "Hold;Navn;Fødselsdato;Trøjenr\nU11 Beta;Bea Beta;10-03-2016;99\nU11 Beta;Ny Pige;2016-01-01;5\n".encode()
+    r = ca.c.post("/admin/import", data={"csrf_token": ca.token("/admin/import"), "file": (io.BytesIO(csv), "x.csv")}, content_type="multipart/form-data")
+    html = r.get_data(as_text=True)
+    token = re.search(r'name="token" value="([^"]+)"', html).group(1)
+    ca.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
+    beta_b = sql(app, "SELECT p.* FROM players p JOIN teams t ON t.id=p.team_id JOIN clubs c ON c.id=t.club_id WHERE c.name='Beta Klub'")
+    assert [p["name"] for p in beta_b] == ["Bea Beta"] and beta_b[0]["shirt_no"] in (None, "")   # Beta Klub urørt
+    new = sql(app, "SELECT t.club_id, COUNT(p.id) n FROM teams t JOIN players p ON p.team_id=t.id WHERE t.name='U11 Beta' GROUP BY t.id")
+    assert {(r["club_id"], r["n"]) for r in new} == {(club_id(app, "Beta Klub"), 1), (club_id(app, "Alfa Klub"), 2)}   # nyt hold i Alfa Klub
+
+
+def test_clubadmin_import_preview_cannot_be_committed_by_other_user(world):
+    import io, re
+    app, admin, ca, cb, ta, tb = world
+    csv = "Hold;Navn\nU11 Alfa;Ida\n".encode()
+    html = ca.c.post("/admin/import", data={"csrf_token": ca.token("/admin/import"), "file": (io.BytesIO(csv), "x.csv")}, content_type="multipart/form-data").get_data(as_text=True)
+    token = re.search(r'name="token" value="([^"]+)"', html).group(1)
+    cb.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
+    assert not sql(app, "SELECT 1 FROM players WHERE name='Ida'")

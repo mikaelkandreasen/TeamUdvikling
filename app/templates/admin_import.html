@@ -1,6 +1,7 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Import{% endblock %}
 {% block content %}
 <h1>Importér spillere og hold</h1>
+{% if club_name %}<p class="muted small">Til klubben <b>{{ club_name }}</b>.</p>{% endif %}
 <p class="muted">Upload en Excel- (.xlsx) eller CSV-fil. Du får en forhåndsvisning, før noget gemmes. Nye hold oprettes automatisk, og eksisterende spillere (samme hold, navn og fødselsdato) opdateres.</p>
 <form method="post" enctype="multipart/form-data" class="card">{{ csrf() }}
   <label for="f">Fil (.xlsx eller .csv, højst 1 MB)</label>

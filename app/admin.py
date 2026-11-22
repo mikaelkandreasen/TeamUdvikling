@@ -686,22 +686,31 @@ def retention():
 
 
 # ----------------------------------------------------------------------------- import af spillere/hold
+def _import_club(db):
+    """Klubben en import går til: klubadministratorens egen klub; for systemadministrator det aktive holds klub."""
+    cid = scope.my_club(g.user) or (g.team["club_id"] if g.get("team") else None) or club_get(db)["id"]
+    if not scope.can_manage_club(g.user, cid):
+        abort(403)
+    return cid
+
+
 @bp.route("/import", methods=["GET", "POST"])
 def import_data():
     db = get_db()
+    cid = _import_club(db)
     if request.method == "POST":
         up = request.files.get("file")
         if not up or not up.filename:
             flash("Vælg en fil.", "error")
             return redirect(url_for("admin.import_data"))
         try:
-            parsed = importer.classify(db, importer.parse(up.read(MAX_IMPORT + 1), up.filename, g.team["name"] if g.get("team") else ""))
+            parsed = importer.classify(db, importer.parse(up.read(MAX_IMPORT + 1), up.filename, g.team["name"] if g.get("team") else ""), cid)
         except importer.ImportError_ as e:
             flash(str(e), "error")
             return redirect(url_for("admin.import_data"))
         token = importer.stash(current_app.config["U11_DATA_DIR"], g.user["id"], parsed)
-        return render_template("admin_import_preview.html", p=parsed, token=token, shown=parsed["rows"][:100])
-    return render_template("admin_import.html")
+        return render_template("admin_import_preview.html", p=parsed, token=token, shown=parsed["rows"][:100], club_name=club_get(db, cid)["name"])
+    return render_template("admin_import.html", club_name=club_get(db, cid)["name"])
 
 
 MAX_IMPORT = 1024 * 1024
@@ -714,7 +723,11 @@ def import_commit():
     if not parsed or request.form.get("confirm") != "ja":
         flash("Importen er udløbet eller ikke bekræftet. Upload filen igen.", "error")
         return redirect(url_for("admin.import_data"))
-    new_n, upd_n, team_n = importer.apply(db, parsed)
+    cid = parsed.get("club_id")
+    if not cid or cid != _import_club(db):                    # forhåndsvisningen hører til en anden klub (fx skiftet hold/profil imellem)
+        flash("Importen hører til en anden klub. Upload filen igen.", "error")
+        return redirect(url_for("admin.import_data"))
+    new_n, upd_n, team_n = importer.apply(db, parsed, cid)
     audit(db, g.user["username"], "import", f"nye={new_n} opdateret={upd_n} nye_hold={team_n}")
     db.commit()
     flash(f"Import gennemført: {new_n} nye spillere, {upd_n} opdateret, {team_n} nye hold.", "ok")

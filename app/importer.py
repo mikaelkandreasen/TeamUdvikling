@@ -156,9 +156,10 @@ def parse(data, filename, default_team):
     return dict(rows=rows, teams=sorted({r["team"] for r in rows if not r["error"]}))
 
 
-def classify(db, parsed):
-    """Tilføjer status: ny / opdater / fejl, og markerer nye hold."""
-    existing_teams = {r["name"].lower(): r["id"] for r in db.execute("SELECT id,name FROM teams")}
+def classify(db, parsed, club_id):
+    """Tilføjer status: ny / opdater / fejl, og markerer nye hold. Hold slås kun op i den angivne klub (holdnavne er unikke pr. klub)."""
+    parsed["club_id"] = club_id
+    existing_teams = {r["name"].lower(): r["id"] for r in db.execute("SELECT id,name FROM teams WHERE club_id=?", (club_id,))}
     for r in parsed["rows"]:
         if r["error"]:
             r["status"] = "fejl"
@@ -176,10 +177,10 @@ def classify(db, parsed):
     return parsed
 
 
-def apply(db, parsed):
-    """Gemmer gyldige rækker. Returnerer (nye, opdaterede, nye_hold). Kald db.commit() udenfor."""
+def apply(db, parsed, club_id):
+    """Gemmer gyldige rækker i klubbens hold (nye hold oprettes i klubben). Returnerer (nye, opdaterede, nye_hold). Kald db.commit() udenfor."""
     from .db import create_team
-    teams = {r["name"].lower(): r["id"] for r in db.execute("SELECT id,name FROM teams")}
+    teams = {r["name"].lower(): r["id"] for r in db.execute("SELECT id,name FROM teams WHERE club_id=?", (club_id,))}
     seasons = {}
     for r in parsed["rows"]:
         if r["season"] and not r["error"]:
@@ -190,7 +191,7 @@ def apply(db, parsed):
             continue
         k = r["team"].lower()
         if k not in teams:
-            teams[k] = create_team(db, r["team"], seasons.get(k, ""))
+            teams[k] = create_team(db, r["team"], seasons.get(k, ""), club_id=club_id)
             team_n += 1
         tid = teams[k]
         hit = db.execute("SELECT id FROM players WHERE team_id=? AND lower(name)=? AND coalesce(birth_date,'')=?",

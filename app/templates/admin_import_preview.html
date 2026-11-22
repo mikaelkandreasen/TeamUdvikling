@@ -1,6 +1,7 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Forhåndsvisning{% endblock %}
 {% block content %}
 <h1>Forhåndsvisning</h1>
+{% if club_name %}<p class="muted small">Importeres til klubben <b>{{ club_name }}</b>. Hold med samme navn i andre klubber berøres ikke.</p>{% endif %}
 <div class="card">
   <p><b>{{ p.counts.ny }}</b> nye spillere · <b>{{ p.counts.opdater }}</b> opdateres · <b>{{ p.counts.fejl }}</b> rækker med fejl (springes over)</p>
   {% if p.new_teams %}<p>Nye hold oprettes: <b>{{ p.new_teams|join(', ') }}</b></p>{% endif %}
