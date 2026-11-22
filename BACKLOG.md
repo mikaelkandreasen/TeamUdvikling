@@ -39,6 +39,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **Kampforslag fra iCal-link** – færdig (v0.26.0). Idé: vis ændringer (flyttet/aflyst) for allerede oprettede kampe ved næste hentning.
 - **B-044 · E-mail-kø** – færdig (v0.26.0). Nulstillingsmail og prøvemail sendes stadig direkte, så brugeren får fejl med det samme (D-026).
 - **v0.26.0** – B-041 automatisk isolationstest af alle id-ruter (andet hold og anden klub, positiv kontrol, fejler ved ny ubeskyttet rute).
 - **v0.25.0** – B-040 rigtige migrationer (runner, log, backup før, rollback, tests, docs/MIGRATIONS.md).

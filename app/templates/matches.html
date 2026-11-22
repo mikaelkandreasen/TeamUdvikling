@@ -2,7 +2,8 @@
 {% block content %}
 <h1>Kampe og spilletid – {{ team['name'] }}</h1>
 <p class="muted small">Sæt spillerne på positioner periode for periode. Oversigten viser, hvor længe hver spiller har spillet på hver position – og hvor der er hvide pletter.</p>
-<div class="actions"><a class="btn sec" href="{{ url_for('matches.overview') }}">Spilletid og hvide pletter</a></div>
+<div class="actions"><a class="btn sec" href="{{ url_for('matches.overview') }}">Spilletid og hvide pletter</a>{% if has_ical %} <a class="btn" href="{{ url_for('matches.suggestions') }}">Hent kampforslag</a>{% endif %}</div>
+{% if not has_ical %}<p class="muted small">Tip: sæt holdets kalenderlink (iCal) under Holdindstillinger, så kampene kan hentes som forslag.</p>{% endif %}
 {% for r in rows %}<a class="pcard" href="{{ url_for('matches.edit', mid=r['id']) }}"><div class="nm">{{ r['day']|date_dk }} {{ '– ' ~ r['opponent'] if r['opponent'] }}
   <div class="sub">{{ r['game_type'] }} {{ r['formation'] }} · {{ r['periods'] }} × {{ r['period_min'] }} min · {{ 'ikke sat endnu' if not r['filled'] else 'opstilling gemt' }}</div></div><span>›</span></a>
 {% else %}<div class="card muted">Ingen kampe endnu.</div>{% endfor %}

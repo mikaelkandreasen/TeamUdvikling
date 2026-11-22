@@ -1,10 +1,11 @@
 """Kampe: sæt spillere på positioner pr. periode, så spilletid pr. spiller og position kan summeres over tid (hvide pletter)."""
 import datetime
+import re
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
-from . import formations, model
-from .db import audit, get_db
+from . import club, formations, ical, model
+from .db import audit, get_db, get_setting
 from .helpers import active_players, int_in, team_id
 from .team import profile
 
@@ -52,7 +53,74 @@ def index():
     db = get_db()
     rows = db.execute("SELECT m.*, (SELECT COUNT(*) FROM match_slots s WHERE s.match_id=m.id) AS filled FROM matches m WHERE m.team_id=? ORDER BY m.day DESC, m.id DESC", (team_id(),)).fetchall()
     return render_template("matches.html", rows=rows, types=formations.GAME_TYPES, options=formations.FORMATIONS, default_type=profile(db, team_id())["game_type"],
-                           defaults=formations.DEFAULT_FORMATION, today=datetime.date.today().isoformat(), size=formations.GAME_TYPES)
+                           defaults=formations.DEFAULT_FORMATION, has_ical=bool(get_setting(db, team_id(), "ical_url")), today=datetime.date.today().isoformat(), size=formations.GAME_TYPES)
+
+
+_SPLIT = re.compile(r"\s+(?:-|–|—|vs\.?|v|mod)\s+", re.I)
+
+
+def guess_opponent(summary, own_names):
+    """Modstanderen ud fra en titel som 'U11 Piger: Virring IF - Skanderborg': delen, der ikke ligner eget hold/klub. Returnerer (navn, ligner_kamp)."""
+    s = re.sub(r"^\s*(kamp|[A-ZÆØÅ]\d{1,2}\b[^:]*):\s*", "", summary or "").strip()
+    parts = [p.strip() for p in _SPLIT.split(s) if p.strip()]
+    if len(parts) < 2:
+        return s[:60], False
+    own = [n.lower() for n in own_names if n and len(n) >= 3]
+    rest = [p for p in parts if not any(o in p.lower() or p.lower() in o for o in own)]
+    return (rest[0] if rest else parts[-1])[:60], True
+
+
+@bp.route("/forslag")
+def suggestions():
+    """Henter kalenderen og viser kommende kampe, der endnu ikke er oprettet."""
+    db = get_db()
+    url = get_setting(db, team_id(), "ical_url")
+    if not url:
+        flash("Tilføj først holdets kalenderlink under Holdindstillinger.", "error")
+        return redirect(url_for("matches.index"))
+    try:
+        events = ical.parse(ical.fetch(url))
+    except ical.FeedError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("matches.index"))
+    today = datetime.date.today().isoformat()
+    have = db.execute("SELECT ical_uid, day FROM matches WHERE team_id=?", (team_id(),)).fetchall()
+    uids, days = {r["ical_uid"] for r in have if r["ical_uid"]}, {r["day"] for r in have}
+    own = [g.team["name"], club.info()["name"], (club.info()["name"] or "").split(" ")[0]]
+    rows = []
+    for e in events:
+        if e["day"] < today or e["uid"] in uids:
+            continue
+        opp, looks = guess_opponent(e["summary"], own)
+        rows.append(dict(e, opp=opp, same_day=e["day"] in days, looks_match=looks or ical.kind_of(e["summary"]) == "match"))
+    return render_template("matches_ical.html", rows=rows[:40], total=len(rows))
+
+
+@bp.route("/importer", methods=["POST"])
+def import_matches():
+    db = get_db()
+    prof = profile(db, team_id())
+    gt = prof["game_type"]
+    fm = formations.DEFAULT_FORMATION.get(gt) or formations.DEFAULT_FORMATION.get(formations.DEFAULT_TYPE)
+    n = 0
+    for i in request.form.getlist("pick")[:60]:
+        if not i.isdigit():
+            continue
+        day = (request.form.get(f"day{i}") or "").strip()
+        uid = (request.form.get(f"uid{i}") or "").strip()[:200]
+        if not model.parse_date(day) or not uid:
+            continue
+        if db.execute("SELECT 1 FROM matches WHERE team_id=? AND ical_uid=?", (team_id(), uid)).fetchone():
+            continue
+        time, place = (request.form.get(f"time{i}") or "").strip()[:5], (request.form.get(f"loc{i}") or "").strip()[:200]
+        note = " · ".join(x for x in ((f"kl. {time}" if time else ""), place) if x)
+        db.execute("INSERT INTO matches(team_id,day,opponent,game_type,formation,periods,period_min,note,created_by,ical_uid) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                   (team_id(), day, (request.form.get(f"opp{i}") or "").strip()[:60], gt, fm, 4, 12, note, g.user["username"], uid))
+        n += 1
+    audit(db, g.user["username"], "kampe_importeret", f"antal={n}")
+    db.commit()
+    flash(f"{n} kampe oprettet. Sæt spillere på under hver kamp." if n else "Ingen kampe valgt.", "ok" if n else "error")
+    return redirect(url_for("matches.index"))
 
 
 @bp.route("/ny", methods=["POST"])

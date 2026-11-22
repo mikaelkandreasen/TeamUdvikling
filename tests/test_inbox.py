@@ -139,7 +139,6 @@ def test_matches_minutes_white_spots_and_scoping(world):
     page = ta.get(f"/kampe/{mid}").get_data(as_text=True)
     assert "Anna Alfa: <b>20</b> min" in page and "Cille Gamma: <b>0</b> min" in page
     ov = ta.get("/kampe/overblik").get_data(as_text=True)
-    assert "Anna Alfa" in ov and "mangler: Forsvar" not in ov or True
     from app import db as appdb
     from app.matches import overview_data
     with app.app_context():
@@ -198,4 +197,61 @@ def test_assistant_evaluates_but_counts_only_if_head_coach_includes(world):
     assert "medtag" in mia.get("/admin/evaluations").get_data(as_text=True)
     mia.post("/admin/evaluations", {"action": "assist", "round": "1"}, page="/admin/evaluations")
     assert samlet() == 4
-    assert "Du er assistent" in ta.get("/evaluation/runde/1/spiller/%d" % pid).get_data(as_text=True) or True
+
+
+ICS = """BEGIN:VCALENDAR\r
+BEGIN:VEVENT\r
+UID:a1@x\r
+DTSTART:{d1}T080000Z\r
+SUMMARY:U11 Piger: Alfa IF - Beta\\, BK\r
+LOCATION:Bane 3\\, Beta\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:a2@x\r
+DTSTART;VALUE=DATE:{d2}\r
+SUMMARY:Gamma vs Alfa IF\r
+STATUS:CANCELLED\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:a3@x\r
+DTSTART:20200101T100000Z\r
+SUMMARY:Gammel kamp\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+UID:a4@x\r
+DTSTART;TZID=Europe/Copenhagen:{d1}T100000\r
+SUMMARY:Delta -\r
+ Alfa IF\r
+END:VEVENT\r
+END:VCALENDAR\r
+"""
+
+
+def test_guess_opponent():
+    from app.matches import guess_opponent
+    assert guess_opponent("U11 Piger: Alfa IF - Beta, BK", ["U11 Alfa", "Alfa IF", "Alfa"]) == ("Beta, BK", True)
+    assert guess_opponent("Gamma vs Alfa IF", ["Alfa"]) == ("Gamma", True)
+    assert guess_opponent("Træning", ["Alfa"]) == ("Træning", False)
+
+
+def test_match_suggestions_import_no_duplicates(world, monkeypatch):
+    import datetime
+    from app import ical
+    app, admin, ca, cb, ta, tb = world
+    d1 = (datetime.date.today() + datetime.timedelta(days=20)).strftime("%Y%m%d")
+    d2 = (datetime.date.today() + datetime.timedelta(days=21)).strftime("%Y%m%d")
+    monkeypatch.setattr(ical, "fetch", lambda url: ICS.format(d1=d1, d2=d2))
+    tid = team_id(app, "U11 Alfa")
+    assert ta.get("/kampe/forslag").status_code == 302                                       # intet link endnu
+    sql(app, "INSERT INTO settings(key,value) VALUES(?,?)", f"t{tid}:ical_url", "https://x.example/a.ics")
+    page = ta.get("/kampe/forslag").get_data(as_text=True)
+    assert "Beta, BK" in page and "Gammel kamp" not in page and "Gamma" not in page          # fortid og aflyst udeladt
+    day = f"{d1[:4]}-{d1[4:6]}-{d1[6:]}"
+    ta.post("/kampe/importer", {"pick": ["0"], "day0": day, "time0": "10:00", "loc0": "Bane 3", "opp0": "Beta, BK", "uid0": "a1@x"}, page="/kampe/forslag")
+    m = sql(app, "SELECT * FROM matches WHERE team_id=?", tid)
+    assert len(m) == 1 and m[0]["opponent"] == "Beta, BK" and m[0]["note"] == "kl. 10:00 · Bane 3" and m[0]["ical_uid"] == "a1@x"
+    ta.post("/kampe/importer", {"pick": ["0"], "day0": day, "opp0": "x", "uid0": "a1@x"}, page="/kampe/forslag")
+    assert len(sql(app, "SELECT * FROM matches WHERE team_id=?", tid)) == 1                  # samme uid oprettes ikke to gange
+    assert "Beta, BK" not in ta.get("/kampe/forslag").get_data(as_text=True)                 # oprettede vises ikke igen
+    assert sql(app, "SELECT COUNT(*) n FROM matches WHERE team_id<>?", tid)[0]["n"] == 0     # intet landede på andre hold
+    assert tb.get("/kampe/forslag").status_code == 302                                       # andet hold: intet link, intet at se

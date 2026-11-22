@@ -112,3 +112,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Mails til mange modtagere blokerede forespørgslen, og en SMTP-fejl gik tabt.
 **Valg:** Tabel `mail_queue` + baggrundstråd pr. gunicorn-worker; rækkelås (`locked_until`) mod dobbeltsending. Backoff 1 min–3 t, 6 forsøg. Brødtekst slettes ved sendt/opgivet (engangslinks); log gemmer kun fejltypen. Nulstilling og prøvemail er bevidst direkte, fordi brugeren skal se fejlen med det samme, og tokenet fjernes ved fejl.
 **Konsekvens:** Invitationer/beskeder kan blive forsinket ved SMTP-problemer; status ses under Administration → E-mail-kø. Mails mistes ikke ved genstart (de ligger i databasen).
+
+## D-027 · Kampforslag fra iCal (2026-11-22)
+**Kontekst:** Kampe blev tastet både i kampprogrammet og her.
+**Valg:** Genbruger holdets eksisterende kalenderlink og den SSRF-låste hentning/parser i `ical.py` (hentes kun ved knaptryk). Trænerne vælger og kan rette modstanderen (gættes ud fra titlen). Dubletter undgås med `matches.ical_uid` (migration 012).
+**Konsekvens:** Flyttede/aflyste kampe opdaterer ikke allerede oprettede kampe. Klokkeslæt vises som feedet angiver dem (ingen tidszoneomregning).

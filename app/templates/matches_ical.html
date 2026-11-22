@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Kampforslag{% endblock %}
+{% block content %}
+<h1>Kampforslag fra kalenderen</h1>
+<p class="muted small">Kommende aftaler fra holdets kalender, som ikke er oprettet som kamp endnu. Ret modstanderen, hvis gættet er forkert, og vælg de kampe, der skal oprettes. Kamptype og opstilling følger holdets indstilling.</p>
+{% if rows %}<form method="post" action="{{ url_for('matches.import_matches') }}" class="card">{{ csrf() }}
+{% for r in rows %}<div class="row" style="padding:10px 0;border-bottom:1px solid #eee">
+  <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" name="pick" value="{{ loop.index0 }}" {{ 'checked' if r.looks_match and not r.same_day }}> <b>{{ r.day|date_dk }}</b>{% if r.time %} kl. {{ r.time }}{% endif %}</label>
+  <div class="small muted">{{ r.summary }}{% if r.location %} · {{ r.location }}{% endif %}{% if r.same_day %} · <b>Der er allerede en kamp den dag</b>{% endif %}</div>
+  <label for="o{{ loop.index0 }}" class="small">Modstander</label><input id="o{{ loop.index0 }}" name="opp{{ loop.index0 }}" value="{{ r.opp }}" maxlength="60">
+  <input type="hidden" name="day{{ loop.index0 }}" value="{{ r.day }}"><input type="hidden" name="time{{ loop.index0 }}" value="{{ r.time }}">
+  <input type="hidden" name="loc{{ loop.index0 }}" value="{{ r.location }}"><input type="hidden" name="uid{{ loop.index0 }}" value="{{ r.uid }}"></div>{% endfor %}
+{% if total > rows|length %}<p class="muted small">Viser de første {{ rows|length }} af {{ total }}.</p>{% endif %}
+<div class="actions"><button class="btn">Opret valgte kampe</button> <a class="btn sec" href="{{ url_for('matches.index') }}">Annuller</a></div></form>
+{% else %}<div class="card muted">Ingen nye kommende kampe i kalenderen.</div><div class="actions"><a class="btn sec" href="{{ url_for('matches.index') }}">Tilbage</a></div>{% endif %}
+{% endblock %}
