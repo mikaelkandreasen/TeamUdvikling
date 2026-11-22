@@ -133,6 +133,7 @@ _T = {
     'Forklaring': ('Legend', 'Legende', 'Förklaring', 'Forklaring'),
     'Ret farver': ('Edit colours', 'Farben ändern', 'Ändra färger', 'Endre farger'),
     'Gennemsnit vises som en blanding af nabofarverne.': ('Averages are shown as a blend of the neighbouring colours.', 'Durchschnitte werden als Mischung der benachbarten Farben angezeigt.', 'Medelvärden visas som en blandning av grannfärgerna.', 'Gjennomsnitt vises som en blanding av nabofargene.'),
+    'Klubadministration': ('Club administration', 'Vereinsverwaltung', 'Klubbadministration', 'Klubbadministrasjon'),
 }
 TR = {"en": {}, "de": {}, "sv": {}, "no": {}}
 for _k, _v in _T.items():

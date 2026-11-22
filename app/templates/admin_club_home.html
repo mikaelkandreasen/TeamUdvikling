@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Klubadministration{% endblock %}
+{% block content %}
+<h1>Klubadministration – {{ club['name'] or club['app_name'] }}</h1>
+<p class="muted small">Her retter du det, du som klubadministrator har ret til i din klub. Andre klubber kan hverken ses eller ændres herfra.</p>
+
+<div class="card"><h2>Klubben i tal</h2>
+  <div class="stats">
+    <div><b>{{ stats.teams }}</b><span>aktive hold</span></div>
+    <div><b>{{ stats.players }}</b><span>aktive spillere</span></div>
+    <div><b>{{ stats.trainers }}</b><span>trænere</span></div>
+    <div><b>{{ stats.assistants }}</b><span>assistenter</span></div>
+    <div><b>{{ stats.admins }}</b><span>klubadministratorer</span></div>
+    <div><b>{{ stats.invites }}</b><span>ventende invitationer</span></div>
+  </div></div>
+
+{% if stats.no_2fa or stats.overdue %}<div class="card" role="status" style="border-left:4px solid #e0b020"><h2>Kræver opmærksomhed</h2>
+  {% if stats.no_2fa %}<p class="small">{{ stats.no_2fa }} bruger{{ 'e' if stats.no_2fa != 1 }} har ikke sat 2FA op endnu. <a href="{{ url_for('admin.users') }}">Se brugere</a></p>{% endif %}
+  {% if stats.overdue %}<p class="small">{{ stats.overdue }} inaktiv{{ 'e' if stats.overdue != 1 }} spiller{{ 'e' if stats.overdue != 1 }} – tjek opbevaringsfristen. <a href="{{ url_for('admin.retention') }}">Dataoprydning</a></p>{% endif %}
+</div>{% endif %}
+
+<h2>Klubben</h2>
+<div class="tiles">
+  <a class="tile" href="{{ url_for('admin.club_profile') }}">Klubprofil<small>navn, logo, farve, motto, kontakt</small></a>
+  <a class="tile" href="{{ url_for('inbox.index') }}">Besked til klubben<small>vises for alle ved næste login, evt. e-mail</small></a>
+</div>
+<h2>Personer</h2>
+<div class="tiles">
+  <a class="tile" href="{{ url_for('admin.users') }}">Brugere<small>roller, hold, chef-trænere, stop, nulstil</small></a>
+  <a class="tile" href="{{ url_for('invites_admin.index') }}">Invitationer<small>inviter trænere, assistenter og klubadministratorer</small></a>
+</div>
+<h2>Hold og data</h2>
+<div class="tiles">
+  <a class="tile alt" href="{{ url_for('admin.teams') }}">Hold<small>opret, omdøb, arkivér</small></a>
+  {% if team %}<a class="tile alt" href="{{ url_for('admin.evaluations') }}">Evalueringsrunder<small>{{ team['name'] }}: åbn/genåbn, assistenter</small></a>
+  <a class="tile alt" href="{{ url_for('admin.settings') }}">Rundenavne<small>{{ team['name'] }}: navne og datoer</small></a>
+  <a class="tile alt" href="{{ url_for('team.settings') }}">Holdindstillinger<small>{{ team['name'] }}: funktioner, farver, kalender</small></a>{% endif %}
+  <a class="tile alt" href="{{ url_for('admin.import_data') }}">Import<small>spillere og hold fra Excel/CSV</small></a>
+  <a class="tile alt" href="{{ url_for('admin.retention') }}">Dataoprydning<small>opbevaringsfrist, slet inaktive</small></a>
+</div>
+
+<div class="card" style="margin-top:.9rem"><h2>Klubbens hold</h2>
+  <p class="muted small">Vælg et hold for at arbejde med dets runder og indstillinger.</p>
+  {% for t in teams_ %}<div class="clubteam">
+    <div><b>{{ t['name'] }}</b>{% if t['season'] %} <span class="muted small">{{ t['season'] }}</span>{% endif %}{% if t['archived'] %} <span class="badge">arkiveret</span>{% endif %}
+      <div class="muted small">{{ t['players'] }} spillere · {{ t['trainers'] }} trænere{% if heads.get(t['id']) %} · chef: {{ heads[t['id']]|join(', ') }}{% else %} · <b>ingen chef-træner</b>{% endif %}</div></div>
+    {% if not team or team['id'] != t['id'] %}<form method="post" action="{{ url_for('main.switch_team') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="team_id" value="{{ t['id'] }}"><button class="btn sec">Vælg</button></form>
+    {% else %}<span class="badge">aktivt</span>{% endif %}
+  </div>{% else %}<p class="muted">Ingen hold endnu. <a href="{{ url_for('admin.teams') }}">Opret det første</a>.</p>{% endfor %}
+</div>
+{% endblock %}

@@ -4,6 +4,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Klubadministration:** klubadministratorer har nu et menupunkt og en samlet side med klubbens nøgletal, ting der kræver opmærksomhed (brugere uden 2FA, inaktive spillere), alle sider de må rette (klubprofil, besked til klubben, brugere, invitationer, hold, evalueringsrunder, holdindstillinger, import, dataoprydning) og en liste over klubbens hold med chef-trænere. Før fandtes siderne, men der var intet link til dem.
+
+### Sikkerhed
+- **Import var ikke afgrænset til klubben:** hold blev slået op på navn på tværs af alle klubber, så en klubadministrator kunne opdatere eller tilføje spillere på et hold med samme navn i en anden klub, og nye hold blev oprettet i standardklubben. Importen bruger nu kun egen klub (systemadministrator: det aktive holds klub), forhåndsvisningen viser hvilken klub, og bekræftelsen afvises, hvis klubben er skiftet imellem.
+
 ## [0.31.0] - 2026-11-22
 
 ### Tilføjet

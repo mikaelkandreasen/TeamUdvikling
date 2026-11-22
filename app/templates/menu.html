@@ -14,6 +14,7 @@
   <a class="tile alt" href="{{ url_for('main.criteria') }}">{{ _('Skala & kriterier') }}</a>
   <a class="tile alt" href="{{ url_for('inbox.index') }}">{{ _('Beskeder') }}{% if inbox_unread %} ({{ inbox_unread|length }}){% endif %}</a>
   <a class="tile alt" href="{{ url_for('auth.account') }}">{{ _('Min konto') }}</a>
-  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">{{ _('Administration') }}</a>{% endif %}
+  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">{{ _('Administration') }}</a>
+  {% elif user['role'] == 'clubadmin' %}<a class="tile" href="{{ url_for('admin.index') }}">{{ _('Klubadministration') }}</a>{% endif %}
 </div>
 {% endblock %}

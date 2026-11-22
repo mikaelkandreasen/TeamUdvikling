@@ -438,3 +438,21 @@ def test_clubadmin_import_preview_cannot_be_committed_by_other_user(world):
     token = re.search(r'name="token" value="([^"]+)"', html).group(1)
     cb.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
     assert not sql(app, "SELECT 1 FROM players WHERE name='Ida'")
+
+
+def test_clubadmin_has_club_admin_page_with_only_own_club_and_working_links(world):
+    import re
+    app, admin, ca, cb, ta, tb = world
+    assert "Klubadministration" in ca.get("/menu").get_data(as_text=True)
+    assert "Klubadministration" not in ta.get("/menu").get_data(as_text=True)                 # trænere ser den ikke
+    page = ca.get("/admin/").get_data(as_text=True)
+    assert "Klubadministration – Alfa Klub" in page and "U11 Alfa" in page
+    assert "U11 Beta" not in page and "Beta Klub" not in page                                # anden klub er usynlig
+    links = {h for h in re.findall(r'href="(/[^"#]*)"', page) if h.startswith(("/admin", "/inbox", "/team"))}
+    assert {"/admin/club", "/admin/users", "/admin/invitations/", "/admin/teams", "/admin/import", "/admin/retention"} <= links
+    for h in sorted(links):
+        assert ca.get(h).status_code == 200, h                                                # alle links virker for klubadmin
+    for h in ("/admin/security", "/admin/mail", "/admin/usage", "/admin/audit", "/admin/clubs", "/admin/backlog", "/admin/users/overview", "/admin/export.xlsx"):
+        assert ca.get(h).status_code == 403, h                                                # kun systemadministrator
+    sysp = admin.get("/admin/").get_data(as_text=True)
+    assert "Driftstjek" in sysp and "Klubber" in sysp                                         # systemadmin har stadig fuld side

@@ -92,6 +92,7 @@ En bruger kan have flere profiler (fx træner i én klub og klubadministrator i 
 - Valgfrit også som e-mail (sendes i baggrunden med genforsøg).
 
 ### 3.13 Administration
+- **Klubadministration** (klubadministrator): én side med klubbens nøgletal, opgaver der kræver opmærksomhed, klubbens hold og genveje til alt, rollen må rette – kun egen klub.
 - Brugere (opret, roller, hold, stop, «se som» skrivebeskyttet), invitationer, hold (opret, arkivér, slet), klubber og klubprofil.
 - Evalueringsrunder (navn, dato, genåbning, assistenter), indstillinger, import fra Excel/CSV (forhåndsvisning før import), eksport til Excel.
 - Backup (download), opbevaringsfrist for inaktive spillere, sikkerhedslog (30 dage), revisionslog, brugsstatistik, e-mail-kø, **driftstjek**, intern backlog.

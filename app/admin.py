@@ -34,8 +34,37 @@ def _guard():
 @bp.route("/")
 def index():
     from . import selfcheck
-    checks = selfcheck.run(current_app.config) if scope.is_sysadmin(g.user) else []
-    return render_template("admin_index.html", sysadmin=scope.is_sysadmin(g.user), checks=checks)
+    if not scope.is_sysadmin(g.user):
+        return _club_home(get_db())
+    return render_template("admin_index.html", sysadmin=True, checks=selfcheck.run(current_app.config))
+
+
+def _club_home(db):
+    """Klubadministration: én side med klubbens nøgletal, hold og alt det, en klubadministrator må rette – kun egen klub."""
+    cid = scope.my_club(g.user)
+    if not cid:
+        abort(403)
+    now = int(time.time())
+    one = lambda q, *a: db.execute(q, a).fetchone()[0]
+    stats = dict(
+        teams=one("SELECT COUNT(*) FROM teams WHERE club_id=? AND archived=0", cid),
+        archived=one("SELECT COUNT(*) FROM teams WHERE club_id=? AND archived=1", cid),
+        players=one("SELECT COUNT(*) FROM players p JOIN teams t ON t.id=p.team_id WHERE t.club_id=? AND p.active=1 AND t.archived=0", cid),
+        trainers=one("SELECT COUNT(*) FROM users WHERE club_id=? AND role='trainer' AND readonly=0 AND stopped_at IS NULL", cid),
+        assistants=one("SELECT COUNT(*) FROM users WHERE club_id=? AND role='trainer' AND readonly=1 AND stopped_at IS NULL", cid),
+        admins=one("SELECT COUNT(*) FROM users WHERE club_id=? AND role='clubadmin' AND stopped_at IS NULL", cid),
+        invites=one("SELECT COUNT(*) FROM invitations WHERE club_id=? AND used_at IS NULL AND revoked=0 AND expires_at>?", cid, now),
+        no_2fa=one("SELECT COUNT(*) FROM users WHERE club_id=? AND totp_enabled=0 AND stopped_at IS NULL", cid),
+        overdue=one("SELECT COUNT(*) FROM players p JOIN teams t ON t.id=p.team_id WHERE t.club_id=? AND p.active=0 AND p.deactivated_at IS NOT NULL", cid),
+    )
+    heads = {}
+    for r in db.execute("SELECT th.team_id, u.display_name FROM team_heads th JOIN users u ON u.id=th.user_id JOIN teams t ON t.id=th.team_id "
+                        "WHERE t.club_id=? ORDER BY u.display_name COLLATE NOCASE", (cid,)):
+        heads.setdefault(r["team_id"], []).append(r["display_name"])
+    teams_ = db.execute("SELECT t.id, t.name, t.season, t.archived, (SELECT COUNT(*) FROM players p WHERE p.team_id=t.id AND p.active=1) AS players, "
+                        "(SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id=t.id) AS trainers FROM teams t WHERE t.club_id=? "
+                        "ORDER BY t.archived, t.name COLLATE NOCASE", (cid,)).fetchall()
+    return render_template("admin_club_home.html", club=club_get(db, cid), stats=stats, teams_=teams_, heads=heads)
 
 
 @bp.route("/testmail", methods=["POST"])

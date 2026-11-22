@@ -99,3 +99,6 @@ Rettet:
 Ikke fundet: SQL-injektion (dynamiske kolonnenavne kommer fra faste lister), XSS (al brugertekst autoescapes; Markup kun til server-genererede SVG med escapede værdier), manglende adgangskontrol (rutetest + ratchet-test grønne).
 
 Ikke verificeret her (ingen netværk): at Pillow 13/gunicorn 26 installeres og kører i imaget – CI-røgtesten fanger det ved første push. Bandit/pip-audit køres i CI, ikke lokalt.
+
+## Rettelse 2026-11-22 (v0.32.0): import afgrænset til klub
+`importer.classify/apply` slog hold op med `SELECT … FROM teams` uden klub. En klubadministrator kunne derfor ramme et hold med samme navn i en anden klub (opdatere/oprette spillere), og nye hold kom i standardklubben. Nu tager begge funktioner `club_id`; klubben gemmes i forhåndsvisningen og kontrolleres igen ved bekræftelse. Isolationstest: `test_import_is_scoped_to_own_club`.
