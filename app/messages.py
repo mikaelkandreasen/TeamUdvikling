@@ -1,7 +1,7 @@
 """Indbakke: beskeder fra klubadministrator (til hele klubben) og chef-træner (til holdet). Vises ved næste login indtil de er læst, og gemmes i indbakken."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 
-from . import mailer, scope
+from . import club, mailer, scope
 from .db import audit, get_db
 from .team import can_configure
 
@@ -11,7 +11,8 @@ MAX_TITLE, MAX_BODY = 120, 3000
 
 def _visible_sql(user):
     """WHERE-del: klubbeskeder i brugerens klub + beskeder til hold brugeren er tilknyttet (user_teams)."""
-    return ("m.club_id = ? AND (m.team_id IS NULL OR m.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?))", (user["club_id"] or -1, user["id"]))
+    return ("((m.club_id = ? AND (m.team_id IS NULL OR m.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?))) OR m.club_id = 0)",
+            (user["club_id"] or -1, user["id"]))          # club_id 0 = besked fra systemadministrator til alle
 
 
 def for_user(db, user, only_unread=False, limit=200):
@@ -35,6 +36,8 @@ def _ctx():
 def _targets():
     """Hvem brugeren må skrive til: [(værdi, tekst)]."""
     out = []
+    if scope.is_sysadmin(g.user) and not g.get("viewing"):
+        out.append(("all", "Alle brugere"))
     if g.user["club_id"] and scope.can_manage_club(g.user, g.user["club_id"]):
         out.append(("club", "Hele klubben"))
     if can_configure() and not g.team["archived"]:
@@ -61,10 +64,11 @@ def send():
         flash("Skriv både en overskrift og en besked.", "error")
         return redirect(url_for("inbox.index"))
     team_id = g.team["id"] if kind == "team" else None
+    club_id = 0 if kind == "all" else g.user["club_id"]
     cur = db.execute("INSERT INTO messages(club_id,team_id,sender_id,sender_name,title,body,created_at) VALUES(?,?,?,?,?,?,datetime('now','localtime'))",
-                     (g.user["club_id"], team_id, g.real_user["id"], g.user["display_name"], title, body))
+                     (club_id, team_id, g.real_user["id"], g.user["display_name"], title, body))
     db.execute("INSERT OR IGNORE INTO message_reads(message_id,user_id,read_at) VALUES(?,?,datetime('now','localtime'))", (cur.lastrowid, g.real_user["id"]))
-    audit(db, g.user["username"], "besked_sendt", f"{'klub' if kind == 'club' else g.team['name']}: id={cur.lastrowid}")
+    audit(db, g.user["username"], "besked_sendt", f"{ {'all': 'alle', 'club': 'klub'}.get(kind) or g.team['name'] }: id={cur.lastrowid}")
     db.commit()
     flash("Beskeden er sendt.", "ok")
     if request.form.get("email"):
@@ -78,10 +82,13 @@ def _email(db, kind, team_id, title, body):
     if todo:
         flash(f"Beskeden er gemt, men e-mail er ikke sat op: mangler {todo}.", "error")
         return
-    if kind == "club":
+    if kind == "all":
+        rows = db.execute("SELECT DISTINCT email, id FROM users WHERE stopped_at IS NULL AND email IS NOT NULL AND email<>'' AND id<>?", (g.real_user["id"],)).fetchall()
+        where = club.info()["app_name"]
+    elif kind == "club":
         rows = db.execute("SELECT DISTINCT email, id FROM users WHERE club_id=? AND stopped_at IS NULL AND email IS NOT NULL AND email<>'' AND id<>?",
                           (g.user["club_id"], g.real_user["id"])).fetchall()
-        where = g.club_info["name"] or "klubben"
+        where = club.info()["name"] or "klubben"
     else:
         rows = db.execute("SELECT DISTINCT u.email, u.id FROM users u JOIN user_teams ut ON ut.user_id=u.id WHERE ut.team_id=? AND u.stopped_at IS NULL "
                           "AND u.email IS NOT NULL AND u.email<>'' AND u.id<>?", (team_id, g.real_user["id"])).fetchall()

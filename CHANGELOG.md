@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- **Systemadministrator kan sende en besked til alle brugere** (på tværs af klubber), også som e-mail. Vises i alles indbakke og kan kun slettes af systemadministratorer.
+
 ## [0.20.0] - 2026-11-22
 
 ### Tilføjet

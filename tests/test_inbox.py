@@ -39,3 +39,19 @@ def test_head_coach_team_message_and_email(world):
     assert "Mød kl. 9" not in tb.get("/inbox/").get_data(as_text=True)
     assert "Mød kl. 9" not in ca.get("/inbox/").get_data(as_text=True)                     # klubadmin er ikke holdmedlem
     assert ta.post("/inbox/send", {"to": "club", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
+
+
+def test_sysadmin_message_reaches_everyone(world):
+    app, admin, ca, cb, ta, tb = world
+    sql(app, "UPDATE users SET email='tina@example.dk' WHERE username='tina'")
+    sql(app, "UPDATE users SET email='ole@example.dk' WHERE username='ole'")
+    before = len(app.extensions.get("outbox", []))
+    admin.post("/inbox/send", {"to": "all", "title": "Vedligehold", "body": "Nede i aften", "email": "1"}, page="/inbox/")
+    for c in (ca, cb, ta, tb):
+        assert "Nede i aften" in c.get("/").get_data(as_text=True)
+    assert sorted(m["to"] for m in app.extensions["outbox"][before:]) == ["ole@example.dk", "tina@example.dk"]
+    assert ta.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
+    assert ca.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
+    mid = sql(app, "SELECT id FROM messages")[0]["id"]
+    assert ca.post(f"/inbox/{mid}/delete", {}, page="/inbox/").status_code == 403
+    assert admin.post(f"/inbox/{mid}/delete", {}, page="/inbox/").status_code == 302
