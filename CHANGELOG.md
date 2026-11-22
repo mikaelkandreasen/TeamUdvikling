@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Niveau ud fra samlet score:** uden niveauvurdering svarer samlet score 3 til B, 4 til A og 5 til A+ (2 = C, 1 = D).
+
 ## [0.18.0] - 2026-11-22
 
 ### Tilføjet

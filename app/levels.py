@@ -18,7 +18,7 @@ def shares(db, tid):
 def calc(db, players, rounds):
     """players: aktive spillere på holdet. Returnerer {pid: dict(level, score, n, source)}.
     Score = gennemsnit af trænernes niveau (valgt i dropdown, ellers udledt af de DBU-valg pr. kompetence) i spillerens seneste runde med vurdering; uden vurdering bruges samlet score
-    fra de 24 kriterier (1-5) omregnet til samme skala. Beregnes løbende – der er ikke noget at trykke på."""
+    fra de 24 kriterier (1-5) omregnet til samme skala (3 ≈ B, 4 ≈ A, 5 ≈ A+). Beregnes løbende – der er ikke noget at trykke på."""
     if not players:
         return {}
     tid = players[0]["team_id"]
@@ -50,7 +50,7 @@ def calc(db, players, rounds):
             continue
         _, res = model.latest(rounds, pid)
         if res and res["samlet"] is not None:
-            info[pid] = dict(score=1 + (res["samlet"] - 1) * 5 / 4, n=0, source="samlet")          # 1-5 → 1-6
+            info[pid] = dict(score=res["samlet"] + 1, n=0, source="samlet")          # samlet 3 ≈ B, 4 ≈ A, 5 ≈ A+ (niveauskala: B=4, A=5, A+=6)
     a, c = shares(db, tid)
     dist = model.distribute_levels({pid: v["score"] for pid, v in info.items()}, a, c)
     return {pid: dict(v, level=dist[pid]) for pid, v in info.items() if pid in dist}

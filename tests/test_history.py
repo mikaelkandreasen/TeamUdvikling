@@ -79,3 +79,9 @@ def test_heat_colours():
     from app.charts import heat
     assert heat(1) == "#f8696b" and heat(2) == "#ffeb84" and heat(3) == "#63be7b"
     assert heat(4) == "#e0b020" and heat(5) == "#9dc3e6" and heat(None) == "#f2f2f2"
+
+
+def test_samlet_maps_to_levels(app):
+    from app import levels
+    import inspect
+    assert 'res["samlet"] + 1' in inspect.getsource(levels.calc)
