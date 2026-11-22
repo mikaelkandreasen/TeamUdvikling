@@ -2,19 +2,25 @@
 {% block content %}
 <h1>{{ _('Menu') }}</h1>
 <div class="tiles">
+  {% if nav_kind in ('sysadmin', 'clubadmin') %}
+  <a class="tile" href="{{ url_for('admin.index') }}">{{ _('Administration') if nav_kind == 'sysadmin' else _('Klubadministration') }}</a>
+  {% if team %}<a class="tile alt" href="{{ url_for('main.home', hold=1) }}">{{ _('Åbn holdet') }}: {{ team['name'] }}</a>{% endif %}
+  {% else %}
+  {% set H = nav_hidden %}
   <a class="tile alt" href="{{ url_for('evaluation.team') }}">{{ _('Teamoversigt') }}</a>
   <a class="tile alt" href="{{ url_for('evaluation.development') }}">{{ _('Udvikling') }}</a>
   <a class="tile alt" href="{{ url_for('evaluation.position_view') }}">{{ _('Position & bane') }}</a>
-  {% if features['lineup'] %}<a class="tile alt" href="{{ url_for('lineup.index') }}">{{ _('Holdsætning') }}</a>{% endif %}
-  {% if features['matches'] %}<a class="tile alt" href="{{ url_for('matches.index') }}">{{ _('Kampe og spilletid') }}</a>{% endif %}
+  {% if features['lineup'] and 'lineup.index' not in H %}<a class="tile alt" href="{{ url_for('lineup.index') }}">{{ _('Holdsætning') }}</a>{% endif %}
+  {% if features['matches'] and 'matches.index' not in H %}<a class="tile alt" href="{{ url_for('matches.index') }}">{{ _('Kampe og spilletid') }}</a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.areas') }}">{{ _('Områder') }}</a>
-  {% if features['motivation'] %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">{{ _('Motivation') }}</a>{% endif %}
-  {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">{{ _('Udviklingsdata') }}</a>
+  {% if features['motivation'] and 'motivation.matrix' not in H %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">{{ _('Motivation') }}</a>{% endif %}
+  {% if features['devdata'] and 'devdata.matrix' not in H %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">{{ _('Udviklingsdata') }}</a>
   <a class="tile alt" href="{{ url_for('devdata.attendance') }}">{{ _('Fremmøde') }}</a>{% endif %}
   <a class="tile alt" href="{{ url_for('main.criteria') }}">{{ _('Skala & kriterier') }}</a>
+  {% if nav_kind == 'head' %}<a class="tile" href="{{ url_for('team.index') }}">{{ _('Mit hold') }}</a>
+  <a class="tile" href="{{ url_for('invites_admin.index') }}">{{ _('Assistenter') }}</a>{% endif %}
+  {% endif %}
   <a class="tile alt" href="{{ url_for('inbox.index') }}">{{ _('Beskeder') }}{% if inbox_unread %} ({{ inbox_unread|length }}){% endif %}</a>
   <a class="tile alt" href="{{ url_for('auth.account') }}">{{ _('Min konto') }}</a>
-  {% if user['role'] == 'admin' %}<a class="tile alt" href="{{ url_for('admin.index') }}">{{ _('Administration') }}</a>
-  {% elif user['role'] == 'clubadmin' %}<a class="tile" href="{{ url_for('admin.index') }}">{{ _('Klubadministration') }}</a>{% endif %}
 </div>
 {% endblock %}

@@ -11,6 +11,9 @@ COOKIE = "lang"
 
 # dansk: (en, de, sv, no)
 _T = {
+    "Assistenter": ("Assistants", "Assistenten", "Assistenter", "Assistenter"),
+    "Mit hold": ("My team", "Mein Team", "Mitt lag", "Mitt lag"),
+    "Åbn holdet": ("Open the team", "Team öffnen", "Öppna laget", "Åpne laget"),
     "Hjem": ("Home", "Start", "Hem", "Hjem"),
     "Spillere": ("Players", "Spielerinnen", "Spelare", "Spillere"),
     "Evaluering": ("Evaluation", "Bewertung", "Utvärdering", "Evaluering"),

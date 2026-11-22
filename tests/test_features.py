@@ -117,7 +117,7 @@ def test_view_as_trainer_is_readonly_and_scoped(app, admin):
     assert not rows(app, "SELECT 1 FROM players WHERE name='Hack'")
     assert rows(app, "SELECT COUNT(*) c FROM evaluations")[0]["c"] == 0
     admin.post("/view-as/stop", {}, page="/players/")
-    assert admin.get("/admin/").status_code == 200 and "Du ser siden som" not in admin.get("/").get_data(as_text=True)
+    assert admin.get("/admin/").status_code == 200 and "Du ser siden som" not in admin.get("/?hold=1").get_data(as_text=True)
     log = " ".join(f"{r['user']} {r['action']}" for r in rows(app, "SELECT user, action FROM audit_log"))
     assert "admin se_som_traener" in log
 
@@ -131,7 +131,7 @@ def test_view_as_cannot_target_admin_or_be_started_by_trainer(app, admin):
     assert t.post(f"/admin/users/{tid}/view-as", {}, page="/").status_code == 403
     with t.c.session_transaction() as s:                                    # forfalsket session-felt virker ikke for trænere
         s["view_as"] = admin_id
-    assert "Du ser siden som" not in t.get("/").get_data(as_text=True)
+    assert "Du ser siden som" not in t.get("/?hold=1").get_data(as_text=True)
 
 
 # ------------------------------------------------------------------ én træner, flere hold
@@ -141,7 +141,7 @@ def test_trainer_on_multiple_teams_switches_and_stays_isolated(app, admin):
     for n in ("U10", "U11", "U12"):
         switch(admin, team_id(app, n)); add_player(admin, f"Spiller {n}")
     t = make_trainer(app, admin, "tr", ["U10", "U11"])
-    home = t.get("/").get_data(as_text=True)
+    home = t.get("/?hold=1").get_data(as_text=True)
     assert "U10" in home and "U11" in home and "U12" not in home
     assert switch(t, team_id(app, "U11")).status_code == 302
     assert "Spiller U11" in t.get("/players/").get_data(as_text=True)

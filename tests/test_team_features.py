@@ -47,7 +47,7 @@ def test_feature_toggle_hides_and_blocks(app, admin):
     admin.post("/team/settings", s, page="/team/settings")
     assert admin.get("/motivation/").status_code == 404 and admin.get("/devdata/").status_code == 404
     assert admin.get("/team/mascot").status_code == 200
-    assert "Sammen" in admin.get("/").get_data(as_text=True)
+    assert "Sammen" in admin.get("/?hold=1").get_data(as_text=True)
     admin.post("/team/settings", {**s, "feat_mascot": "", "feat_motivation": "1"}, page="/team/settings")
     assert admin.get("/team/mascot").status_code == 404 and admin.get("/motivation/").status_code == 200
 
@@ -109,19 +109,20 @@ def test_head_coach_permissions_and_invites(world):
     ca.post(f"/admin/teams/{tid}/head", {"head_user": [str(sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"])]}, page="/admin/teams")
     assert ta.get("/team/settings").status_code == 200 and ta.get("/admin/evaluations").status_code == 200
     assert ta.get("/admin/clubs").status_code == 403 and ta.get("/admin/users").status_code == 403
-    # chef-træner inviterer en ny chef-træner til eget hold
+    # chef-træner kan kun invitere assistenter (også selvom formularen forsøger andet) til eget hold
     data = {"email": "chef@example.dk", "role": "trainer", "as_head": "1", "teams": [str(tid), str(team_id(app, "U11 Beta"))], "code": code(app, ta, "tina")}
     ta.post("/admin/invitations/", data, page="/admin/invitations/", follow_redirects=True)
     row = sql(app, "SELECT * FROM invitations WHERE email='chef@example.dk'")[0]
-    assert row["team_ids"] == str(tid) and row["as_head"] == 1          # kun eget hold
+    assert row["team_ids"] == str(tid) and row["as_head"] == 0 and row["as_readonly"] == 1   # kun eget hold, kun assistent
     n = Client(app)
     n.c.post(link(app), data={"csrf_token": n.token(link(app)), "username": "chefny", "display_name": "Chef", "password": PW, "password2": PW})
     uid = sql(app, "SELECT id FROM users WHERE username='chefny'")[0]["id"]
-    assert sql(app, "SELECT 1 FROM team_heads WHERE team_id=? AND user_id=?", tid, uid)
+    assert not sql(app, "SELECT 1 FROM team_heads WHERE team_id=? AND user_id=?", tid, uid)
+    assert sql(app, "SELECT readonly FROM users WHERE id=?", uid)[0]["readonly"] == 1
     # chef-træner kan ikke invitere klubadministrator eller se andres invitationer
     ta.post("/admin/invitations/", {"email": "x@example.dk", "role": "clubadmin", "code": code(app, ta, "tina")}, page="/admin/invitations/")
     assert not sql(app, "SELECT 1 FROM invitations WHERE email='x@example.dk'")
-    ta.post("/admin/invitations/", {"email": "y@example.dk", "role": "trainer", "code": code(app, ta, "tina")}, page="/admin/invitations/")
+    ta.post("/admin/invitations/", {"email": "y@example.dk", "role": "trainer", "as_readonly": "1", "code": code(app, ta, "tina")}, page="/admin/invitations/")
     assert not sql(app, "SELECT 1 FROM invitations WHERE email='y@example.dk'")         # intet hold valgt
 
 
@@ -648,6 +649,36 @@ def test_wiki_notes_dated_shared_editable_searchable_and_team_scoped(app, admin)
 
 def test_links_without_access_are_hidden_and_hold_tile_is_on_home(app, admin):
     make_team(admin, "A"); switch(admin, team_id(app, "A"))
-    home = admin.get("/").get_data(as_text=True)
+    home = admin.get("/?hold=1").get_data(as_text=True)
     assert 'href="/team/"' in home and "Noter" in home
     assert 'href="/team/"' not in admin.get("/menu").get_data(as_text=True)
+
+
+# ----------------------------------------------------------------------------- rollebaseret menu
+def _menu(c, path="/menu"):
+    return c.get(path).get_data(as_text=True)
+
+
+def test_role_based_menus(world):
+    app, admin, ca, cb, ta, tb = world
+    tid = team_id(app, "U11 Alfa")
+    # systemadministrator og klubadministrator lander på administration og ser ikke holdets menu
+    for c, label in ((admin, "Administration"), (ca, "Klubadministration")):
+        r = c.get("/")
+        assert r.status_code == 302 and "/admin/" in r.headers["Location"]
+        page = c.get("/admin/").get_data(as_text=True)
+        nav = page.split('<nav class="side"')[1].split("</nav>")[0]
+        assert label in nav and "Spillere" not in nav and "Teamoversigt" not in nav and "Beskeder" in nav
+        assert "Spillere" in c.get("/?hold=1").get_data(as_text=True).split('<nav class="side"')[1].split("</nav>")[0]
+    # træner: holdets menu, ingen administration eller assistent-invitation
+    nav = ta.get("/").get_data(as_text=True).split('<nav class="side"')[1].split("</nav>")[0]
+    assert "Spillere" in nav and "Motivation" in nav and "Administration" not in nav and "Assistenter" not in nav
+    # chef-træner får «Mit hold» og «Assistenter»
+    ca.post(f"/admin/teams/{tid}/head", {"head_user": [str(sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"])]}, page="/admin/teams")
+    nav = ta.get("/").get_data(as_text=True).split('<nav class="side"')[1].split("</nav>")[0]
+    assert "Mit hold" in nav and "Assistenter" in nav
+    assert "Assistenter" in ta.get("/admin/invitations/").get_data(as_text=True)
+    # assistent: ingen kampe, holdsætning, motivation, udviklingsdata, rapporter
+    sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")
+    nav = ta.get("/").get_data(as_text=True).split('<nav class="side"')[1].split("</nav>")[0]
+    assert "Evaluering" in nav and "Motivation" not in nav and "Udviklingsdata" not in nav and "Rapporter" not in nav and "Assistenter" not in nav

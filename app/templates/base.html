@@ -43,21 +43,10 @@
 </header>
 {% if authed %}
 <nav class="side" aria-label="{{ _('Hovedmenu') }}">
-  {% for e, label, f in [('main.home',_('Hjem'),''),('players.index',_('Spillere'),''),('evaluation.eval_home',_('Evaluering'),''),('evaluation.team',_('Teamoversigt'),''),
-      ('evaluation.development',_('Udvikling'),''),('evaluation.position_view',_('Position & bane'),''),('lineup.index',_('Holdsætning'),'lineup'),('matches.index',_('Kampe'),'matches'),('evaluation.areas',_('Områder'),''),
-      ('motivation.matrix',_('Motivation'),'motivation'),('devdata.matrix',_('Udviklingsdata'),'devdata'),('reports.index',_('Rapporter'),''),('main.criteria',_('Skala & kriterier'),''),
-      ('inbox.index',_('Beskeder'),''),('auth.account',_('Min konto'),'')] if not f or features.get(f, True) %}
-    <a href="{{ url_for(e) }}" class="{{ 'on' if ep == e }}">{{ label }}</a>
-  {% endfor %}
-  {% if user['role'] == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin.') }}">{{ _('Administration') }}</a>
-  {% elif user['role'] == 'clubadmin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin.') or ep.startswith('invites_admin.') }}">{{ _('Klubadministration') }}</a>{% endif %}
+  {% for it in nav_items() %}{% if it.sep %}<span class="navsep">{{ it.sep }}</span>{% else %}<a href="{{ url_for(it.ep, **(it.args or {})) }}" class="{{ 'on' if it.on }}">{{ _(it.label) }}</a>{% endif %}{% endfor %}
 </nav>
 <nav class="tabbar" aria-label="{{ _('Hovedmenu (mobil)') }}">
-  <a href="{{ url_for('main.mobile') }}" class="{{ 'on' if ep in ('main.mobile','main.home') }}"><b>🏠</b>{{ _('Hjem') }}</a>
-  <a href="{{ url_for('players.index') }}" class="{{ 'on' if ep.startswith('players.') }}"><b>👧</b>{{ _('Spillere') }}</a>
-  <a href="{{ url_for('evaluation.eval_home') }}" class="{{ 'on' if ep.startswith('evaluation.eval') }}"><b>✅</b>{{ _('Evaluér') }}</a>
-  <a href="{{ url_for('reports.index') }}" class="{{ 'on' if ep.startswith('reports.') }}"><b>📄</b>{{ _('Rapport') }}</a>
-  <a href="{{ url_for('main.menu') }}" class="{{ 'on' if ep == 'main.menu' }}"><b>☰</b>{{ _('Mere') }}</a>
+  {% for e, ic, lb, on in nav_tabs() %}<a href="{{ url_for(e) }}" class="{{ 'on' if on }}"><b>{{ ic }}</b>{{ _(lb) }}</a>{% endfor %}
 </nav>
 {% endif %}
 {% if viewing %}<div class="viewas" role="status"><span>{{ _('Du ser siden som') }} <b>{{ user['display_name'] }}</b> {{ _('(skrivebeskyttet)') }}</span>

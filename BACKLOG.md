@@ -30,6 +30,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
 - **B-050 · Lavere pixelgrænse for PNG/WebP og opdeling af admin.py** · S/M – (A10/A13).
 
+- [ ] **B-051** Lås også assistenters adgang til motivation, udviklingsdata og rapporter på serversiden (i dag kun skjult i menuen).
+
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
 - Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.

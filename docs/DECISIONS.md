@@ -142,3 +142,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** CI's røgtest af v0.30.0 viste, at gunicorns workers kørte migrationer parallelt og fejlede; de kunne også oprette forskellige nøglefiler ved første start.
 **Valg:** `fcntl.flock` på `/data/.init.lock` omkring hele initialiseringen i `create_app` + gentjek af `schema_migrations` inde i transaktionen. Ikke `--preload`, fordi baggrundstråden (mail/backup) så ikke ville overleve fork.
 **Konsekvens:** Workers starter efter hinanden (få millisekunder). Låsen kræver et lokalt filsystem (Docker-volumen er det).
+
+## D-033 · Rollebaseret menu og assistent-invitation (2026-11-22)
+**Kontekst:** Alle roller så næsten samme menu. Administratorer så holdets spillerdata uden at have brug for det, og chef-trænere havde ingen synlig vej til at invitere hjælp.
+**Valg:** `nav.py` bygger sidemenu, mobilfaner og menuside pr. rolle (sysadmin, clubadmin, head, trainer, assistant). Administratorer lander på `/admin/`; holdsiderne åbnes med `?hold=1`. Chef-trænere kan kun invitere assistenter (`as_readonly` tvinges på serversiden).
+**Konsekvens:** Menuen er kun bekvemmelighed – sidernes egne rolle-tjek er uændrede, så assistenter kan stadig nå skjulte sider via URL. Skal de låses, er det en separat ændring (B-051).

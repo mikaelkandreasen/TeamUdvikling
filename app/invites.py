@@ -161,6 +161,8 @@ def index():
     role = request.form.get("role", "trainer")
     as_readonly = request.form.get("as_readonly") == "1" and role == "trainer"
     as_head = request.form.get("as_head") == "1" and role == "trainer" and not as_readonly
+    if not scope.is_manager(g.user):
+        role, as_readonly, as_head = "trainer", True, False         # chef-trænere inviterer kun assistenter (D-033)
     if role not in ("trainer", "clubadmin") or (role == "clubadmin" and not scope.is_sysadmin(g.user)):
         abort(404 if role == "clubadmin" else 400)
     raw_club = request.form.get("club")

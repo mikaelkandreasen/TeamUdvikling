@@ -24,7 +24,7 @@ main{padding:.9rem .8rem 5.5rem;max-width:1200px;margin:0 auto}
 .flash{padding:.7rem .9rem;border-radius:10px;margin:.6rem 0;font-weight:500}
 .flash.ok{background:#e6f4ec;color:var(--ok)}.flash.error{background:#fdecea;color:var(--err)}.flash.info{background:#e8f0fe;color:var(--info)}
 /* nederste tabbar (mobil) */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid var(--line);
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:#fff;border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom)}
 .tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;text-decoration:none;color:var(--mut);font-size:.72rem}
 .tabbar a b{font-size:1.25rem;line-height:1}.tabbar a.on{color:var(--navy);font-weight:700}
@@ -140,3 +140,5 @@ footer{color:var(--mut);font-size:.78rem;text-align:center;padding:1rem}
 .clubteam{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee}
 .clubteam:last-child{border-bottom:0}
 .clubteam form{flex:none}
+
+nav.side .navsep{display:block;padding:.6rem .8rem .2rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}

@@ -75,7 +75,7 @@ def bad_login(app, user, pw="forkert-forkert-12", ip=None):
 
 
 def ok_session(resp_client):
-    return resp_client.get("/").status_code == 200
+    return resp_client.get("/?hold=1").status_code == 200
 
 
 # ------------------------------------------------------------------ 1. IP-spoofing mod login-spærren
@@ -162,7 +162,7 @@ def test_session_cookie_dies_on_logout(world):
     c.post("/logout", {}, page="/account")
     replay = app.test_client()
     replay.set_cookie("__Host-u11", stolen)
-    r = replay.get("/")
+    r = replay.get("/?hold=1")
     assert r.status_code == 302 and "/login" in r.headers["Location"]
 
 

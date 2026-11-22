@@ -175,7 +175,9 @@ def create_app(config=None):
         from . import profiles as _pf
         from .db import get_db
         myprof = _pf.list_for(get_db(), g.real_user) if g.get("real_user") and not g.get("viewing") and session.get("stage") == "ok" else []
-        return dict(_=i18n.gettext, lang=i18n.current(), langs=i18n.LANGS, my_profiles=myprof if len(myprof) > 1 else [], csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
+        from . import nav as _nav
+        nv = _nav.context(get_db()) if g.get("user") and session.get("stage") == "ok" else dict(nav_kind=None, nav_hidden=set(), nav_items=lambda: [], nav_tabs=lambda: [])
+        return dict(**nv, _=i18n.gettext, lang=i18n.current(), langs=i18n.LANGS, my_profiles=myprof if len(myprof) > 1 else [], csrf_token=csrf_token, user=g.get("user"), team=g.get("team"), teams=g.get("teams", []), club=club.info(), online=activity.badge(), features=features.current(), rounds=g.get("rounds", (1, 2, 3, 4)), viewing=g.get("viewing", False), version=app.config["VERSION"], model=model,
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 

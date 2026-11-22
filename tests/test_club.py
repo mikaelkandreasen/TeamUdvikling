@@ -35,7 +35,7 @@ def test_profile_text_color_and_footer_show_up(app, team):
     add_player(team, "Anna Alfa")
     r = save(team, name="Virring Fodbold", address="Virringvej 1", email="u11@klub.dk", footer="Kontakt trænerne", color="#14532d")
     assert "Klubprofilen er gemt" in r.get_data(as_text=True)
-    page = team.get("/").get_data(as_text=True)
+    page = team.get("/?hold=1").get_data(as_text=True)
     assert "--navy2:#14532d" in page and "Virring Fodbold" in page
     rep = team.get("/report/%d" % player_id(app, "Anna Alfa")).get_data(as_text=True)
     assert "Virringvej 1" in rep and "Kontakt trænerne" in rep
@@ -57,7 +57,7 @@ def test_logo_upload_served_publicly_and_removable(app, team):
     junk = app.test_client()
     junk.set_cookie("u11_lc", "999")
     assert "/branding/logo/" not in junk.get("/login").get_data(as_text=True)
-    assert "/branding/logo/1?v=" in team.get("/").get_data(as_text=True)
+    assert "/branding/logo/1?v=" in team.get("/?hold=1").get_data(as_text=True)
     team.post("/admin/club", {"action": "remove_logo"}, page="/admin/club")
     assert team.get("/branding/logo/1").status_code == 404
 
@@ -78,7 +78,7 @@ def test_bad_color_rejected(team, color):
     r = save(team, color=color)
     html = r.get_data(as_text=True)
     assert "Farven skal" in html or "mørkere" in html
-    assert "--navy2:" + color not in team.get("/").get_data(as_text=True)
+    assert "--navy2:" + color not in team.get("/?hold=1").get_data(as_text=True)
 
 
 def test_trainer_cannot_edit_club(app, team):
@@ -95,16 +95,16 @@ def test_compose_uses_port_1020():
 
 
 def test_app_name_defaults_and_is_configurable(app, team):
-    html = team.get("/").get_data(as_text=True)
+    html = team.get("/?hold=1").get_data(as_text=True)
     assert "Team Udvikling" in html and "U11 Udvikling" not in html
     save(team, app_name="Holdets Model")
-    html = team.get("/").get_data(as_text=True)
+    html = team.get("/?hold=1").get_data(as_text=True)
     assert "Holdets Model" in html and "Team Udvikling" not in html
     assert "<title>" in html and "Holdets Model</title>" in html
     save(team, app_name="  ")                                           # tomt → standardnavn
-    assert "Team Udvikling" in team.get("/").get_data(as_text=True)
+    assert "Team Udvikling" in team.get("/?hold=1").get_data(as_text=True)
     save(team, app_name="<b>x</b>")
-    assert "<b>x</b>" not in team.get("/").get_data(as_text=True)
+    assert "<b>x</b>" not in team.get("/?hold=1").get_data(as_text=True)
 
 
 def test_club_motto_and_team_slogan_both_on_parent_report(app, team):

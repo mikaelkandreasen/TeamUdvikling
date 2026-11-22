@@ -3,7 +3,7 @@ import io
 
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, send_file, session, url_for
 
-from . import activity, club, i18n, model, teams
+from . import activity, club, i18n, model, scope, teams
 from .db import get_db
 from .team import team_criteria, team_focus
 from .helpers import active_players, default_round, round_info, round_window, team_id
@@ -28,9 +28,11 @@ def _dashboard_data(db):
 
 @bp.route("/")
 def home():
+    if scope.is_manager(g.user) and not (request.args.get("hold") or request.args.get("desktop")):
+        return redirect(url_for("admin.index"))                      # administratorer lander på administration; holdet åbnes bevidst
     ua = request.headers.get("User-Agent", "")
     if "Mobi" in ua and not request.args.get("desktop"):
-        return redirect(url_for("main.mobile"))
+        return redirect(url_for("main.mobile", hold=1) if request.args.get("hold") else url_for("main.mobile"))
     db = get_db()
     players, rounds, prog = _dashboard_data(db)
     return render_template("home.html", players=players, prog=prog, tfocus=team_focus(db, team_id()) if g.get("team") else None)
@@ -39,6 +41,8 @@ def home():
 @bp.route("/m")
 def mobile():
     """Mobilforside: store trykflader, spillerliste med seneste score."""
+    if scope.is_manager(g.user) and not (request.args.get("hold") or request.args.get("desktop")):
+        return redirect(url_for("admin.index"))
     db = get_db()
     players, rounds, prog = _dashboard_data(db)
     cards = []
@@ -80,7 +84,7 @@ def switch_team():
     tid = request.form.get("team_id", type=int)
     if tid is None or not teams.switch(db, g.user, tid):
         abort(403)
-    return redirect(url_for("main.home", desktop=1) if "Mobi" not in request.headers.get("User-Agent", "") else url_for("main.mobile"))
+    return redirect(url_for("main.home", desktop=1, hold=1) if "Mobi" not in request.headers.get("User-Agent", "") else url_for("main.mobile", hold=1))
 
 
 @bp.route("/switch-profile", methods=["POST"])

@@ -76,11 +76,11 @@ def test_invitation_flow_creates_user_with_teams_and_requires_2fa(world):
     assert u["role"] == "trainer" and u["email"] == "ny.traener@example.dk" and u["club_id"] == club_id(app, "Alfa Klub")
     assert u["must_change_pw"] == 0 and u["totp_enabled"] == 0
     assert [r["team_id"] for r in sql(app, "SELECT team_id FROM user_teams WHERE user_id=?", u["id"])] == [team_id(app, "U11 Alfa")]
-    assert anon.get("/").status_code == 302                                      # ingen adgang før 2FA er sat op
+    assert anon.get("/?hold=1").status_code == 302                                      # ingen adgang før 2FA er sat op
     page = anon.get("/2fa/setup").get_data(as_text=True)
     secret = re.search(r'class="secret">([A-Z2-7]+)<', page).group(1)
     assert anon.post("/2fa/setup", {"code": totp.totp(secret)}, page="/2fa/setup").status_code in (200, 302)
-    assert anon.get("/").status_code == 200
+    assert anon.get("/?hold=1").status_code == 200
     assert anon.get(url).status_code == 400                                      # engangslink
 
 
@@ -207,8 +207,8 @@ def test_each_club_has_own_colour_and_logo_branding(world):
     app, admin, ca, cb, ta, tb = world
     ca.post("/admin/club", {"action": "save", "name": "Alfa Klub", "color": "#1b5e20"}, page="/admin/club")
     cb.post("/admin/club", {"action": "save", "name": "Beta Klub", "color": "#7f1d1d"}, page="/admin/club")
-    assert "--navy2:#1b5e20" in ta.get("/").get_data(as_text=True)
-    page = tb.get("/").get_data(as_text=True)
+    assert "--navy2:#1b5e20" in ta.get("/?hold=1").get_data(as_text=True)
+    page = tb.get("/?hold=1").get_data(as_text=True)
     assert "--navy2:#7f1d1d" in page and "#1b5e20" not in page
     assert sql(app, "SELECT color FROM clubs WHERE id=?", club_id(app, "Alfa Klub"))[0]["color"] == "#1b5e20"
 
@@ -394,7 +394,7 @@ def test_user_can_have_several_profiles_and_switch(world):
     ta.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/")
     page = ta.get("/admin/users").get_data(as_text=True)
     assert "(ole)" in page and "(tina)" not in page and "(kaja)" not in page                  # klubadministrator i Beta Klub
-    assert "Skift profil" in ta.get("/").get_data(as_text=True)
+    assert "Skift profil" in ta.get("/?hold=1").get_data(as_text=True)
     ta.post("/switch-profile", {"profile_id": "0"}, page="/")
     assert ta.get("/admin/users").status_code in (302, 403, 404)                              # tilbage som træner
     # fjernet profil mister virkning

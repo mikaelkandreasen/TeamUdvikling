@@ -8,12 +8,12 @@ def test_club_message_scope_read_and_rights(world):
     assert ta.post("/inbox/send", {"to": "club", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
     assert ta.post("/inbox/send", {"to": "team", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
     ca.post("/inbox/send", {"to": "club", "title": "Hej alle", "body": "Husk træning"}, page="/inbox/")
-    assert "Husk træning" in ta.get("/").get_data(as_text=True) and "Nye beskeder" in ta.get("/").get_data(as_text=True)
+    assert "Husk træning" in ta.get("/?hold=1").get_data(as_text=True) and "Nye beskeder" in ta.get("/?hold=1").get_data(as_text=True)
     for other in (tb, cb):
         assert "Husk træning" not in other.get("/inbox/").get_data(as_text=True)           # anden klub ser intet
-    assert "Nye beskeder" not in ca.get("/").get_data(as_text=True)                         # afsenderen har den læst
+    assert "Nye beskeder" not in ca.get("/?hold=1").get_data(as_text=True)                         # afsenderen har den læst
     ta.post("/inbox/read", {}, page="/inbox/")
-    assert "Nye beskeder" not in ta.get("/").get_data(as_text=True)
+    assert "Nye beskeder" not in ta.get("/?hold=1").get_data(as_text=True)
     assert "Husk træning" in ta.get("/inbox/").get_data(as_text=True)                       # gemt i indbakken
     mid = sql(app, "SELECT id FROM messages")[0]["id"]
     assert tb.post(f"/inbox/{mid}/delete", {}, page="/inbox/").status_code == 404           # fremmed klub
@@ -35,7 +35,7 @@ def test_head_coach_team_message_and_email(world):
     ta.post("/inbox/send", {"to": "team", "title": "Kamp lørdag", "body": "Mød kl. 9", "email": "1"}, page="/inbox/")
     sent = app.extensions["outbox"][before:]
     assert [m["to"] for m in sent] == ["mia@example.dk"]                                    # ikke afsenderen, ikke andre hold/klubber
-    assert "Mød kl. 9" in mia.get("/").get_data(as_text=True)
+    assert "Mød kl. 9" in mia.get("/?hold=1").get_data(as_text=True)
     assert "Mød kl. 9" not in tb.get("/inbox/").get_data(as_text=True)
     assert "Mød kl. 9" not in ca.get("/inbox/").get_data(as_text=True)                     # klubadmin er ikke holdmedlem
     assert ta.post("/inbox/send", {"to": "club", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
@@ -48,7 +48,7 @@ def test_sysadmin_message_reaches_everyone(world):
     before = len(app.extensions.get("outbox", []))
     admin.post("/inbox/send", {"to": "all", "title": "Vedligehold", "body": "Nede i aften", "email": "1"}, page="/inbox/")
     for c in (ca, cb, ta, tb):
-        assert "Nede i aften" in c.get("/").get_data(as_text=True)
+        assert "Nede i aften" in c.get("/?hold=1").get_data(as_text=True)
     assert sorted(m["to"] for m in app.extensions["outbox"][before:]) == ["ole@example.dk", "tina@example.dk"]
     assert ta.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
     assert ca.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
@@ -68,12 +68,12 @@ def test_team_focus_saved_shown_and_scoped(world):
     ta.post("/team/focus", {"pick": [nm, "opfundet"], "own": "Aflevering med indersiden"}, page="/team/focus")
     page = ta.get("/team/focus").get_data(as_text=True)
     assert nm in page and "Aflevering med indersiden" in page and "opfundet" not in page      # kun kendte forslag gemmes
-    assert "<b>Holdets fokus</b>" in ta.get("/").get_data(as_text=True) and "Aflevering med indersiden" in ta.get("/").get_data(as_text=True)
-    assert "Aflevering med indersiden" not in tb.get("/").get_data(as_text=True)               # andet hold ser det ikke
+    assert "<b>Holdets fokus</b>" in ta.get("/?hold=1").get_data(as_text=True) and "Aflevering med indersiden" in ta.get("/?hold=1").get_data(as_text=True)
+    assert "Aflevering med indersiden" not in tb.get("/?hold=1").get_data(as_text=True)               # andet hold ser det ikke
     rep = ta.get("/report/%d/foraeldre" % player_id(app, "Anna Alfa")).get_data(as_text=True)
     assert "Hele holdet træner på" in rep and "Aflevering med indersiden" in rep
     ta.post("/team/focus", {}, page="/team/focus")
-    assert "<b>Holdets fokus</b>" not in ta.get("/").get_data(as_text=True)
+    assert "<b>Holdets fokus</b>" not in ta.get("/?hold=1").get_data(as_text=True)
 
 
 def test_parent_reports_whole_team_and_motivation_history(world):
@@ -101,7 +101,7 @@ def test_reply_private_and_read_stats(world):
     assert "Læst af 1 af 2" in ca.get("/inbox/").get_data(as_text=True)
     mid = sql(app, "SELECT id FROM messages")[0]["id"]
     assert ta.post(f"/inbox/{mid}/reply", {"body": "Jeg kan godt"}, page="/inbox/").status_code == 302
-    assert "Jeg kan godt" in ca.get("/").get_data(as_text=True)         # afsenderen får svaret som ulæst
+    assert "Jeg kan godt" in ca.get("/?hold=1").get_data(as_text=True)         # afsenderen får svaret som ulæst
     for other in (mia, tb, cb):
         assert "Jeg kan godt" not in other.get("/inbox/").get_data(as_text=True)    # svaret er privat
     assert tb.post(f"/inbox/{mid}/reply", {"body": "x"}, page="/inbox/").status_code == 404
@@ -164,9 +164,9 @@ def test_assistant_can_mark_read_but_not_send(world):
     app, admin, ca, cb, ta, tb = world
     ca.post("/inbox/send", {"to": "club", "title": "Info", "body": "Læs mig"}, page="/inbox/")
     sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")
-    assert "Læs mig" in ta.get("/").get_data(as_text=True)
+    assert "Læs mig" in ta.get("/?hold=1").get_data(as_text=True)
     assert ta.post("/inbox/read", {}, page="/inbox/").status_code == 302
-    assert "Nye beskeder" not in ta.get("/").get_data(as_text=True)
+    assert "Nye beskeder" not in ta.get("/?hold=1").get_data(as_text=True)
     assert ta.post("/inbox/send", {"to": "team", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
 
 

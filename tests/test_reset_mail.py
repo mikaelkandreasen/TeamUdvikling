@@ -144,7 +144,7 @@ def test_password_reset_via_link(setup):
     # gammel adgangskode virker ikke, ny kræver stadig 2FA
     assert login_as(app, "anna", PW, tr.secret)[1].status_code == 200
     c, r = login_as(app, "anna", new, tr.secret)
-    assert r.status_code == 302 and c.get("/").status_code == 200
+    assert r.status_code == 302 and c.get("/?hold=1").status_code == 200
     # engangs
     assert pub.post(path, {"new": new, "new2": new}, page=path).status_code == 400
     assert Client(app).get(path).status_code == 400
@@ -160,7 +160,7 @@ def test_password_reset_needs_2fa_afterwards(setup):
     c.c.get("/login")
     r = c.post("/login", {"username": "anna", "password": new}, page="/login")
     assert r.headers["Location"].endswith("/login/2fa")           # ingen adgang uden kode
-    assert c.get("/").status_code == 302
+    assert c.get("/?hold=1").status_code == 302
 
 
 def test_totp_reset_requires_password_and_replaces_secret(setup):
@@ -191,7 +191,7 @@ def test_email_alone_cannot_bypass_2fa(setup):
     path = link_of(app)
     pub = Client(app)
     assert pub.get(path).status_code == 200
-    assert pub.get("/").status_code == 302                       # kun linket giver intet login
+    assert pub.get("/?hold=1").status_code == 302                       # kun linket giver intet login
     assert sql(app, "SELECT totp_enabled FROM users WHERE username='anna'")[0][0] == 1
 
 

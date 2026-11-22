@@ -13,7 +13,7 @@ def team(app, admin):
     return admin
 
 
-PAGES = ["/", "/m", "/menu", "/criteria", "/players/", "/players/new", "/eval", "/eval/1", "/eval/4", "/overview", "/overview/2",
+PAGES = ["/?hold=1", "/m?hold=1", "/menu", "/criteria", "/players/", "/players/new", "/eval", "/eval/1", "/eval/4", "/overview", "/overview/2",
          "/development", "/development/position", "/development/position?type=sekundaer&pos=Kant", "/areas",
          "/motivation/", "/motivation/questions", "/motivation/tablet", "/devdata/", "/reports", "/reports/all",
          "/account", "/admin/", "/admin/teams", "/admin/users", "/admin/settings", "/admin/audit", "/admin/export.xlsx"]
@@ -47,9 +47,9 @@ def test_all_pages_render_with_data(app, team):
 
 
 def test_mobile_redirect_and_viewport(team):
-    r = team.get("/", headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148"})
-    assert r.status_code == 302 and r.headers["Location"].endswith("/m")
-    html = team.get("/m").get_data(as_text=True)
+    r = team.get("/?hold=1", headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148"})
+    assert r.status_code == 302 and "/m" in r.headers["Location"]
+    html = team.get("/m?hold=1").get_data(as_text=True)
     assert 'name="viewport" content="width=device-width, initial-scale=1' in html and "tabbar" in html
 
 
@@ -151,6 +151,6 @@ def test_backup_download_and_auto_backup(app, team, tmp_path):
 
 
 def test_no_inline_scripts_or_handlers(team):
-    for path in ("/", "/reports", "/players/"):
+    for path in ("/?hold=1", "/reports", "/players/"):
         html = team.get(path).get_data(as_text=True)
         assert "onclick=" not in html and "<script>" not in html

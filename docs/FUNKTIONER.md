@@ -11,6 +11,8 @@ sikkert og afgrænset pr. klub og hold. Det er børnefodbold: tallene skal støt
 
 ## 2. Brugere og roller
 
+*Menuen tilpasses rollen (`app/nav.py`): administratorer ser administration, trænere holdets sider, assistenter uden kampe/holdsætning/motivation/udviklingsdata/rapporter, chef-trænere desuden «Mit hold» og «Assistenter» (invitation af assistenter).*
+
 | Rolle | Hvem | Kort |
 |---|---|---|
 | **Assistent** | Hjælpetræner | Kan se alt på sine hold og evaluere. Evalueringen tæller kun med, hvis chef-træneren vælger det. Kan ikke ændre andet. |

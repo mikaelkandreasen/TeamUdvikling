@@ -114,7 +114,7 @@ def test_usage_buckets_in_local_time(app, two):
 def test_usage_page_admin_only_and_renders(app, two):
     admin = two
     add = make_trainer(app, admin, "tina", ["U11 Alfa"])
-    add.get("/")
+    add.get("/?hold=1")
     for path in ("/admin/usage", "/admin/usage?days=7&team=1", "/admin/usage?days=abc&team=zzz", "/admin/usage?team=999"):
         r = admin.get(path)
         assert r.status_code == 200, path

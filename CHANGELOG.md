@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- Rollebaseret menu: systemadministrator og klubadministrator lander på administration og ser kun administrationsmenuen (holdets sider åbnes bevidst via «Åbn holdet»); trænere ser holdets sider; assistenter ser ikke kampe, holdsætning, motivation, udviklingsdata og rapporter; chef-trænere får «Mit hold» og «Assistenter».
+- Chef-trænere kan invitere assistenter til eget hold (ikke længere trænere eller chef-trænere – det gør klubadministratoren).
+
 ## [0.32.0] - 2026-11-22
 
 ### Tilføjet

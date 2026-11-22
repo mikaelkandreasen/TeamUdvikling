@@ -25,5 +25,5 @@
 <div class="card">{{ _('Ingen spillere endnu.') }} <a href="{{ url_for('players.new') }}">{{ _('Opret den første') }}</a>.</div>
 {% endfor %}
 </details>
-<div class="actions"><a class="btn sec block" href="{{ url_for('main.home', desktop=1) }}">{{ _('Vis fuld version') }}</a></div>
+<div class="actions"><a class="btn sec block" href="{{ url_for('main.home', desktop=1, hold=1) }}">{{ _('Vis fuld version') }}</a></div>
 {% endblock %}

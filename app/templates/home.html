@@ -29,11 +29,11 @@
   <a class="tile" href="{{ url_for('team.index') }}">Hold<small>{{ _('niveau, kalender, noter') }}</small></a>
   <a class="tile" href="{{ url_for('evaluation.team') }}">Teamoversigt<small>{{ _('roller og samlet score') }}</small></a>
   {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">{{ _('Noter') }}<small>{{ _('del med trænerne') }}</small></a>{% endif %}
-  {% if features['motivation'] %}<a class="tile" href="{{ url_for('motivation.matrix') }}">Motivation<small>{{ _('svar pr. spiller') }}</small></a>{% endif %}
-  {% if features['devdata'] %}<a class="tile" href="{{ url_for('devdata.matrix') }}">Udviklingsdata<small>{{ _('alder, fremmøde, trivsel') }}</small></a>{% endif %}
+  {% if features['motivation'] and 'motivation.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('motivation.matrix') }}">Motivation<small>{{ _('svar pr. spiller') }}</small></a>{% endif %}
+  {% if features['devdata'] and 'devdata.matrix' not in nav_hidden %}<a class="tile" href="{{ url_for('devdata.matrix') }}">Udviklingsdata<small>{{ _('alder, fremmøde, trivsel') }}</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling<small>{{ _('runde for runde') }}</small></a>
   <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder<small>{{ _('roller og færdigheder') }}</small></a>
-  <a class="tile alt" href="{{ url_for('reports.index') }}">Rapporter<small>{{ _('én side pr. spiller') }}</small></a>
-  <a class="tile alt" href="{{ url_for('main.mobile') }}">{{ _('Mobilvisning') }}<small>{{ _('til banen') }}</small></a>
+  {% if 'reports.index' not in nav_hidden %}<a class="tile alt" href="{{ url_for('reports.index') }}">Rapporter<small>{{ _('én side pr. spiller') }}</small></a>{% endif %}
+  <a class="tile alt" href="{{ url_for('main.mobile', hold=1) }}">{{ _('Mobilvisning') }}<small>{{ _('til banen') }}</small></a>
 </div>
 {% endblock %}

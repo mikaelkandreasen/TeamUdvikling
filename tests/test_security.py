@@ -160,7 +160,7 @@ def test_old_session_dies_after_password_change(app, admin):
 def test_2fa_reset_kills_live_session(app, admin):
     make_team(admin, "A")
     t = make_trainer(app, admin, "tr", ["A"])
-    assert t.get("/").status_code in (200, 302)
+    assert t.get("/?hold=1").status_code in (200, 302)
     from app import db
     con = db.connect(app.config["DATABASE"])
     uid = con.execute("SELECT id FROM users WHERE username='tr'").fetchone()[0]
