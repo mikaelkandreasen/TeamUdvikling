@@ -4,6 +4,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Sikkerhed
+- Opgraderet Pillow til 13.x (kendte sårbarheder i billedafkodning), gunicorn til 26.x (request smuggling) og cryptography til ≥ 50; defusedxml tilføjet til Excel-import.
+- Billeder åbnes kun med JPEG-, PNG- og WebP-parsere.
+- Sprogvalg kunne bruges til omdirigering til en fremmed side (tab/linjeskift i `next`) – rettet.
+- Kalenderhentning forbinder til den kontrollerede IP (beskytter mod DNS-rebinding) og hentes højst én gang i minuttet pr. hold fra kampforslag.
+- CI: kendte sårbarheder i afhængigheder blokerer nu udgivelse af imaget.
+
 ## [0.28.0] - 2026-11-22
 
 ## [0.27.0] - 2026-11-22

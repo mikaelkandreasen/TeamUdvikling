@@ -83,3 +83,19 @@ Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug
 - **Spillerlink** (`/svar/<token>`): offentlig, men kræver et 256-bit token (kun HMAC-hash gemmes), udløber efter 7 dage, kan kun bruges én gang (atomisk), GET forbruger ikke linket, ugyldige forsøg tæller mod IP-begrænsningen, og siden viser kun fornavn og dette ene skema. Tilføj `/svar` til Cloudflare-rate-limit-reglen.
 - **Assistent** (`users.readonly`) blokeres globalt for alle ændringer undtagen egen konto (adgangskode/2FA).
 - «Alle brugere» (oprettet, senest logget ind) er kun for systemadministratorer.
+
+
+## Sikkerhedsgennemgang 3 (2026-11-22, v0.29.0)
+Gennemgået: offentlige ruter, CSRF/gate, skrivespærrer, SQL-opbygning, `|safe`/Markup, filhåndtering, ny kode siden v0.25 (e-mail-kø, kampforslag fra iCal, opstillingsforslag, sprogvalg, delvise opdateringer) og kendte sårbarheder i afhængighederne.
+
+Rettet:
+- **Afhængigheder:** Pillow < 13.0.0 har flere sårbarheder (bl.a. heap-overløb ved JPEG-afkodning; I behandler uploadede fotos) → `Pillow>=13`. gunicorn ≤ 25.3.0 har request smuggling → `gunicorn>=26`. `cryptography>=50` (tidligere tilladte versioner havde kendte fejl). `defusedxml` tilføjet, så openpyxl læser Excel-importen sikkert.
+- **Billeder:** `Image.open(..., formats=JPEG/PNG/WEBP)` – Pillows parsere for andre formater (PSD, TIFF, BMP …) køres aldrig, heller ikke for at læse headeren.
+- **Åben omdirigering i sprogvalg:** `next` med tab/linjeskift (`/\t/evil.example`) kunne af browseren læses som `//evil.example`. Bruger nu samme `_safe_next` som login.
+- **DNS-rebinding i kalenderhentning:** værten blev slået op ved kontrollen og igen ved forbindelsen. Nu forbindes til den kontrollerede IP (certifikat tjekkes stadig mod værtsnavnet); kontroltegn i URL afvises.
+- **Udgående kald:** kampforslag henter højst kalenderen én gang pr. minut pr. hold (ellers genbruges sidste hentning).
+- **CI:** `pip-audit` blokerer nu udgivelse af Docker-imaget (før kun en advarsel).
+
+Ikke fundet: SQL-injektion (dynamiske kolonnenavne kommer fra faste lister), XSS (al brugertekst autoescapes; Markup kun til server-genererede SVG med escapede værdier), manglende adgangskontrol (rutetest + ratchet-test grønne).
+
+Ikke verificeret her (ingen netværk): at Pillow 13/gunicorn 26 installeres og kører i imaget – CI-røgtesten fanger det ved første push. Bandit/pip-audit køres i CI, ikke lokalt.

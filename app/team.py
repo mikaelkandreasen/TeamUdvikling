@@ -123,6 +123,8 @@ def settings():
             except ical.FeedError as exc:
                 flash(f"Kalenderadressen blev ikke gemt: {exc}", "error")
                 url = ""
+        if url != (get_setting(db, tid, "ical_url") or ""):
+            set_setting(db, tid, "ical_fetched_at", "")             # nyt link: hent forfra ved næste kampforslag
         set_setting(db, tid, "ical_url", url)
         db.execute("UPDATE teams SET slogan=?, mascot_name=? WHERE id=?",
                    ((request.form.get("slogan") or "").strip()[:80] or None, (request.form.get("mascot_name") or "").strip()[:40] or None, tid))

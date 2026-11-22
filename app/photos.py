@@ -30,7 +30,7 @@ def process(data):
     if len(data) > MAX_UPLOAD:
         raise PhotoError("Billedet er for stort (maks. 12 MB).")
     try:
-        img = Image.open(io.BytesIO(data))
+        img = Image.open(io.BytesIO(data), formats=sorted(ALLOWED))   # andre formatparsere køres aldrig
         fmt, (w, h) = img.format, img.size
     except Exception:
         raise PhotoError("Filen er ikke et billede, der kan læses.")
@@ -65,7 +65,7 @@ def process_free(data, max_side=600):
     if len(data) > MAX_UPLOAD:
         raise PhotoError("Billedet er for stort (maks. 12 MB).")
     try:
-        img = Image.open(io.BytesIO(data))
+        img = Image.open(io.BytesIO(data), formats=sorted(ALLOWED))   # andre formatparsere køres aldrig
         fmt, (w, h) = img.format, img.size
     except Exception:
         raise PhotoError("Filen er ikke et billede, der kan læses.")

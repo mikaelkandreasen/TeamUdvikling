@@ -122,9 +122,8 @@ def set_lang():
     lang = request.form.get("lang", "")
     if lang not in i18n.LANGS:
         abort(400)
-    nxt = request.form.get("next", "/")
-    if not nxt.startswith("/") or nxt.startswith("//") or "\\" in nxt:
-        nxt = "/"
+    from .auth import _safe_next
+    nxt = _safe_next(request.form.get("next", "")) or "/"
     real = g.get("real_user") or g.get("user")
     if real is not None and session.get("stage") == "ok":
         db = get_db()

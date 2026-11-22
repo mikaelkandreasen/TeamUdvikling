@@ -4,11 +4,11 @@ Hentning sker kun over https, kun til offentlige IP-adresser (ingen intern adres
 og højst 3 omdirigeringer (hver kontrolleres igen). URL'en kan kun sættes af chef-træner/administrator.
 """
 import datetime
+import http.client
 import ipaddress
 import socket
-import urllib.error
+import ssl
 import urllib.parse
-import urllib.request
 
 MAX_BYTES = 1024 * 1024
 TIMEOUT = 8
@@ -19,48 +19,67 @@ class FeedError(Exception):
 
 
 def _public_host(host):
+    """Slår værten op og returnerer en offentlig IP. Afviser, hvis bare én af adresserne er intern."""
     try:
         infos = socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)
-    except socket.gaierror as exc:
+    except (socket.gaierror, UnicodeError) as exc:
         raise FeedError("Adressen kunne ikke slås op.") from exc
+    ips = []
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if not ip.is_global:
+        if not ip.is_global or ip.is_multicast:
             raise FeedError("Adressen peger på en ikke-offentlig adresse og afvises.")
+        ips.append(str(ip))
+    if not ips:
+        raise FeedError("Adressen kunne ikke slås op.")
+    return ips[0]
 
 
 def check_url(url):
-    p = urllib.parse.urlparse(url or "")
-    if p.scheme != "https" or not p.hostname or p.username or p.password or (p.port not in (None, 443)):
+    p = urllib.parse.urlsplit(url or "")
+    if (p.scheme != "https" or not p.hostname or p.username or p.password or (p.port not in (None, 443))
+            or any(ord(c) < 33 for c in url)):
         raise FeedError("Kalenderadressen skal være en https-adresse.")
     _public_host(p.hostname)
     return url
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *a, **k):
-        return None
+class _PinnedHTTPS(http.client.HTTPSConnection):
+    """Forbinder til den IP, der allerede er kontrolleret (ingen nyt DNS-opslag → ingen DNS-rebinding),
+    men verificerer certifikatet mod værtsnavnet som normalt."""
+    def __init__(self, host, ip):
+        super().__init__(host, 443, timeout=TIMEOUT, context=ssl.create_default_context())
+        self._ip = ip
+
+    def connect(self):
+        sock = socket.create_connection((self._ip, 443), TIMEOUT)
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
 
 
 def fetch(url):
-    """Henter feedet som tekst. Fejl → FeedError med generisk tekst (aldrig svar-indhold)."""
-    opener = urllib.request.build_opener(_NoRedirect)
+    """Henter feedet som tekst. Hver omdirigering kontrolleres igen. Fejl → FeedError med generisk tekst (aldrig svar-indhold)."""
     for _ in range(4):
         check_url(url)
-        req = urllib.request.Request(url, headers={"User-Agent": "TeamUdvikling-kalender/1.0", "Accept": "text/calendar,*/*"})
+        p = urllib.parse.urlsplit(url)
+        ip = _public_host(p.hostname)
+        conn = _PinnedHTTPS(p.hostname, ip)
         try:
-            with opener.open(req, timeout=TIMEOUT) as r:
-                data = r.read(MAX_BYTES + 1)
-                if len(data) > MAX_BYTES:
-                    raise FeedError("Kalenderen er for stor.")
-                return data.decode("utf-8", "replace")
-        except urllib.error.HTTPError as exc:
-            if exc.code in (301, 302, 303, 307, 308) and exc.headers.get("Location"):
-                url = urllib.parse.urljoin(url, exc.headers["Location"])
+            conn.request("GET", (p.path or "/") + (f"?{p.query}" if p.query else ""),
+                         headers={"User-Agent": "TeamUdvikling-kalender/1.0", "Accept": "text/calendar,*/*"})
+            r = conn.getresponse()
+            if r.status in (301, 302, 303, 307, 308) and r.getheader("Location"):
+                url = urllib.parse.urljoin(url, r.getheader("Location"))
                 continue
-            raise FeedError(f"Kalenderen svarede med fejl ({exc.code}).") from exc
-        except (urllib.error.URLError, OSError) as exc:
+            if r.status != 200:
+                raise FeedError(f"Kalenderen svarede med fejl ({r.status}).")
+            data = r.read(MAX_BYTES + 1)
+        except (OSError, http.client.HTTPException) as exc:
             raise FeedError("Kalenderen kunne ikke hentes.") from exc
+        finally:
+            conn.close()
+        if len(data) > MAX_BYTES:
+            raise FeedError("Kalenderen er for stor.")
+        return data.decode("utf-8", "replace")
     raise FeedError("For mange omdirigeringer.")
 
 

@@ -127,3 +127,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Ønske om dansk (standard), engelsk, tysk, svensk og norsk.
 **Valg:** Egen minimal løsning i `app/i18n.py` frem for Babel/gettext (ingen nye pakker): den danske tekst er nøglen, `_("Tekst")` slår op i en tabel og falder tilbage til dansk. Sprog gemmes i cookie `lang` (så login-siden kan skifte) og i `users.lang`. `POST /sprog` er offentlig (kun cookie, valideret mod listen; `next` skal være en lokal sti) og undtaget fra skrivespærrerne for assistenter og «se som».
 **Konsekvens:** Oversættelserne er skrevet uden modersmålskontrol og bør læses igennem af en, der taler sproget. En test sikrer, at alle tekster, der er markeret med `_()`, findes i alle sprog. Resten af skabelonerne og alle beskeder fra Python-koden er endnu ikke markeret.
+
+## D-030 · Sårbarhedsscanning blokerer udgivelse (2026-11-22)
+**Kontekst:** `pip-audit` kørte kun som advarsel, og Pillow 12 med kendte sårbarheder ville være blevet udgivet.
+**Valg:** Eget CI-job `audit`, som `image` afhænger af. Bandit er fortsat kun en advarsel (mange falske positiver).
+**Konsekvens:** En ny CVE i en afhængighed stopper udgivelsen, indtil versionen er hævet i `requirements.txt` – også selvom appens egen kode ikke er ændret.

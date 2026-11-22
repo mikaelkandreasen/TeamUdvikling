@@ -5,7 +5,7 @@ import re
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
 
 from . import club, formations, ical, model, suggest
-from .db import audit, get_db, get_setting
+from .db import audit, get_db, get_setting, set_setting
 from .helpers import active_players, int_in, team_id
 from .team import profile
 
@@ -70,6 +70,36 @@ def guess_opponent(summary, own_names):
     return (rest[0] if rest else parts[-1])[:60], True
 
 
+FEED_MIN_SECONDS = 60          # højst ét udgående kald pr. hold pr. minut; ellers bruges sidst hentede
+
+
+def _feed_events(db, url):
+    """Kalenderens aftaler. Genbruger hentningen fra det seneste minut, så siden ikke kan bruges til at hamre på en fremmed server."""
+    import json
+    import time
+    now = int(time.time())
+    try:
+        last = int(get_setting(db, team_id(), "ical_fetched_at") or 0)
+    except ValueError:
+        last = 0
+    if now - last < FEED_MIN_SECONDS:
+        try:
+            return json.loads(get_setting(db, team_id(), "ical_suggest_cache") or "[]")
+        except ValueError:
+            pass
+    try:
+        events = ical.parse(ical.fetch(url))[:500]
+    except ical.FeedError as exc:
+        flash(str(exc), "error")
+        return None
+    for e in events:
+        e["uid"] = e["uid"] or f"{e['day']}|{e['time']}|{e['summary']}"[:200]
+    set_setting(db, team_id(), "ical_fetched_at", str(now))
+    set_setting(db, team_id(), "ical_suggest_cache", json.dumps(events))
+    db.commit()
+    return events
+
+
 @bp.route("/forslag")
 def suggestions():
     """Henter kalenderen og viser kommende kampe, der endnu ikke er oprettet."""
@@ -78,10 +108,8 @@ def suggestions():
     if not url:
         flash("Tilføj først holdets kalenderlink under Holdindstillinger.", "error")
         return redirect(url_for("matches.index"))
-    try:
-        events = ical.parse(ical.fetch(url))
-    except ical.FeedError as exc:
-        flash(str(exc), "error")
+    events = _feed_events(db, url)
+    if events is None:
         return redirect(url_for("matches.index"))
     today = datetime.date.today().isoformat()
     have = db.execute("SELECT ical_uid, day FROM matches WHERE team_id=?", (team_id(),)).fetchall()

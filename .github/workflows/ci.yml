@@ -34,9 +34,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install pip-audit bandit
-      - run: pip-audit -r requirements.txt
+      - run: pip install bandit
       - run: bandit -q -r app -ll
+
+  audit:
+    # Kendte sårbarheder i afhængighederne blokerer udgivelse af imaget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt
 
   smoke:
     # Bygger imaget og starter det som i drift (ikke-root, cap_drop ALL, skrivebeskyttet rod) – fanger Dockerfile-fejl før udgivelse
@@ -59,7 +69,7 @@ jobs:
         run: docker logs u11-smoke || true
 
   image:
-    needs: [test, smoke]
+    needs: [test, smoke, audit]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
