@@ -132,3 +132,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** `pip-audit` kørte kun som advarsel, og Pillow 12 med kendte sårbarheder ville være blevet udgivet.
 **Valg:** Eget CI-job `audit`, som `image` afhænger af. Bandit er fortsat kun en advarsel (mange falske positiver).
 **Konsekvens:** En ny CVE i en afhængighed stopper udgivelsen, indtil versionen er hævet i `requirements.txt` – også selvom appens egen kode ikke er ændret.
+
+## D-031 · Driftstjek og logrensning (2026-11-22)
+**Kontekst:** Arkitekturgennemgangen fandt, at de største risici ligger i driften (backup, nøgler, proxy-indstillinger) og i container-loggen.
+**Valg:** `selfcheck.py` vurderer konfigurationen ved start og i Administration (kun systemadministrator) uden at stoppe appen. `gunicorn.conf.py` fjerner engangstokens fra adgangsloggen. Daglig backup flyttes til baggrundstråden.
+**Konsekvens:** Forkerte indstillinger bliver synlige, men appen starter stadig (så en fejlkonfiguration ikke låser brugerne ude). Driftsforslag uden kode står i `docs/ARKITEKTURGENNEMGANG.md`.

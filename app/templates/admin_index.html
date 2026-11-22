@@ -1,6 +1,8 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Administration{% endblock %}
 {% block content %}
 <h1>Administration</h1>
+{% if checks %}<div class="card" role="status" style="border-left:4px solid {{ '#b00020' if checks|selectattr(0,'equalto','fejl')|list else '#e0b020' }}"><h2>Driftstjek</h2>
+  {% for lvl, txt in checks %}<p class="small"><b>{{ 'Fejl' if lvl == 'fejl' else 'Bemærk' }}:</b> {{ txt }}</p>{% endfor %}</div>{% endif %}
 <div class="tiles">
   {% if sysadmin %}<a class="tile" href="{{ url_for('admin.clubs') }}">Klubber<small>opret klubber, udseende, klubadministratorer</small></a>{% endif %}
   <a class="tile" href="{{ url_for('admin.teams') }}">Hold<small>opret og administrer</small></a>

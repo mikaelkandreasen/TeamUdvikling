@@ -1,6 +1,6 @@
 # CLAUDE.md – orientering til Claude (og andre udviklere)
 
-Læs denne fil først, derefter `BACKLOG.md` (hvad der skal laves) og `docs/ARCHITECTURE.md` (hvordan det hænger sammen).
+Læs denne fil først, derefter `BACKLOG.md` (hvad der skal laves) og `docs/ARCHITECTURE.md` (hvordan det hænger sammen). Funktioner: `docs/FUNKTIONER.md`; processer: `docs/SWIMLANES.md`. Opdatér dem, når du ændrer arkitektur, roller eller processer.
 
 ## Hvad er projektet?
 **Team Udvikling** (repo: u11-udvikling; navnet kan ændres under Klubprofil) er en selvhostet webapp (Flask + SQLite) til trænere på børnehold. Den erstatter en Excel-model og samler:

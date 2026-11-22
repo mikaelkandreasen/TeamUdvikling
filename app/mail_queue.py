@@ -85,7 +85,7 @@ def after_request_drain(app):
 
 
 def start_worker(app):
-    """Baggrundstråd (én pr. proces; rækkelåsen forhindrer dobbeltsending mellem gunicorn-workers)."""
+    """Baggrundstråd (én pr. proces): sender mails (rækkelåsen forhindrer dobbeltsending mellem gunicorn-workers) og tager daglig backup."""
     if app.config.get("MAIL_BACKEND") == "memory" or app.config.get("TESTING") or app.config.get("MAIL_WORKER") == "0":
         return None
     wake = threading.Event()
@@ -102,9 +102,11 @@ def start_worker(app):
                     con = connect(app.config["DATABASE"])
                     try:
                         process(con)
-                        if time.time() - last_purge > 3600:
+                        if time.time() - last_purge > 3600:      # timevis vedligehold: oprydning + daglig backup (også uden login)
                             purge(con)
                             last_purge = time.time()
+                            from .db import backup_if_due
+                            backup_if_due(app.config["DATABASE"], app.config["BACKUP_DIR"])
                     finally:
                         con.close()
             except Exception:     # noqa: BLE001 – tråden må aldrig dø

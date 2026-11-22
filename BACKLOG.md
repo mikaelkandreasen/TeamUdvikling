@@ -24,6 +24,12 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 - **B-045 · Oversæt resten af appen** · L – markér resten af skabelonerne (≈85 filer) og beskeder fra Python-koden med `_()`, oversæt til en/de/sv/no, og få oversættelserne læst igennem af modersmålstalende. Tilføj dato-/tegnformat pr. sprog hvis nødvendigt. *Status v0.28.0: menuer, login, Menu, Min konto, Hjem, spillerliste og evalueringsknapper er oversat; resten (især sætninger med fed tekst/links midt i, som skal skrives som hele sætninger) mangler.*
 
+- **B-046 · Off-site-backup og afprøvet gendannelse** · S (drift, din opgave) – restic/rclone crypt til ekstern placering, `BACKUP_OFFSITE=1` (A1/A12, se docs/ARKITEKTURGENNEMGANG.md).
+- **B-047 · Nøgler som miljøvariabler og lukket port** · S (drift) – `SECRET_KEY`/`TOTP_KEY` i Dockhand, `U11_BIND=127.0.0.1` eller ingen `ports:` (A2/A3).
+- **B-048 · Cloudflare Access foran /admin og rate-limit-regler** · S (drift) – (A8).
+- **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
+- **B-050 · Lavere pixelgrænse for PNG/WebP og opdeling af admin.py** · S/M – (A10/A13).
+
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
 - Fremmøde kobles til kampe, så spillere der ikke var med ikke tæller som bænk.
@@ -37,6 +43,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Eksport af rapport som billede til deling med forældre.
 
 ## Færdigt
+- **Arkitekturgennemgang + komplet dokumentation** – færdig (v0.30.0): driftstjek, tokens fjernet fra log, backup uden login, docs/ARCHITECTURE, SWIMLANES, FUNKTIONER, ARKITEKTURGENNEMGANG.
 - **Testmail-knap og Excel-import** – var allerede lavet (Administration); fjernet fra idéer.
 - **Sprogvalg (da/en/de/sv/no)** – grundlag færdigt (v0.27.0): menuer, login, menu og Min konto oversat; resten under B-045.
 - **B-041b · SQL-afgrænsning kontrolleres automatisk** – færdig (v0.27.0): `tests/test_sql_scope.py` + `sql_scope_allow.txt`.

@@ -33,7 +33,9 @@ def _guard():
 
 @bp.route("/")
 def index():
-    return render_template("admin_index.html", sysadmin=scope.is_sysadmin(g.user))
+    from . import selfcheck
+    checks = selfcheck.run(current_app.config) if scope.is_sysadmin(g.user) else []
+    return render_template("admin_index.html", sysadmin=scope.is_sysadmin(g.user), checks=checks)
 
 
 @bp.route("/testmail", methods=["POST"])

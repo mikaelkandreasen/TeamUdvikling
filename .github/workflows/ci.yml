@@ -65,6 +65,9 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/setup); test "$code" = "200"
           test "$(docker exec u11-smoke id -u)" != "0"
           docker exec u11-smoke python -c "import PIL, qrcode; print('pakker ok')"
+          curl -s -o /dev/null http://127.0.0.1:8000/nulstil/HEMMELIGTTOKEN123 || true
+          sleep 1
+          ! docker logs u11-smoke 2>&1 | grep -q HEMMELIGTTOKEN123      # engangstokens må ikke stå i adgangsloggen
       - if: failure()
         run: docker logs u11-smoke || true
 
