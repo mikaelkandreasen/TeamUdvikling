@@ -173,7 +173,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 21   # v21: matches + match_slots (kampe: spillere på positioner pr. periode → spilletid; IF NOT EXISTS); v20: messages.to_user_id/reply_to (svar), conversations (forældresamtaler), motivation_log + triggers (motivation over tid; IF NOT EXISTS/ADD COLUMN); v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 22   # v22: mail_queue (e-mail-kø; via migration 011); v21: matches + match_slots (kampe: spillere på positioner pr. periode → spilletid; IF NOT EXISTS); v20: messages.to_user_id/reply_to (svar), conversations (forældresamtaler), motivation_log + triggers (motivation over tid; IF NOT EXISTS/ADD COLUMN); v19: messages + message_reads (indbakke: klub- og holdbeskeder; IF NOT EXISTS); v18: clubs.motto (klubmotto; ADD COLUMN, idempotent); v17: team_mascot_img (maskotbillede til forældrerapporten; IF NOT EXISTS); v16: eval_history (evalueringer følger spilleren ved holdskifte), users.stopped_at (stoppede trænere beholder deres evalueringer), runde-åbning (30 dage); v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -309,6 +309,15 @@ def _migrate_dbu_levels(con):
 # Hver ændring af eksisterende tabeller/data er en migration med et fast id. Den kører præcis én gang pr. database og logges i schema_migrations.
 # Tredje felt False = kører uden ydre transaktion (de ældste migrationer er idempotente og styrer selv commit/PRAGMA). Nye migrationer er som standard transaktionelle.
 # Nye migrationer tilføjes NEDERST i MIGRATIONS (aldrig ændre eller omsortere eksisterende) – se docs/MIGRATIONS.md.
+def _m011_mail_queue(con):
+    """v22: mail_queue (e-mail-kø med genforsøg; brødtekst slettes efter udsendelse)."""
+    con.execute("""CREATE TABLE IF NOT EXISTS mail_queue(
+        id INTEGER PRIMARY KEY, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'andet',
+        created_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_try INTEGER NOT NULL, locked_until INTEGER,
+        sent_at INTEGER, failed INTEGER NOT NULL DEFAULT 0, last_error TEXT)""")
+    con.execute("CREATE INDEX IF NOT EXISTS ix_mail_queue ON mail_queue(sent_at, failed, next_try)")
+
+
 MIGRATIONS = [
     ("001_baseline", lambda con: _migrate(con), False),
     ("002_klubber", lambda con: _migrate_clubs(con), False),
@@ -320,7 +329,17 @@ MIGRATIONS = [
     ("008_klubmotto", lambda con: _migrate_club_motto(con), False),
     ("009_beskeder_samtaler_motivation", lambda con: _migrate_v20(con), False),
     ("010_assistenter", lambda con: _migrate_assistants(con), False),
+    ("011_mail_koe", _m011_mail_queue),
 ]
+
+
+def _m011_mail_queue(con):
+    """v22: mail_queue (e-mail-kø med genforsøg; brødtekst slettes efter udsendelse)."""
+    con.execute("""CREATE TABLE IF NOT EXISTS mail_queue(
+        id INTEGER PRIMARY KEY, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'andet',
+        created_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_try INTEGER NOT NULL, locked_until INTEGER,
+        sent_at INTEGER, failed INTEGER NOT NULL DEFAULT 0, last_error TEXT)""")
+    con.execute("CREATE INDEX IF NOT EXISTS ix_mail_queue ON mail_queue(sent_at, failed, next_try)")
 
 
 class MigrationError(RuntimeError):

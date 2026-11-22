@@ -627,6 +627,24 @@ def security():
     return render_template("admin_security.html", counts=counts, top=top, rows=rows)
 
 
+@bp.route("/mail", methods=["GET", "POST"])
+@admin_required
+def mail_status():
+    """E-mail-kø: antal i kø/fejlet/sendt og de seneste mails (uden indhold). Mislykkede kan sættes i kø igen."""
+    from . import mail_queue
+    db = get_db()
+    if request.method == "POST":
+        n = mail_queue.retry_failed(db)
+        flash(f"{n} mails sat i kø igen." if n else "Ingen mails kan sættes i kø igen (indholdet slettes, når en mail opgives).", "ok" if n else "error")
+        return redirect(url_for("admin.mail_status"))
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    zone = ZoneInfo(current_app.config.get("TIMEZONE") or "UTC")
+    rows = [dict(r, when=datetime.fromtimestamp(r["created_at"], zone).strftime("%d-%m-%Y %H:%M"))
+            for r in db.execute("SELECT id,to_addr,subject,kind,created_at,attempts,sent_at,failed,last_error FROM mail_queue ORDER BY id DESC LIMIT 100")]
+    return render_template("admin_mail.html", st=mail_queue.stats(db), rows=rows)
+
+
 # ----------------------------------------------------------------------------- dataoprydning (GDPR)
 @bp.route("/retention", methods=["GET", "POST"])
 def retention():

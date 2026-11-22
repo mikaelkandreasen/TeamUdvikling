@@ -15,7 +15,7 @@ import time
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import generate_password_hash
 
-from . import lockout, mailer, scope
+from . import lockout, mail_queue, mailer, scope
 from .auth import _bind, _fresh_login, _too_many, check_password_policy, record_fail, revoke_session, throttled, verify_admin_code
 from .db import audit, club_get, default_club_id, get_db
 from .helpers import int_in
@@ -67,7 +67,7 @@ def _mail(db, row, token, inviter):
             f"{mailer.public_url()}/invitation/{token}\n\n"
             "Linket virker i 7 dage og kan kun bruges én gang.\n"
             "Kender du ikke afsenderen, så ignorér mailen.\n")
-    mailer.send(row["email"], f"Invitation til {club}", body)
+    mail_queue.enqueue(db, row["email"], f"Invitation til {club}", body, "invitation")
 
 
 def send(db, email, role, club_id, team_ids, inviter, as_head=False, as_readonly=False):

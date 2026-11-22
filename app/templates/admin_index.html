@@ -6,6 +6,7 @@
   <a class="tile" href="{{ url_for('admin.teams') }}">Hold<small>opret og administrer</small></a>
   <a class="tile" href="{{ url_for('admin.users') }}">Brugere<small>trænere, hold, 2FA</small></a>
   {% if user['role'] == 'admin' %}<a class="tile" href="{{ url_for('admin.security') }}">Sikkerhedslog<small>blokeringer og mislykkede login</small></a>
+  <a class="tile" href="{{ url_for('admin.mail_status') }}">E-mail-kø<small>sendt, i kø og mislykket</small></a>
   <a class="tile" href="{{ url_for('admin.users_overview') }}">Alle brugere<small>klub, hold, oprettet, senest login</small></a>{% endif %}
   <a class="tile" href="{{ url_for('invites_admin.index') }}">Invitationer<small>send link til ny træner</small></a>
   {% if sysadmin %}<a class="tile alt" href="{{ url_for('admin.backlog') }}">Backlog<small>prioritér opgaver</small></a>{% endif %}

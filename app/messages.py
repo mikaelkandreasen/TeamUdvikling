@@ -1,7 +1,7 @@
 """Indbakke: beskeder fra klubadministrator (til hele klubben) og chef-træner (til holdet). Vises ved næste login indtil de er læst, og gemmes i indbakken."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 
-from . import club, mailer, scope
+from . import mail_queue, club, mailer, scope
 from .db import audit, get_db
 from .team import can_configure
 
@@ -121,16 +121,12 @@ def _email(db, kind, team_id, title, body):
                           "AND u.email IS NOT NULL AND u.email<>'' AND u.id<>?", (team_id, g.real_user["id"])).fetchall()
         where = g.team["name"]
     text = f"{body}\n\n— {g.user['display_name']}, {where}\n{mailer.public_url()}/inbox/"
-    sent = failed = 0
+    subj = f"{where}: {title}".replace("\n", " ").replace("\r", " ")
     for r in rows:
-        try:
-            mailer.send(r["email"], f"{where}: {title}".replace("\n", " ").replace("\r", " "), text)
-            sent += 1
-        except Exception:
-            failed += 1
-    audit(db, g.user["username"], "besked_mail", f"sendt={sent} fejlet={failed}")
+        mail_queue.enqueue(db, r["email"], subj, text, "besked")
+    audit(db, g.user["username"], "besked_mail", f"i_koe={len(rows)}")
     db.commit()
-    flash(f"E-mail sendt til {sent} modtagere" + (f" ({failed} kunne ikke sendes)." if failed else "."), "error" if failed else "ok")
+    flash(f"E-mail lagt i kø til {len(rows)} modtagere – sendes i baggrunden.", "ok")
 
 
 def _own(db, mid):

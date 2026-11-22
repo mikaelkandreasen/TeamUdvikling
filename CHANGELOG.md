@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 ## [Unreleased]
 
 ### Tilføjet
+- **E-mail-kø (B-044):** invitationer og indbakkebeskeder lægges i en kø og sendes af en baggrundstråd med op til 6 genforsøg; brugeren venter ikke på SMTP. Ny side Administration → E-mail-kø (sendt/i kø/mislykket, uden indhold; mislykkede kan sættes i kø igen). Indholdet slettes efter udsendelse/opgivelse. Migration 011 (skema 22).
 - **Automatisk isolationstest af alle ruter med id (B-041):** hver rute testes som træner fra et andet hold i samme klub og fra en anden klub og skal afvises. Tilføjes en ny rute med id uden at stå i testen, fejler testen. Positiv kontrol sikrer, at ejerholdet stadig kan nå sine egne data.
 
 ## [0.25.0] - 2026-11-22

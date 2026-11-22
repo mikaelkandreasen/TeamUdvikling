@@ -8,7 +8,7 @@ from pathlib import Path
 from flask import Flask, abort, g, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from . import activity, features, secrets_box, auth, charts, club, db, helpers, model, photos, remember, teams
+from . import activity, mail_queue, features, secrets_box, auth, charts, club, db, helpers, model, photos, remember, teams
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -74,6 +74,7 @@ def create_app(config=None):
     if not app.config.get("SECRET_KEY"):
         app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
     db.init_db(app.config["DATABASE"], backup_dir=app.config["BACKUP_DIR"])
+    mail_queue.start_worker(app)
     app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
     _con = db.connect(app.config["DATABASE"])
     secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
@@ -125,6 +126,7 @@ def create_app(config=None):
 
     @app.after_request
     def _headers(resp):
+        mail_queue.after_request_drain(app)
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("X-Frame-Options", "DENY")
         resp.headers.setdefault("Referrer-Policy", "same-origin")

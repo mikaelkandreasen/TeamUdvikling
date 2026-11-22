@@ -22,7 +22,6 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **B-041b · Fast adgangslag i koden** · M – restpunkt: selve laget (repository), så rå SQL på spillerdata samles ét sted. Den automatiske rutetest (v0.26.0) fanger allerede glemte afgrænsninger.
 - **B-042 · Evalueringskriterier som tabeller** · L – roller, nøglefærdigheder og kriterier (i dag 24 faste indeks i `model.py`) flyttes til tabeller pr. hold med standardsæt som udgangspunkt. Accept: eksisterende hold ser præcis de samme kriterier og tal; et hold kan omdøbe/skjule et kriterium uden kodeændring; beregninger og rapporter bruger tabellerne; migration uden tab af scores.
 - **B-043 · HTMX-frontend** · M – serverrenderede dele opdateres uden fuld sideindlæsning (evalueringsskema, indbakke, kampopstilling, noter). Accept: HTMX leveres fra `static/` (ingen CDN) og virker med den stramme CSP; alt virker stadig uden JavaScript; ingen indlejret JS/`on*=`; mobiltest på 360–430 px.
-- **B-044 · E-mail-kø** · S/M – udgående mails lægges i en tabel og sendes af en baggrundstråd/proces med genforsøg og fejllog; brugeren venter ikke på SMTP. Accept: indbakkebesked til mange modtagere returnerer straks; fejlede mails forsøges igen og kan ses (uden mailindhold) i administration; test med falsk SMTP-fejl.
 
 ## Idéer (uprioriteret)
 - Forslag til næste kamps opstilling, der automatisk prioriterer hvide pletter og lav spilletid.
@@ -40,6 +39,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - Flere sprog (da/en) via oversættelsesfiler.
 
 ## Færdigt
+- **B-044 · E-mail-kø** – færdig (v0.26.0). Nulstillingsmail og prøvemail sendes stadig direkte, så brugeren får fejl med det samme (D-026).
 - **v0.26.0** – B-041 automatisk isolationstest af alle id-ruter (andet hold og anden klub, positiv kontrol, fejler ved ny ubeskyttet rute).
 - **v0.25.0** – B-040 rigtige migrationer (runner, log, backup før, rollback, tests, docs/MIGRATIONS.md).
 - **v0.23.0** – Kampe: spillere på positioner pr. periode, spilletid og hvide pletter pr. spiller/position over tid.

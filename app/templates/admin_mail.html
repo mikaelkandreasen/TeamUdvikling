@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}E-mail-kø{% endblock %}
+{% block content %}
+<h1>E-mail-kø</h1>
+<p class="muted">Mails sendes i baggrunden med op til 6 forsøg (1 min, 5 min, 15 min, 1 t, 3 t). Indholdet slettes, når mailen er sendt eller opgivet; sendte rækker slettes efter 7 dage, mislykkede efter 30.</p>
+<div class="card"><b>{{ st.pending }}</b> i kø · <b>{{ st.sent24 }}</b> sendt seneste døgn · <b>{{ st.failed }}</b> mislykket
+{% if st.failed %}<form method="post" action="{{ url_for('admin.mail_status') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn" type="submit">Sæt mislykkede i kø igen</button></form>{% endif %}</div>
+<div class="card"><h2>Seneste 100</h2>{% for r in rows %}<div class="small">{{ r['when'] }} · {{ r['kind'] }} · {{ r['to_addr'] }} · {{ r['subject'] }} ·
+{% if r['sent_at'] %}<b>sendt</b>{% elif r['failed'] %}<b>mislykket</b> ({{ r['last_error'] }}){% else %}i kø, forsøg {{ r['attempts'] }}{% if r['last_error'] %} ({{ r['last_error'] }}){% endif %}{% endif %}</div>{% else %}<span class="muted">–</span>{% endfor %}</div>
+{% endblock %}

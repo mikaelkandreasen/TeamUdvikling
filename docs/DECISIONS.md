@@ -107,3 +107,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Valg:** Assistent = `users.readonly=1`. Evaluering er det eneste skrive-endpoint, de må bruge (`evaluation.eval_form`; samt læst/svar i indbakken). `model.excluded_assistants()` fjerner assistenters rækker fra `load_rounds` og niveauberegningen, medmindre cheftræneren har medtaget dem for runden (`assist_ok_<runde>` = bruger-id'er). Standard: ikke med.
 **Konsekvens:** Rådata gemmes altid; valget kan ændres bagefter og beregnes løbende. Ved holdskifte kopieres kun medtagne assistenters evalueringer til historikken.
 
+
+## D-026 · E-mail-kø (2026-11-22)
+**Kontekst:** Mails til mange modtagere blokerede forespørgslen, og en SMTP-fejl gik tabt.
+**Valg:** Tabel `mail_queue` + baggrundstråd pr. gunicorn-worker; rækkelås (`locked_until`) mod dobbeltsending. Backoff 1 min–3 t, 6 forsøg. Brødtekst slettes ved sendt/opgivet (engangslinks); log gemmer kun fejltypen. Nulstilling og prøvemail er bevidst direkte, fordi brugeren skal se fejlen med det samme, og tokenet fjernes ved fejl.
+**Konsekvens:** Invitationer/beskeder kan blive forsinket ved SMTP-problemer; status ses under Administration → E-mail-kø. Mails mistes ikke ved genstart (de ligger i databasen).
