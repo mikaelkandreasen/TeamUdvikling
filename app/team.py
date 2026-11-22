@@ -112,34 +112,87 @@ def settings():
                            heads=heads, n_rounds=len(g.rounds), shares=levelcalc.shares(db, tid))
 
 
-# ----------------------------------------------------------------------------- noter
+# ----------------------------------------------------------------------------- noter (delt wiki for trænerne på holdet)
+def _note_or_404(db, nid):
+    n = db.execute("SELECT * FROM team_notes WHERE id=? AND team_id=?", (nid, team_id())).fetchone()
+    if not n:
+        abort(404)
+    return n
+
+
+def _note_fields():
+    body = (request.form.get("body") or "").strip()[:20000]
+    title = (request.form.get("title") or "").strip()[:120]
+    day = (request.form.get("note_date") or "").strip()
+    try:
+        from datetime import date
+        day = date.fromisoformat(day).isoformat()
+    except ValueError:
+        day = _today()
+    if not title and body:
+        title = body.splitlines()[0][:60]
+    return title, day, body
+
+
 @bp.route("/notes")
 def notes():
     db = get_db()
-    rows = db.execute("SELECT * FROM team_notes WHERE team_id=? ORDER BY created_at DESC, id DESC LIMIT 200", (team_id(),)).fetchall()
-    return render_template("team_notes.html", rows=rows)
+    q = (request.args.get("q") or "").strip()[:80]
+    sql = "SELECT id, title, note_date, author, updated_at, updated_by, substr(body,1,160) AS snip FROM team_notes WHERE team_id=?"
+    args = [team_id()]
+    if q:
+        sql += " AND (title LIKE ? ESCAPE '\\' OR body LIKE ? ESCAPE '\\')"
+        like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        args += [like, like]
+    rows = db.execute(sql + " ORDER BY note_date DESC, id DESC LIMIT 300", args).fetchall()
+    return render_template("team_notes.html", rows=rows, q=q)
+
+
+@bp.route("/notes/new")
+def notes_new():
+    return render_template("team_note_form.html", n=None, today=_today())
 
 
 @bp.route("/notes/add", methods=["POST"])
 def notes_add():
     db = get_db()
-    body = (request.form.get("body") or "").strip()[:2000]
+    title, day, body = _note_fields()
     if not body:
         flash("Skriv en note.", "error")
-    else:
-        db.execute("INSERT INTO team_notes(team_id,user_id,author,created_at,body) VALUES(?,?,?,datetime('now','localtime'),?)",
-                   (team_id(), g.user["id"], g.user["display_name"], body))
+        return redirect(url_for("team.notes_new"))
+    cur = db.execute("INSERT INTO team_notes(team_id,user_id,author,created_at,note_date,title,body) VALUES(?,?,?,datetime('now','localtime'),?,?,?)",
+                     (team_id(), g.user["id"], g.user["display_name"], day, title, body))
+    db.commit()
+    flash("Noten er gemt og kan ses af de andre trænere.", "ok")
+    return redirect(url_for("team.note_view", nid=cur.lastrowid))
+
+
+@bp.route("/notes/<int:nid>")
+def note_view(nid):
+    return render_template("team_note.html", n=_note_or_404(get_db(), nid))
+
+
+@bp.route("/notes/<int:nid>/edit", methods=["GET", "POST"])
+def note_edit(nid):
+    db = get_db()
+    n = _note_or_404(db, nid)
+    if request.method == "POST":
+        title, day, body = _note_fields()
+        if not body:
+            flash("Noten må ikke være tom.", "error")
+            return redirect(url_for("team.note_edit", nid=nid))
+        db.execute("UPDATE team_notes SET title=?, note_date=?, body=?, updated_at=datetime('now','localtime'), updated_by=? WHERE id=? AND team_id=?",
+                   (title, day, body, g.user["display_name"], nid, team_id()))
         db.commit()
-        flash("Noten er gemt.", "ok")
-    return redirect(url_for("team.notes"))
+        flash("Noten er opdateret.", "ok")
+        return redirect(url_for("team.note_view", nid=nid))
+    return render_template("team_note_form.html", n=n, today=_today())
 
 
 @bp.route("/notes/<int:nid>/delete", methods=["POST"])
 def notes_delete(nid):
     db = get_db()
-    n = db.execute("SELECT * FROM team_notes WHERE id=? AND team_id=?", (nid, team_id())).fetchone()
-    if not n:
-        abort(404)
+    n = _note_or_404(db, nid)
     if n["user_id"] != g.user["id"] and not can_configure():
         abort(403)
     db.execute("DELETE FROM team_notes WHERE id=?", (nid,))

@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- **Links uden adgang skjules:** «Del i A/B/C-hold» og «Spillerniveau» viser ikke længere et link til Holdindstillinger, hvis man ikke har adgang til dem som træner.
+- **Hold-knappen er flyttet fra menuen til Hjem** (både mobil- og fuld version), sammen med en ny **Noter**-knap.
+- **Noter er nu en delt wiki til holdets trænere:** hver note har titel, dato og tekst (op til 20.000 tegn), kan rettes af alle trænere på holdet (med «sidst rettet af»), kan søges, og kan slettes af forfatteren eller en holdansvarlig. Afgrænset til holdet. Skema v15 (migration tilføjer titel/dato, eksisterende noter beholdes).
+
 ## [0.16.0] - 2026-11-21
 
 ### Tilføjet

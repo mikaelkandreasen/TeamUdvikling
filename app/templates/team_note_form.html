@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ 'Ret note' if n else 'Ny note' }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('team.note_view', nid=n['id']) if n else url_for('team.notes') }}">‹ Tilbage</a></p>
+<h1>{{ 'Ret note' if n else 'Ny note' }}</h1>
+<form method="post" action="{{ url_for('team.note_edit', nid=n['id']) if n else url_for('team.notes_add') }}" class="card">{{ csrf() }}
+  <label for="t">Titel</label><input id="t" name="title" maxlength="120" value="{{ n['title'] if n }}" placeholder="fx Træning 12. november – fokus på presspil">
+  <label for="d">Dato</label><input id="d" type="date" name="note_date" value="{{ n['note_date'] if n else today }}">
+  <label for="b">Note</label><textarea id="b" name="body" rows="12" maxlength="20000" required placeholder="Skriv frit – alle trænere på holdet kan læse og rette noten.">{{ n['body'] if n }}</textarea>
+  <div class="actions"><button class="btn">Gem</button></div></form>
+{% endblock %}

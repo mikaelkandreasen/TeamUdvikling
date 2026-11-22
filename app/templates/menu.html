@@ -6,7 +6,6 @@
   <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling</a>
   <a class="tile alt" href="{{ url_for('evaluation.position_view') }}">Position &amp; bane</a>
   {% if features['lineup'] %}<a class="tile alt" href="{{ url_for('lineup.index') }}">Holdsætning</a>{% endif %}
-  <a class="tile alt" href="{{ url_for('team.index') }}">Hold</a>
   <a class="tile alt" href="{{ url_for('evaluation.areas') }}">Områder</a>
   {% if features['motivation'] %}<a class="tile alt" href="{{ url_for('motivation.matrix') }}">Motivation</a>{% endif %}
   {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.matrix') }}">Udviklingsdata</a>

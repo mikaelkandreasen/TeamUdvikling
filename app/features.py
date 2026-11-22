@@ -16,7 +16,7 @@ FEATURES = (
 )
 KEYS = [k for k, _l, _d in FEATURES]
 BLUEPRINT = {"devdata": "devdata", "motivation": "motivation", "lineup": "lineup"}
-ENDPOINT = {"team.notes": "notes", "team.notes_add": "notes", "team.notes_delete": "notes", "team.levels": "levels",
+ENDPOINT = {"team.notes": "notes", "team.notes_add": "notes", "team.notes_new": "notes", "team.note_view": "notes", "team.note_edit": "notes", "team.notes_delete": "notes", "team.levels": "levels",
             "team.mascot": "mascot", "team.mascot_return": "mascot", "team.mascot_delete": "mascot", "team.mascot_report": "mascot"}
 
 

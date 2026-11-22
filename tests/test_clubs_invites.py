@@ -401,3 +401,13 @@ def test_user_can_have_several_profiles_and_switch(world):
     ta.post("/switch-profile", {"profile_id": str(prof[0]["id"])}, page="/")
     admin.post(f"/admin/users/{uid('tina')}/profile-remove", {"profile": str(prof[0]["id"])}, page=f"/admin/users/{uid('tina')}")
     assert ta.get("/admin/users").status_code in (302, 403, 404)
+
+
+def test_trainer_does_not_see_links_to_pages_without_access(world):
+    app, admin, ca, cb, ta, tb = world
+    for url in ("/lineup/split", "/team/levels", "/team/", "/team/calendar"):
+        page = ta.get(url).get_data(as_text=True)
+        assert "Holdindstillinger" not in page.replace("Holdindstillinger er", "") or url == "/team/", url
+        assert 'href="/team/settings"' not in page and 'href="/team/criteria"' not in page and 'href="/admin/' not in page, url
+    assert ta.get("/team/settings").status_code in (302, 403, 404)                       # og siden er reelt låst
+    assert 'href="/team/settings"' in ca.get("/team/").get_data(as_text=True)             # klubadministrator ser den

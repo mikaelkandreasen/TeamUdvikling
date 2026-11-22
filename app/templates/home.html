@@ -24,7 +24,9 @@
 </div>
 <div class="tiles">
   <a class="tile" href="{{ url_for('players.index') }}">Spillere<small>{{ players|length }} aktive</small></a>
+  <a class="tile" href="{{ url_for('team.index') }}">Hold<small>niveau, kalender, noter</small></a>
   <a class="tile" href="{{ url_for('evaluation.team') }}">Teamoversigt<small>roller og samlet score</small></a>
+  {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">Noter<small>del med trænerne</small></a>{% endif %}
   {% if features['motivation'] %}<a class="tile" href="{{ url_for('motivation.matrix') }}">Motivation<small>svar pr. spiller</small></a>{% endif %}
   {% if features['devdata'] %}<a class="tile" href="{{ url_for('devdata.matrix') }}">Udviklingsdata<small>alder, fremmøde, trivsel</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.development') }}">Udvikling<small>runde for runde</small></a>

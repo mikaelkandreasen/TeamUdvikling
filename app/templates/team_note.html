@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ n['title'] or 'Note' }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('team.notes') }}">‹ Alle noter</a></p>
+<div class="card"><h1>{{ n['title'] or '(uden titel)' }}</h1>
+  <p class="muted small">Dato {{ n['note_date'] }} · skrevet af {{ n['author'] }} ({{ n['created_at'] }}){% if n['updated_at'] %} · sidst rettet af {{ n['updated_by'] }} {{ n['updated_at'] }}{% endif %}</p>
+  <div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ n['body'] }}</div></div>
+<div class="actions noprint"><a class="btn" href="{{ url_for('team.note_edit', nid=n['id']) }}">Ret noten</a>
+  {% if n['user_id'] == user['id'] or can_configure() %}<form method="post" action="{{ url_for('team.notes_delete', nid=n['id']) }}" style="display:inline">{{ csrf() }}<button class="btn sec">Slet</button></form>{% endif %}</div>
+{% endblock %}

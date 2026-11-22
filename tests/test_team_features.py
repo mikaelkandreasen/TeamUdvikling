@@ -1,3 +1,4 @@
+import datetime
 """v0.10.0: holdindstillinger, funktionsvalg, niveau, noter, mascot, holddeling, chef-trænere og invitationer, brugeroversigt."""
 import re
 
@@ -58,7 +59,7 @@ def test_levels_notes_mascot_and_report(app, admin):
     pa, pb = player_id(app, "Anna Alfa"), player_id(app, "Bella Beta")
     admin.post("/team/levels", {f"level_{pa}": "A", f"level_{pb}": "Ugyldig"}, page="/team/levels")
     assert sql(app, "SELECT level FROM players WHERE id=?", pa)[0]["level"] == "A" and sql(app, "SELECT level FROM players WHERE id=?", pb)[0]["level"] is None
-    admin.post("/team/notes/add", {"body": "Husk bolde"}, page="/team/notes")
+    admin.post("/team/notes/add", {"title": "Bolde", "note_date": "2026-11-20", "body": "Husk bolde"}, page="/team/notes")
     assert "Husk bolde" in admin.get("/team/notes").get_data(as_text=True)
     admin.post("/team/settings", {"game_type": "5v5", "subs": "1", "feat_mascot": "1", "feat_notes": "1", "feat_levels": "1"}, page="/team/settings")
     for pid, why in ((pa, "indsats"), (pa, "fremgang"), (pb, "indsats")):
@@ -619,3 +620,34 @@ def test_dbu_choices_are_saved_per_trainer_and_drive_calculated_level(app, admin
     post("Spiller A", {})
     assert sql(app, "SELECT COUNT(*) c FROM dbu_checks WHERE player_id=?", pid)[0]["c"] == 0
     assert "Holdsammensætning" in admin.get("/team/levels").get_data(as_text=True)
+
+
+def test_wiki_notes_dated_shared_editable_searchable_and_team_scoped(app, admin):
+    make_team(admin, "A"); make_team(admin, "B")
+    switch(admin, team_id(app, "A"))
+    admin.post("/team/notes/add", {"title": "Træning 12. nov", "note_date": "2026-11-12", "body": "Presspil og afleveringer"}, page="/team/notes/new")
+    admin.post("/team/notes/add", {"body": "Kun en tekst uden titel", "note_date": "ugyldig"}, page="/team/notes/new")          # titel udledes, dato falder tilbage til i dag
+    rows = sql(app, "SELECT * FROM team_notes ORDER BY id")
+    assert rows[0]["note_date"] == "2026-11-12" and rows[1]["title"] == "Kun en tekst uden titel" and rows[1]["note_date"] == datetime.date.today().isoformat()
+    nid = rows[0]["id"]
+    page = admin.get("/team/notes").get_data(as_text=True)
+    assert "Træning 12. nov" in page and "2026-11-12" in page and "Ny note" in page
+    assert "Træning 12. nov" in admin.get("/team/notes?q=presspil").get_data(as_text=True) and "Kun en tekst" not in admin.get("/team/notes?q=presspil").get_data(as_text=True)
+    assert "Kun en tekst" not in admin.get("/team/notes?q=%25").get_data(as_text=True)                                  # % er ikke jokertegn
+    admin.post(f"/team/notes/{nid}/edit", {"title": "Træning 12. nov", "note_date": "2026-11-12", "body": "Rettet af en anden"}, page=f"/team/notes/{nid}")
+    v = admin.get(f"/team/notes/{nid}").get_data(as_text=True)
+    assert "Rettet af en anden" in v and "sidst rettet af" in v
+    # hold B kan hverken se, rette eller slette holdets noter
+    switch(admin, team_id(app, "B"))
+    assert "Træning 12. nov" not in admin.get("/team/notes").get_data(as_text=True)
+    assert admin.get(f"/team/notes/{nid}").status_code == 404
+    assert admin.post(f"/team/notes/{nid}/edit", {"body": "hack"}, page="/team/notes").status_code == 404
+    assert admin.post(f"/team/notes/{nid}/delete", {}, page="/team/notes").status_code == 404
+    assert sql(app, "SELECT body FROM team_notes WHERE id=?", nid)[0]["body"] == "Rettet af en anden"
+
+
+def test_links_without_access_are_hidden_and_hold_tile_is_on_home(app, admin):
+    make_team(admin, "A"); switch(admin, team_id(app, "A"))
+    home = admin.get("/").get_data(as_text=True)
+    assert 'href="/team/"' in home and "Noter" in home
+    assert 'href="/team/"' not in admin.get("/menu").get_data(as_text=True)

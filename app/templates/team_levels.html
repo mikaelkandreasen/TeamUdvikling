@@ -3,7 +3,7 @@
 <h1>Spillerniveau – {{ team['name'] }}{{ levelhelp() }}</h1>
 <p class="muted">{% for lv in LEVELS %}{{ lv }}: <b>{{ counts[lv] }}</b> · {% endfor %}uden niveau: <b>{{ counts['uden'] }}</b></p>
 <div class="card"><h2>Beregnet niveau</h2>
-  <p class="muted small">Beregnes automatisk ud fra trænernes niveauvurderinger i evalueringen: de øverste <b>{{ shares[0] }} %</b> bliver A, de nederste <b>{{ shares[1] }} %</b> C og resten B (kan ændres under <a href="{{ url_for('team.settings') }}">Holdindstillinger</a>). Uden vurdering bruges samlet score fra de 24 kriterier. Har du valgt et niveau nedenfor, bruges det i stedet for det beregnede.</p>
+  <p class="muted small">Beregnes automatisk ud fra trænernes niveauvurderinger i evalueringen: de øverste <b>{{ shares[0] }} %</b> bliver A, de nederste <b>{{ shares[1] }} %</b> C og resten B {% if can_configure() %}(kan ændres under <a href="{{ url_for('team.settings') }}">Holdindstillinger</a>){% endif %}. Uden vurdering bruges samlet score fra de 24 kriterier. Har du valgt et niveau nedenfor, bruges det i stedet for det beregnede.</p>
   <p>A: <b>{{ ccount['A'] }}</b> · B: <b>{{ ccount['B'] }}</b> · C: <b>{{ ccount['C'] }}</b> · uden grundlag: <b>{{ players|length - calc|length }}</b></p></div>
 <form method="post">{{ csrf() }}
 {% for p in players %}

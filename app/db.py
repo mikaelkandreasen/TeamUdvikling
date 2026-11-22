@@ -139,7 +139,7 @@ def connect(path):
     return con
 
 
-SCHEMA_VERSION = 14   # v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
+SCHEMA_VERSION = 15   # v15: team_notes.title/note_date/updated_at/updated_by (delte holdnoter i wiki-stil; ADD COLUMN, idempotent); v14: dbu_checks (trænerens afkrydsning af DBU-niveau-udsagn pr. spiller og runde; IF NOT EXISTS); v13: user_profiles (ekstra profiler pr. bruger: træner/klubadministrator/systemadministrator med klub; IF NOT EXISTS), level_ratings.level (A+/A/B/C/D/Nystartet i stedet for 1-5; gamle rækker omsat og tabellen genopbygget); v12: niveauer følger DBU (A, B, C, D): A+→A og Ny→D (idempotent); v11: level_ratings (trænernes samlede niveauvurdering pr. spiller og runde; IF NOT EXISTS); v10: players.deactivated_at (opbevaringsfrist), users.readonly + invitations.as_readonly (assistent = træner med læseadgang), teams.archived (sæsonskifte), att_events + att_marks (fremmøde pr. træning/kamp), wellbeing (trivsel over tid), player_links (spillerlink til motivationsskema), security_events (blokeringslog, 30 dage) – alle IF NOT EXISTS; v9: players.level, teams.slogan/mascot_name, team_heads (chef-trænere), invitations.as_head, users.last_login, team_notes, mascot_log; v8: clubs, invitations, users.club_id, teams.club_id (migration flytter klubprofil/logo til clubs); v7: v7: presence + activity (IF NOT EXISTS); v6: v6: players.position3/4, player_photos, lineups, lineup_slots (ADD COLUMN/IF NOT EXISTS, idempotent); v5: login_fails + revoked_sessions (IF NOT EXISTS); v4: users.email + reset_tokens (migration: ADD COLUMN, idempotent); v3: remember_tokens; v2: backlog_items (oprettes med IF NOT EXISTS – ingen datamigration nødvendig)  # øg ved skemaændringer og tilføj migration i MIGRATIONS
 
 
 def _migrate(con):
@@ -215,6 +215,15 @@ def _migrate_team_features(con):
         con.execute("ALTER TABLE invitations ADD COLUMN as_head INTEGER NOT NULL DEFAULT 0")
 
 
+def _migrate_team_notes(con):
+    """v15: holdnoter får titel, dato, og «sidst redigeret» (idempotent)."""
+    cols = {r["name"] for r in con.execute("PRAGMA table_info(team_notes)")}
+    for name, ddl in (("title", "TEXT NOT NULL DEFAULT ''"), ("note_date", "TEXT"), ("updated_at", "TEXT"), ("updated_by", "TEXT")):
+        if name not in cols:
+            con.execute(f"ALTER TABLE team_notes ADD COLUMN {name} {ddl}")
+    con.execute("UPDATE team_notes SET note_date=substr(created_at,1,10) WHERE note_date IS NULL OR note_date=''")
+
+
 def _migrate_dbu_levels(con):
     """v12/v13: «Ny» hedder nu «Nystartet» (A+ bevares). Trænernes niveauvurdering gemmes som niveau i stedet for tal 1-5
     (5→A, 4→B, 3→C, 2→D, 1→Nystartet); tabellen genopbygges, gamle rækker omsættes (idempotent)."""
@@ -237,6 +246,7 @@ def init_db(path):
     _migrate_clubs(con)
     _migrate_team_features(con)
     _migrate_dbu_levels(con)
+    _migrate_team_notes(con)
     ver = con.execute("PRAGMA user_version").fetchone()[0]
     if ver < SCHEMA_VERSION:
         con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

@@ -3,6 +3,8 @@
 <div class="tiles">
   <a class="tile" href="{{ url_for('evaluation.eval_round', rnd=cur) }}">Evaluér<small>{{ prog[cur-1]['label'] }}</small></a>
   {% if features['motivation'] %}<a class="tile" href="{{ url_for('motivation.tablet_list') }}">Spillerskema<small>til tablet/telefon</small></a>{% endif %}
+  <a class="tile" href="{{ url_for('team.index') }}">Hold<small>niveau, kalender, noter</small></a>
+  {% if features['notes'] %}<a class="tile" href="{{ url_for('team.notes') }}">Noter<small>del med trænerne</small></a>{% endif %}
   <a class="tile alt" href="{{ url_for('evaluation.team', rnd=cur) }}">Overblik<small>hele holdet</small></a>
   {% if features['devdata'] %}<a class="tile alt" href="{{ url_for('devdata.attendance') }}">Fremmøde<small>afkryds træning/kamp</small></a>{% endif %}
 </div>

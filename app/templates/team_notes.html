@@ -1,12 +1,15 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}Noter{% endblock %}
+{% extends "base.html" %}{% block title %}Noter{% endblock %}
 {% block content %}
-<h1>Holdnoter – {{ team['name'] }}</h1>
-<form method="post" action="{{ url_for('team.notes_add') }}" class="card">{{ csrf() }}
-  <label for="b">Ny note</label><textarea id="b" name="body" maxlength="2000" required placeholder="fx Fokus til næste træning, aftaler med forældre …"></textarea>
-  <div class="actions"><button class="btn">Gem note</button></div></form>
+<p><a href="{{ url_for('team.index') }}">‹ Hold</a></p>
+<h1>Noter – {{ team['name'] }}</h1>
+<p class="muted">Delte noter til alle trænere på holdet. Alle kan læse og rette dem.</p>
+<div class="actions"><a class="btn" href="{{ url_for('team.notes_new') }}">+ Ny note</a></div>
+<form method="get" class="card noprint"><label for="q">Søg i noter</label><input id="q" type="search" name="q" value="{{ q }}"><div class="actions"><button class="btn sec">Søg</button></div></form>
 {% for n in rows %}
-<div class="card"><p style="white-space:pre-wrap">{{ n['body'] }}</p>
-  <p class="muted small">{{ n['author'] }} · {{ n['created_at'] }}</p>
-  {% if n['user_id'] == user['id'] or can_configure() %}<form method="post" action="{{ url_for('team.notes_delete', nid=n['id']) }}">{{ csrf() }}<button class="btn sec">Slet</button></form>{% endif %}</div>
-{% else %}<div class="card muted">Ingen noter endnu.</div>{% endfor %}
+<a class="pcard" href="{{ url_for('team.note_view', nid=n['id']) }}" style="display:block;text-decoration:none;color:inherit">
+  <div><b>{{ n['title'] or '(uden titel)' }}</b> <span class="muted small">{{ n['note_date'] }}</span></div>
+  <div class="muted small">{{ n['author'] }}{% if n['updated_at'] %} · rettet af {{ n['updated_by'] }}{% endif %}</div>
+  <div class="muted small">{{ n['snip'] }}</div>
+</a>
+{% else %}<div class="card muted">{{ 'Ingen noter matcher.' if q else 'Ingen noter endnu.' }}</div>{% endfor %}
 {% endblock %}
