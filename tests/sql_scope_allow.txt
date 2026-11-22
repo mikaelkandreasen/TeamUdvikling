@@ -1,7 +1,7 @@
 # Gennemgåede forespørgsler på team-afgrænsede tabeller uden team_id i selve SQL'en (se tests/test_sql_scope.py).
 # Udgangspunkt 2026-11-22: stikprøve af de mest risikable (slet/ret på id) kalder get_player()/_get()/_event()/_note_or_404() først; alle id-ruter dækkes desuden af tests/test_isolation_routes.py.
 # Nye linjer: skriv fil::funktion::tabel # begrundelse
-admin.py::retention::players
+admin_more.py::retention::players
 conversations.py::add::conversations
 conversations.py::delete::conversations
 conversations.py::index::conversations
@@ -69,3 +69,5 @@ transfer.py::move_player::match_slots
 transfer.py::move_player::player_links
 transfer.py::put::eval_history
 views.py::_dashboard_data::evaluations
+
+matches.py::ical_update::matches # UPDATE på id efter _get(db, mid), som afgrænser til holdet
