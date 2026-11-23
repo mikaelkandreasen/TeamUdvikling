@@ -23,6 +23,15 @@
 </div>
 {% if sysadmin %}<div class="card" style="margin-top:.9rem"><h2>Backup</h2>
   <p class="muted small">Der tages automatisk en sikkerhedskopi (maks. én pr. døgn, de seneste 14 gemmes) i /data/backups. Her kan du hente en kopi af hele databasen.</p>
-  <form method="post" action="{{ url_for('admin.make_backup') }}">{{ csrf() }}<button class="btn sec">Hent backup af databasen</button></form></div>{% endif %}
+  <form method="post" action="{{ url_for('admin.make_backup') }}">{{ csrf() }}<button class="btn sec">Hent backup af databasen</button></form>
+  <details style="margin-top:.8rem"><summary><b>Gendan en backup</b></summary>
+    <form method="post" action="{{ url_for('admin.restore_backup') }}" enctype="multipart/form-data">{{ csrf() }}
+      <p class="muted small"><b>Erstatter hele databasen</b> (alle hold, spillere og brugere). Den nuværende database gemmes først i /data/backups. Du logges ud bagefter.</p>
+      <label for="rb">Backupfil (.db)</label><input id="rb" type="file" name="backup" accept=".db,.sqlite,application/octet-stream" required>
+      <label for="rk">2FA-nøgle fra den gamle server (filen totp_key – valgfri)</label><input id="rk" type="file" name="totp_key">
+      <p class="muted small">Uden nøglen kan de gendannede brugere ikke bruge deres 2FA-kode, hvis backuppen kommer fra en anden installation.</p>
+      <label for="rc">Din 2FA-kode</label><input id="rc" name="code" inputmode="numeric" autocomplete="one-time-code" required>
+      <label for="rg">Skriv GENDAN for at bekræfte</label><input id="rg" name="confirm" autocomplete="off" required>
+      <div class="actions"><button class="btn">Gendan backup</button></div></form></details></div>{% endif %}
 {% if sysadmin %}<form method="post" action="{{ url_for('admin.testmail') }}" class="card">{{ csrf() }}<h2>E-mail</h2><p class="muted small">Sender en prøvemail til din egen adresse.</p><button class="btn sec">Send prøvemail</button></form>{% endif %}
 {% endblock %}

@@ -11,6 +11,9 @@ python3 scripts/verify-backup.py teamudvikling-20261121-030000.db
 ```
 Kontrollen er kun-læsning og viser skemaversion og antal rækker.
 
+## Gendan via siden (anbefalet)
+Administration → Backup → **Gendan en backup**: vælg `.db`-filen, (hvis backuppen kommer fra en anden installation) også filen `totp_key` fra den gamle volumen, skriv din 2FA-kode og `GENDAN`. Den nuværende database gemmes først i `/data/backups`. Uden `totp_key` kan de gendannede brugere ikke bruge deres 2FA-kode, og 2FA skal nulstilles.
+
 ## Gendan (Docker)
 ```bash
 docker stop teamudvikling

@@ -347,3 +347,109 @@ def backlog():
         return redirect(url_for("admin.backlog") + (f"#i{iid}" if iid and action != "delete" else ""))
     items = db.execute("SELECT * FROM backlog_items ORDER BY (status='Færdig'), priority, position, id").fetchall()
     return render_template("admin_backlog.html", items=items, prios=BACKLOG_PRIO, statuses=BACKLOG_STATUS)
+
+
+# ----------------------------------------------------------------------------- gendan backup (kun systemadministrator)
+RESTORE_MAX = 200 * 1024 * 1024
+
+
+def _check_backup_file(path):
+    """Kontrollerer en uploadet backup. Returnerer (None, antal_brugere) eller (fejltekst, 0)."""
+    import sqlite3
+    from .db import SCHEMA_VERSION
+    with open(path, "rb") as f:
+        if f.read(15) != b"SQLite format 3":
+            return "Filen er ikke en SQLite-database.", 0
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
+            if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                return "Backuppen bestod ikke integritetskontrollen.", 0
+            tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            if not {"users", "teams", "players"} <= tables:
+                return "Filen ligner ikke en TeamUdvikling-backup.", 0
+            if con.execute("PRAGMA user_version").fetchone()[0] > SCHEMA_VERSION:
+                return "Backuppen er fra en nyere version end denne app. Opdatér appen først.", 0
+            return None, con.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        finally:
+            con.close()
+    except sqlite3.DatabaseError:
+        return "Filen kunne ikke læses som en database.", 0
+
+
+@bp.route("/restore", methods=["POST"])
+@admin_required
+def restore_backup():
+    """Erstatter hele databasen med en uploadet backup. Kræver frisk 2FA-kode og at man skriver GENDAN.
+    Nuværende database gemmes først som sikkerhedskopi i /data/backups. Valgfri totp_key-fil gør, at brugernes 2FA virker efter gendannelsen."""
+    import os
+    import sqlite3
+    import tempfile
+    from cryptography.fernet import Fernet
+    from . import secrets_box
+    from .db import connect, init_db
+    db = get_db()
+    if throttled(db):
+        return _too_many()
+    back = redirect(url_for("admin.index"))
+    if request.form.get("confirm", "").strip().upper() != "GENDAN":
+        flash("Skriv GENDAN for at bekræfte.", "error")
+        return back
+    up = request.files.get("backup")
+    if not up or not up.filename:
+        flash("Vælg en backupfil.", "error")
+        return back
+    if not verify_admin_code(db, g.user, request.form.get("code", "")):
+        flash("Forkert eller allerede brugt 2FA-kode. Vent på en ny kode i appen og prøv igen.", "error")
+        return back
+    cfg = current_app.config
+    new_key = None
+    kf = request.files.get("totp_key")
+    if kf and kf.filename:
+        raw = kf.read(4096).strip()
+        try:
+            Fernet(raw)
+            new_key = raw
+        except Exception:
+            flash("totp_key-filen er ikke gyldig. Gendannelsen er ikke udført.", "error")
+            return back
+        if os.environ.get("TOTP_KEY"):
+            flash("TOTP_KEY er sat som miljøvariabel og bruges i stedet for filen. Gendannelsen er ikke udført.", "error")
+            return back
+    tmp_fd, tmp = tempfile.mkstemp(prefix="restore-", suffix=".db", dir=cfg["TEAMUDVIKLING_DATA_DIR"])
+    os.close(tmp_fd)
+    try:
+        up.save(tmp)
+        err, n_users = _check_backup_file(tmp)
+        if err:
+            flash(err, "error")
+            return back
+        before = backup(cfg["DATABASE"], cfg["BACKUP_DIR"])                       # sikkerhedskopi af den nuværende database
+        if new_key:
+            kp = os.path.join(cfg["TEAMUDVIKLING_DATA_DIR"], "totp_key")
+            if os.path.exists(kp):
+                os.replace(kp, kp + ".before-restore")
+            with open(kp, "wb") as f:
+                f.write(new_key)
+            os.chmod(kp, 0o600)
+            cfg["TOTP_KEY_BYTES"] = new_key
+        src = sqlite3.connect(tmp)
+        dst = sqlite3.connect(cfg["DATABASE"])
+        try:
+            src.backup(dst)
+        finally:
+            src.close()
+            dst.close()
+        init_db(cfg["DATABASE"], backup_dir=cfg["BACKUP_DIR"])                     # migrér en ældre backup til nuværende skema
+        con = connect(cfg["DATABASE"])
+        secrets_box.encrypt_all(con, cfg["TOTP_KEY_BYTES"])
+        audit(con, "system", "backup_gendannet", f"{n_users} brugere; tidligere database: {os.path.basename(before)}")
+        con.commit()
+        con.close()
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    current_app.logger.warning("Database gendannet fra backup (%s brugere). Tidligere database: %s", n_users, before)
+    session.clear()
+    flash(f"Backup gendannet ({n_users} brugere). Log ind igen. Den tidligere database er gemt i /data/backups.", "ok")
+    return redirect(url_for("auth.login"))

@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- Gendan backup via siden (Administration → Backup): upload, kontrol, frisk 2FA-kode + «GENDAN», sikkerhedskopi af nuværende database, valgfri `totp_key`.
+- Cloudflare-regler opdateret i docs/SECURITY.md (`/setup`, `/2fa`, Access på `/admin`).
+
 ## [0.35.1] - 2026-11-23
 
 ### Ændret

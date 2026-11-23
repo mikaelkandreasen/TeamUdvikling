@@ -30,7 +30,17 @@ Vurderet og ikke indført: `ALLOWED_HOSTS`/origin-hemmelighed (tunnelen gør ori
 
 ### Cloudflare-indstillinger (gør dette)
 1. **Ingen Access-login** på din adresse (appen har egen adgangskode + 2FA), men behold resten af beskyttelsen.
-2. **Rate limiting-regel:** sti `/login` og `/nulstil`, maks. 10 forespørgsler/minut pr. IP, handling Block. (Appen har egen spærre, men Cloudflare stopper trafikken, før den rammer din NUC.)
+2. **Rate limiting-regel** (Security → WAF → Rate limiting rules): maks. 10 forespørgsler/minut pr. IP, handling Block, på disse stier (appen har egen spærre, men Cloudflare stopper trafikken, før den rammer serveren):
+   ```
+   (http.request.uri.path wildcard r"/login*") or (http.request.uri.path wildcard r"/nulstil*") or
+   (http.request.uri.path wildcard r"/invitation*") or (http.request.uri.path wildcard r"/svar*") or
+   (http.request.uri.path wildcard r"/setup*") or (http.request.uri.path wildcard r"/2fa*")
+   ```
+   På gratis-planen er periode og varighed faste; vælg det, planen tilbyder.
+2b. **Luk `/setup` udefra** (Custom rule, handling Block): `(http.request.uri.path wildcard r"/setup*")`. Slå reglen fra midlertidigt, hvis en ny, tom installation skal sættes op.
+2c. **Må ikke blokeres:** `/healthz`, `/static`, `/privatliv` og klublogoet.
+2d. **Valgfrit:** en Cloudflare Access-applikation på `/admin*` (kun dine administratorer) som ekstra lag foran administration.
+2e. **Tunnel:** Public hostname → `http://teamudvikling:8000` (samme Docker-netværk som appen) eller `http://<server-ip>:1020`.
 3. **Bot Fight Mode** til. **Always Use HTTPS** til. Minimum TLS 1.2.
 4. **Slå fra:** Rocket Loader, Email Address Obfuscation og Web Analytics-injektion. De indsætter scripts i siden, som appens CSP (`script-src 'self'`) blokerer, og det giver fejl.
 5. **Cache:** lad HTML være uden for cache (standard). Brug ikke «Cache Everything» på domænet.
@@ -44,7 +54,7 @@ Alle ruter kræver login og 2FA (`pw_ok`-session kan ikke springe 2FA over); all
 - Roller: systemadministrator (`admin`), klubadministrator (`clubadmin`, kun egen klub), træner. Adgang til hold: træner via tildeling **og** samme klub; klubadministrator alle hold i egen klub; systemadministrator alle.
 - Klubadministratorer kan ikke se eller ændre brugere/hold/profil i andre klubber (404), ikke oprette administratorer og ikke åbne systemsider (backup, eksport, audit, brug, klubber, backlog).
 - Invitationer: 256-bit token (kun HMAC-hash gemmes), 7 dages levetid, engangsbrug (atomisk), kan tilbagekaldes, kræver afsenderens friske 2FA-kode, rate-begrænset pr. IP. Nye brugere skal sætte 2FA op, før de får adgang. Link-GET forbruger ikke tokenet.
-- Cloudflare: tilføj `/invitation` til rate-limit-reglen sammen med `/login` og `/nulstil`.
+- Cloudflare: `/invitation` indgår i rate-limit-reglen (se Cloudflare-indstillinger).
 
 ## Spillerbilleder (v0.7.0)
 - Upload kræver samtykke-afkrydsning; maks. 12 MB og 40 mio. pixel; kun JPEG/PNG/WebP (indholdet åbnes og genkodes – filendelse/type fra klienten stoles ikke på). SVG/HTML/GIF/afkortede filer afvises. EXIF, GPS og farveprofil fjernes ved genkodning.
@@ -102,3 +112,7 @@ Ikke verificeret her (ingen netværk): at Pillow 13/gunicorn 26 installeres og k
 
 ## Rettelse 2026-11-22 (v0.32.0): import afgrænset til klub
 `importer.classify/apply` slog hold op med `SELECT … FROM teams` uden klub. En klubadministrator kunne derfor ramme et hold med samme navn i en anden klub (opdatere/oprette spillere), og nye hold kom i standardklubben. Nu tager begge funktioner `club_id`; klubben gemmes i forhåndsvisningen og kontrolleres igen ved bekræftelse. Isolationstest: `test_import_is_scoped_to_own_club`.
+
+
+## Gendannelse via siden (v0.36.0)
+Kun systemadministratorer (Administration → Backup → «Gendan en backup»). Kræver frisk 2FA-kode og at man skriver GENDAN. Filen kontrolleres (SQLite-format, integritetstjek, nødvendige tabeller, ikke nyere skema end appen), den nuværende database gemmes først i `/data/backups`, og handlingen står i revisionsloggen. Filen kan højst være 200 MB. En valgfri `totp_key`-fil gør, at 2FA virker efter gendannelse fra en anden installation.

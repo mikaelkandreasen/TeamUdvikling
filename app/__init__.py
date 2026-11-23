@@ -124,6 +124,8 @@ def create_app(config=None):
     def _limits():                                # billedupload må være større end resten (sættes før formularen læses)
         if request.endpoint == "players.photo_upload":
             request.max_content_length = photos.MAX_UPLOAD + 256 * 1024
+        elif request.endpoint == "admin.restore_backup":                 # gendannelse af backup (sysadmin): databasen kan være stor
+            request.max_content_length = 200 * 1024 * 1024
 
     @app.before_request
     def _before():
