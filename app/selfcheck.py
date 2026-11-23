@@ -21,7 +21,7 @@ def run(config):
                                 "til miljøvariablen TOTP_KEY, gem den uden for backupperne, og slet filen. Ellers kan en volumen-kopi også dekryptere 2FA-nøglerne."))
     bdir = config.get("BACKUP_DIR") or ""
     try:
-        files = sorted((f for f in os.listdir(bdir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
+        files = sorted((f for f in os.listdir(bdir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=__import__('app.db', fromlist=['backup_sort_key']).backup_sort_key)
         newest = os.path.getmtime(os.path.join(bdir, files[-1])) if files else 0
     except OSError:
         newest = 0

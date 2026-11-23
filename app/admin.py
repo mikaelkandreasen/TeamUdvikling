@@ -36,7 +36,10 @@ def index():
     from . import selfcheck
     if not scope.is_sysadmin(g.user):
         return _club_home(get_db())
-    return render_template("admin_index.html", sysadmin=True, checks=selfcheck.run(current_app.config))
+    from . import backup_plan
+    plan = backup_plan.get_plan(get_db())
+    return render_template("admin_index.html", sysadmin=True, checks=selfcheck.run(current_app.config), bplan=plan,
+                           bstate=backup_plan.get_state(get_db()), bnext=backup_plan.next_run(plan), bdays=backup_plan.DAYS)
 
 
 def _club_home(db):
@@ -523,10 +526,11 @@ def settings():
 @bp.route("/backup", methods=["POST"])
 @admin_required
 def make_backup():
-    dest = backup(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"])
+    from .backup_plan import keep_count
+    dest = backup(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"], keep=keep_count(get_db()))
     audit(get_db(), g.user["username"], "backup_hentet")
     get_db().commit()
-    return send_file(dest, as_attachment=True, download_name="teamudvikling-backup.db")
+    return send_file(dest, as_attachment=True, download_name=time.strftime("teamudvikling-%Y-%m-%d_%H%M.db"))      # dato og tid i filnavnet (B-12)
 
 
 @bp.route("/usage")

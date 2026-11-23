@@ -424,7 +424,7 @@ def restore_backup():
         if err:
             flash(err, "error")
             return back
-        before = backup(cfg["DATABASE"], cfg["BACKUP_DIR"])                       # sikkerhedskopi af den nuværende database
+        before = backup(cfg["DATABASE"], cfg["BACKUP_DIR"], keep=__import__("app.backup_plan", fromlist=["keep_count"]).keep_count(db))                       # sikkerhedskopi af den nuværende database
         if new_key:
             kp = os.path.join(cfg["TEAMUDVIKLING_DATA_DIR"], "totp_key")
             if os.path.exists(kp):
@@ -453,3 +453,20 @@ def restore_backup():
     session.clear()
     flash(f"Backup gendannet ({n_users} brugere). Log ind igen. Den tidligere database er gemt i /data/backups.", "ok")
     return redirect(url_for("auth.login"))
+
+
+@bp.route("/backup-plan", methods=["POST"])
+@admin_required
+def backup_plan_save():
+    """Systemadministratoren vælger ugedage, klokkeslæt og antal gemte backups for den automatiske backup (B-13)."""
+    from . import backup_plan
+    db = get_db()
+    plan, err = backup_plan.parse_form(request.form)
+    if err:
+        flash(err, "error")
+        return redirect(url_for("admin.index"))
+    backup_plan.set_plan(db, plan)
+    audit(db, g.user["username"], "backupplan_ændret", f"{'til' if plan['enabled'] else 'fra'}; dage={plan['days']}; kl. {plan['time']}; gem {plan['keep']}")
+    db.commit()
+    flash("Backupplanen er gemt.", "ok")
+    return redirect(url_for("admin.index"))

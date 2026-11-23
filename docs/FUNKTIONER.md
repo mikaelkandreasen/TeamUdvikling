@@ -27,6 +27,7 @@ En bruger kan have flere profiler (fx træner i én klub og klubadministrator i 
 ## 3. Funktioner
 
 ### 3.1 Login og konto
+- Planlagt automatisk backup (ugedage, klokkeslæt, antal) med `latest.db`/`latest.json` til eksterne hentejobs.
 - Systemadministrator kan gendanne en backup via siden (kontrol, sikkerhedskopi af nuværende database, frisk 2FA-kode).
 - Login med brugernavn, adgangskode (mindst 12 tegn) og **obligatorisk 2FA** (autentificeringsapp). Gendannelseskoder ved tabt telefon.
 - «Husk denne enhed» i op til 30 dage (kan glemmes under Min konto).

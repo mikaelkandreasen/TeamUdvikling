@@ -102,11 +102,14 @@ def start_worker(app):
                     con = connect(app.config["DATABASE"])
                     try:
                         process(con)
+                        from .backup_plan import run_if_due
+                        run_if_due(con, app.config["DATABASE"], app.config["BACKUP_DIR"])     # planlagt backup (B-13)
                         if time.time() - last_purge > 3600:      # timevis vedligehold: oprydning + daglig backup (også uden login)
                             purge(con)
                             last_purge = time.time()
                             from .db import backup_if_due
-                            backup_if_due(app.config["DATABASE"], app.config["BACKUP_DIR"])
+                            from .backup_plan import keep_count
+                            backup_if_due(app.config["DATABASE"], app.config["BACKUP_DIR"], keep=keep_count(con))
                     finally:
                         con.close()
             except Exception:     # noqa: BLE001 – tråden må aldrig dø

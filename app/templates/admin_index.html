@@ -24,6 +24,17 @@
 {% if sysadmin %}<div class="card" style="margin-top:.9rem"><h2>Backup</h2>
   <p class="muted small">Der tages automatisk en sikkerhedskopi (maks. én pr. døgn, de seneste 14 gemmes) i /data/backups. Her kan du hente en kopi af hele databasen.</p>
   <form method="post" action="{{ url_for('admin.make_backup') }}">{{ csrf() }}<button class="btn sec">Hent backup af databasen</button></form>
+  <form method="post" action="{{ url_for('admin.backup_plan_save') }}" style="margin-top:.8rem">{{ csrf() }}
+    <h3 style="margin:.6rem 0 .3rem">Automatisk backup efter plan</h3>
+    <label style="display:flex;gap:.5rem;align-items:center"><input type="checkbox" name="enabled" value="1" {{ 'checked' if bplan.enabled }}> Tag backup efter planen</label>
+    <fieldset style="border:0;padding:0;margin:.4rem 0"><legend class="muted small">Ugedage</legend>
+      {% for d in bdays %}<label style="display:inline-flex;gap:.3rem;align-items:center;margin-right:.7rem"><input type="checkbox" name="days" value="{{ loop.index0 }}" {{ 'checked' if loop.index0 in bplan.days }}> {{ d[:3] }}</label>{% endfor %}</fieldset>
+    <label for="bt">Klokkeslæt (serverens tid)</label><input id="bt" type="time" name="time" value="{{ bplan.time }}" required>
+    <label for="bk">Antal backups, der gemmes</label><input id="bk" type="number" name="keep" min="1" max="90" value="{{ bplan.keep }}" required>
+    <p class="muted small">{% if bnext %}Næste planlagte backup: <b>{{ bnext.strftime('%d-%m-%Y kl. %H:%M') }}</b>.{% else %}Planen er slået fra.{% endif %}
+      {% if bstate.get('at') %}Seneste planlagte kørsel: {{ bstate.at }} – {% if bstate.ok %}<b>ok</b> ({{ bstate.file }}){% else %}<b style="color:var(--err)">fejlede: {{ bstate.error }}</b>{% endif %}.{% endif %}</p>
+    <p class="muted small">Filerne ligger i <code>/data/backups</code>. <code>latest.db</code> og <code>latest.json</code> (filnavn, størrelse, sha256) opdateres efter hver backup – lad et eksternt job (rclone, rsync, scp) hente dem lidt efter det planlagte tidspunkt.</p>
+    <div class="actions"><button class="btn sec">Gem plan</button></div></form>
   <details style="margin-top:.8rem"><summary><b>Gendan en backup</b></summary>
     <form method="post" action="{{ url_for('admin.restore_backup') }}" enctype="multipart/form-data">{{ csrf() }}
       <p class="muted small"><b>Erstatter hele databasen</b> (alle hold, spillere og brugere). Den nuværende database gemmes først i /data/backups. Du logges ud bagefter.</p>

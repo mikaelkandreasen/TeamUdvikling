@@ -11,6 +11,11 @@ python3 scripts/verify-backup.py teamudvikling-20261121-030000.db
 ```
 Kontrollen er kun-læsning og viser skemaversion og antal rækker.
 
+## Planlagt automatisk backup (v0.38.0)
+Administration → Backup → «Automatisk backup efter plan» (kun systemadministrator): slå til, vælg ugedage, klokkeslæt (serverens tid, `TZ`) og hvor mange backups der gemmes (1–90). Appen tager højst én planlagt backup pr. dag, også med flere workers, og viser seneste kørsel, fejl og næste tidspunkt. Backup uden plan: mindst én pr. døgn som før.
+
+**Til eksternt job:** efter hver backup (planlagt, manuel og daglig) opdateres to faste filer i `/data/backups`: `latest.db` (seneste backup) og `latest.json` (`file`, `size`, `created`, `sha256`). Lad et job på værten hente dem et stykke tid efter det planlagte tidspunkt, fx `rclone copy <volumen>/backups/latest.db remote:teamudvikling/ ` og tjek `sha256` i `latest.json`. Husk også `totp_key` (se nedenfor), som ikke ligger i backuppen.
+
 ## Gendan via siden (anbefalet)
 Administration → Backup → **Gendan en backup**: vælg `.db`-filen, (hvis backuppen kommer fra en anden installation) også filen `totp_key` fra den gamle volumen, skriv din 2FA-kode og `GENDAN`. Den nuværende database gemmes først i `/data/backups`. Uden `totp_key` kan de gendannede brugere ikke bruge deres 2FA-kode, og 2FA skal nulstilles.
 

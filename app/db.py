@@ -395,6 +395,8 @@ def pre_migration_backup(path, backup_dir, keep=5):
     files = sorted(f for f in os.listdir(backup_dir) if f.startswith("pre-migration-") and f.endswith(".db"))
     for old in files[:-keep]:
         os.remove(os.path.join(backup_dir, old))
+    from .backup_plan import publish_latest
+    publish_latest(dest, backup_dir)                  # latest.db + latest.json til eksterne hentejobs
     return dest
 
 
@@ -534,28 +536,36 @@ def purge_old(db):
     db.commit()
 
 
+def backup_sort_key(name):
+    """Sorterer backupfiler kronologisk: tidsstempel, derefter løbenummer (to backups i samme sekund: …-1.db er nyere end …db)."""
+    m = re.search(r"(\d{8}-\d{6})(?:-(\d+))?\.db$", name)
+    return (m.group(1), int(m.group(2) or 0)) if m else ("", 0)
+
+
 def backup(db_path, backup_dir, keep=14):
     """Konsistent kopi af databasen via SQLite's backup-API. Beholder de seneste `keep` filer."""
     os.makedirs(backup_dir, exist_ok=True)
-    dest = os.path.join(backup_dir, time.strftime("teamudvikling-%Y%m%d-%H%M%S.db"))
-    n = 1
-    while os.path.exists(dest):                        # to backups i samme sekund overskriver ikke hinanden
-        dest = os.path.join(backup_dir, time.strftime("teamudvikling-%Y%m%d-%H%M%S") + f"-{n}.db")
-        n += 1
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    dest = os.path.join(backup_dir, f"teamudvikling-{stamp}.db")
+    same = [backup_sort_key(f)[1] for f in os.listdir(backup_dir) if backup_sort_key(f)[0] == stamp]
+    if same:                                           # to backups i samme sekund overskriver ikke hinanden og bliver aldrig «ældre» ved oprydning
+        dest = os.path.join(backup_dir, f"teamudvikling-{stamp}-{max(same) + 1}.db")
     src = sqlite3.connect(db_path)
     dst = sqlite3.connect(dest)
     with dst:
         src.backup(dst)
     src.close()
     dst.close()
-    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=backup_sort_key)
     ok, msgs = verify_backup(dest)
     if not ok:                                        # en ødelagt backup må aldrig fortrænge en god
         os.remove(dest)
         raise RuntimeError("Backup fejlede kontrol: " + "; ".join(msgs))
-    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=backup_sort_key)
     for old in files[:-keep]:
         os.remove(os.path.join(backup_dir, old))
+    from .backup_plan import publish_latest
+    publish_latest(dest, backup_dir)                  # latest.db + latest.json til eksterne hentejobs
     return dest
 
 
@@ -584,14 +594,14 @@ def verify_backup(path):
     return (not msgs), msgs
 
 
-def backup_if_due(db_path, backup_dir, hours=24):
+def backup_if_due(db_path, backup_dir, hours=24, keep=14):
     os.makedirs(backup_dir, exist_ok=True)
-    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=backup_sort_key)
     if files:
         age = time.time() - os.path.getmtime(os.path.join(backup_dir, files[-1]))
         if age < hours * 3600:
             return None
-    return backup(db_path, backup_dir)
+    return backup(db_path, backup_dir, keep=keep)
 
 
 # ------------------------------------------------------------------ klubprofil (gælder alle hold)

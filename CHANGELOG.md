@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- Planlagt automatisk backup: systemadministratoren vælger ugedage, klokkeslæt og antal gemte backups; status og næste kørsel vises (B-13).
+- `latest.db` og `latest.json` (filnavn, størrelse, sha256) opdateres efter hver backup, så et eksternt job nemt kan hente den seneste.
+- Backup hentet fra siden har dato og tid i filnavnet (B-12).
+
+### Rettet
+- To backups i samme sekund kunne ved oprydning slette den nyeste.
+
 ## [0.37.0] - 2026-11-23
 
 ### Tilføjet
