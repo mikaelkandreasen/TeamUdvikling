@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-11-23
+
 ### Tilføjet
 - **4v4** som kamptype med opstillingerne 1-2-1 (diamant) og 2-2 (firkant), uden målmand.
 - **Egne opstillinger pr. hold** (Holdsætning → Egne opstillinger): skriv et mønster som 1-3-2-1, vælg med eller uden målmand, og ret position pr. plads. Kan bruges i opstillinger og kampe. Nyt skema (v26, migration 015).
