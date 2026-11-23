@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.38.2] - 2026-11-23
+
 ### Rettet
 - Kalenderlink (iCal): `webcal://`-links fra Apple/Google accepteres nu og gemmes som `https://`. Et ugyldigt link sletter ikke længere det gamle.
 
