@@ -4,6 +4,8 @@ Prioriteret liste. Øverst = næste. Format: `ID · titel · størrelse (S/M/L) 
 Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye opdagelser nederst i "Idéer".
 
 ## Næste (P0 – før første rigtige brug)
+- **B-12 · Backupfil med dato/tid i navnet** · S – «Hent backup af databasen» på siden giver en fil med dato og tid i navnet (fx `teamudvikling-2026-11-23_1142.db`) i stedet for `teamudvikling-backup.db`, så filer ikke overskriver hinanden og er lette at sortere/hente. *Tolkning: «dato/tid i fremtiden» er læst som «dato/tid i filnavnet» – ret mig, hvis det er noget andet.*
+- **B-13 · Planlagt automatisk backup (systemadministrator bestemmer tid)** · M – Administration → Backup får en plan: vælg ugedage (pr. dag) og klokkeslæt; systemet tager selv backup på de tidspunkter (nu: højst én pr. døgn). Accept: backup lægges i en fast mappe (`/data/backups`) med dato/tid i navnet; seneste fil kan hentes af et eksternt job (fx rclone/rsync/scp) – fast filnavn/«latest»-markør eller `latest.json` med filnavn, størrelse og tidspunkt; sidste kørsel, status og fejl vises i Administration og i revisionsloggen; opbevaring (antal/dage) kan indstilles; test af planlægning (tidszone Europa/København) og at backup ikke tages dobbelt ved flere workers. Eventuelt en skrivebeskyttet, token-beskyttet download-adresse til det eksterne job.
 - **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen). *Status: Backup kontrolleres automatisk; scripts/restore.sh + verify-backup.py; docs/BACKUP.md (off-site med rclone/rsync).*
 
 ## Senere (P1)
