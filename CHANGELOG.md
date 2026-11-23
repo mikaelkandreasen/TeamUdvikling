@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+## [0.38.1] - 2026-11-23
+
 ### Rettet
 - Position og bane: spillere på «Kant» og venstre/højre kant lå oven på hinanden; alle spillere placeres nu ved siden af hinanden (og flyttes lodret, hvis der ikke er plads).
 
