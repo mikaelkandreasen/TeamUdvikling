@@ -1,4 +1,17 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Holdsætning") }}{% endblock %}
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ _("Holdsætning") }}<div class="card">
+  <h2>{{ _("Egne opstillinger ({gt})", gt=gt) }}</h2>
+  <p class="muted small">{{ _("Lav din egen opstilling til {size} spillere på banen. Skriv antal spillere i hver række bagfra, fx 1-3-2-1. Bagefter kan du rette position pr. plads.", size=size) }}</p>
+  {% for c in custom %}<a class="pcard" href="{{ url_for('lineup.formation_edit', fid=c['id']) }}"><div class="nm">{{ c['name'] }}<div class="sub">{{ c['lines']|map('length')|join('-') }}</div></div><span>›</span></a>{% endfor %}
+  <form method="post" action="{{ url_for('lineup.formation_new') }}">{{ csrf() }}
+    <input type="hidden" name="game_type" value="{{ gt }}">
+    <label for="fp">{{ _("Mønster") }}</label><input id="fp" type="text" name="pattern" inputmode="numeric" maxlength="20" placeholder="1-3-2-1" required>
+    <label for="fg">{{ _("Målmand") }}</label>
+    <select id="fg" name="gk"><option value="ja" {{ 'selected' if gt not in ('3v3', '4v4') }}>{{ _("Med målmand (første række er 1)") }}</option><option value="nej" {{ 'selected' if gt in ('3v3', '4v4') }}>{{ _("Uden målmand") }}</option></select>
+    <label for="fn">{{ _("Navn (valgfrit)") }}</label><input id="fn" type="text" name="name" maxlength="24">
+    <div class="actions"><button class="btn sec">{{ _("Opret egen opstilling") }}</button></div>
+  </form>
+</div>
+{% endblock %}
 {% block content %}
 <h1>{{ _("Holdsætning – {team}", team=team['name']) }}</h1>
 <p class="muted small">{{ _("Trænergruppens opstillinger. Vælg kamptype, opret en opstilling, sæt spillerne på pladserne, og marker ét idealhold. Husk, at alle spillere skal have spilletid, og at positioner roteres i udviklingsfodbold.") }}</p>

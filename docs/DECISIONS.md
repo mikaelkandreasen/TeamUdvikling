@@ -162,3 +162,9 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Navnet «u11» (alder) stod i image, volumen, filer og eksempler, og et konkret domæne stod i dokumentationen.
 **Valg:** Alt omdøbt til TeamUdvikling; eksempler bruger `dit-domæne.example`. Appen omdøber selv gammel `u11.db`, læser `U11_DATA_DIR` som reserve og tæller `u11-`-backups med.
 **Konsekvens:** Docker-volumen kan ikke omdøbes automatisk – data skal kopieres én gang til `teamudvikling-data`.
+
+## D-037 · Egne opstillinger gemmes som linjer pr. hold (2026-11-23)
+**Kontekst:** Trænere vil sætte hold op frit og bruge 4v4 uden målmand.
+**Valg:** Tabellen `team_formations(team_id, game_type, name, lines JSON)`; `formations.catalog()` fletter indbyggede og holdets egne opstillinger. Målmand er valgfri og skal stå alene i første række. En opstilling i brug kan ikke slettes; omdøbning følger med i opstillinger og kampe.
+**Konsekvens:** Alle opslag går via `catalog()`/`is_valid()`, ikke `FORMATIONS` direkte.
+

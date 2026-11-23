@@ -7,7 +7,8 @@ GK, DEF, RB, LB, CB = "Målmand", "Forsvar", "Højre back", "Venstre back", "Mid
 DM, CM, AM = "Defensiv midtbane", "Midtbane", "Offensiv midtbane"
 RW, LW, ST = "Højre kant", "Venstre kant", "Angreb"
 
-GAME_TYPES = {"3v3": 3, "5v5": 5, "8v8": 8, "11v11": 11}          # antal spillere på banen
+GAME_TYPES = {"3v3": 3, "4v4": 4, "5v5": 5, "8v8": 8, "11v11": 11}   # antal spillere på banen
+NO_GK = ("3v3", "4v4")                                              # kamptyper uden målmand
 DEFAULT_TYPE = "8v8"                                                # børnehold spiller typisk 8-mands
 
 FORMATIONS = {
@@ -15,6 +16,10 @@ FORMATIONS = {
         "1-2": [[DEF], [LW, RW]],
         "2-1": [[LB, RB], [ST]],
         "1-1-1": [[DEF], [CM], [ST]],
+    },
+    "4v4": {                                                        # ingen målmand
+        "1-2-1": [[DEF], [CM, CM], [ST]],                           # diamant
+        "2-2": [[LB, RB], [ST, ST]],                                # firkant
     },
     "5v5": {
         "1-2-1": [[GK], [CB], [CM, CM], [ST]],                      # diamant
@@ -36,16 +41,27 @@ FORMATIONS = {
         "3-4-3": [[GK], [CB, CB, CB], [LW, CM, CM, RW], [LW, ST, RW]],
     },
 }
-DEFAULT_FORMATION = {"3v3": "1-2", "5v5": "1-2-1", "8v8": "3-3-1", "11v11": "4-3-3"}
+DEFAULT_FORMATION = {"3v3": "1-2", "4v4": "1-2-1", "5v5": "1-2-1", "8v8": "3-3-1", "11v11": "4-3-3"}
+
+
+_loader = None                                                      # sættes af appen: henter holdets egne opstillinger (app/fmcat.py)
+
+
+def catalog():
+    """Alle opstillinger for det aktive hold: de indbyggede + holdets egne ({kamptype: {navn: linjer}})."""
+    extra = _loader() if _loader else {}
+    if not extra:
+        return FORMATIONS
+    return {gt: {**FORMATIONS.get(gt, {}), **extra.get(gt, {})} for gt in GAME_TYPES}
 
 
 def is_valid(game_type, formation):
-    return formation in FORMATIONS.get(game_type, {})
+    return formation in catalog().get(game_type, {})
 
 
 def slots(game_type, formation):
     """Pladserne i en opstilling: [{i, tag, line, x, y}] i fast rækkefølge (bagfra og fra venstre mod højre)."""
-    lines = FORMATIONS[game_type][formation]
+    lines = catalog()[game_type][formation]
     out, n = [], len(lines)
     for li, line in enumerate(lines):
         y = 90 - li * (76 / (n - 1)) if n > 1 else 50
@@ -162,3 +178,62 @@ def suggest(slot_list, players, scores=None, weight=10):
     players = sorted(players, key=lambda p: p["id"])
     value = [[fit(p["positions"], s["tag"]) + weight * ((scores or {}).get(p["id"]) or 0) for p in players] for s in slot_list]
     return {r: players[c]["id"] for r, c in best_assignment(value).items()}
+
+
+# ---------------------------------------------------------------- egne opstillinger (holdet sætter selv op)
+MAX_LINES, MAX_PER_LINE = 6, 6
+PICKABLE = [GK, DEF, LB, CB, RB, DM, CM, AM, LW, RW, ST]           # positioner, der kan vælges pr. plads
+
+
+def parse_pattern(text):
+    """'1-3-2-1' → [1, 3, 2, 1]; None hvis det ikke er et gyldigt mønster."""
+    parts = [x for x in (text or "").replace(" ", "").replace("–", "-").split("-")]
+    if not 2 <= len(parts) <= MAX_LINES or not all(x.isdigit() and 1 <= int(x) <= MAX_PER_LINE for x in parts):
+        return None
+    return [int(x) for x in parts]
+
+
+def _tags_for(role, n):
+    if role == "gk":
+        return [GK]
+    if role == "def":
+        return {1: [DEF], 2: [LB, RB], 3: [LB, CB, RB], 4: [LB, CB, CB, RB]}.get(n, [LB] + [CB] * (n - 2) + [RB])
+    if role == "att":
+        return {1: [ST], 2: [ST, ST], 3: [LW, ST, RW]}.get(n, [LW] + [ST] * (n - 2) + [RW])
+    return {1: [CM], 2: [CM, CM], 3: [LW, CM, RW], 4: [LW, CM, CM, RW], 5: [LW, CM, DM, CM, RW]}.get(n, [LW] + [CM] * (n - 2) + [RW])
+
+
+def auto_lines(game_type, counts, gk=None):
+    """Giver hver plads et fornuftigt standardnavn ud fra rækkens placering: forsvar, midtbane, angreb. Returnerer (linjer, fejltekst)."""
+    size = GAME_TYPES.get(game_type)
+    if size is None:
+        return None, "Ukendt kamptype."
+    if sum(counts) != size:
+        return None, f"Mønsteret skal give {size} spillere på banen (det giver {sum(counts)})."
+    has_gk = (game_type not in NO_GK) if gk is None else gk
+    if has_gk and counts[0] != 1:
+        return None, "Første række er målmanden og skal være 1 (fx 1-2-1)."
+    outfield = counts[1:] if has_gk else counts
+    if len(outfield) < 2:
+        return None, "Der skal være mindst to rækker foran målmanden."
+    lines = [[GK]] if has_gk else []
+    for k, n in enumerate(outfield):
+        role = "def" if k == 0 else "att" if k == len(outfield) - 1 else "mid"
+        lines.append(_tags_for(role, n))
+    return lines, None
+
+
+def clean_lines(game_type, lines):
+    """Kontrollerer redigerede linjer (positionsnavne, antal, målmand). Returnerer (linjer, fejltekst)."""
+    try:
+        out = [[str(t) for t in line] for line in lines]
+    except TypeError:
+        return None, "Ugyldig opstilling."
+    if not 2 <= len(out) <= MAX_LINES or any(not 1 <= len(x) <= MAX_PER_LINE for x in out) or any(t not in PICKABLE for x in out for t in x):
+        return None, "Ugyldig opstilling."
+    if sum(len(x) for x in out) != GAME_TYPES.get(game_type, -1):
+        return None, "Antal spillere passer ikke til kamptypen."
+    gks = sum(t == GK for x in out for t in x)
+    if gks > 1 or (gks == 1 and out[0] != [GK]):                    # målmand er valgfri, men højst én og alene i første række
+        return None, "Målmanden skal stå alene i første række (højst én)."
+    return out, None

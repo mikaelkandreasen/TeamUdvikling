@@ -52,7 +52,7 @@ def _form(data):
 def index():
     db = get_db()
     rows = db.execute("SELECT m.*, (SELECT COUNT(*) FROM match_slots s WHERE s.match_id=m.id) AS filled FROM matches m WHERE m.team_id=? ORDER BY m.day DESC, m.id DESC", (team_id(),)).fetchall()
-    return render_template("matches.html", rows=rows, types=formations.GAME_TYPES, options=formations.FORMATIONS, default_type=profile(db, team_id())["game_type"],
+    return render_template("matches.html", rows=rows, types=formations.GAME_TYPES, options=formations.catalog(), default_type=profile(db, team_id())["game_type"],
                            defaults=formations.DEFAULT_FORMATION, has_ical=bool(get_setting(db, team_id(), "ical_url")), today=datetime.date.today().isoformat(), size=formations.GAME_TYPES)
 
 

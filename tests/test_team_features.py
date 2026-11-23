@@ -705,3 +705,21 @@ def test_note_edit_with_javascript_stays_on_the_edit_page(app, admin):
     r = admin.post(pg, {"title": "Swap", "body": "Tredje"}, page=pg)
     assert r.headers["Location"].endswith(f"/team/notes/{nid}")
     assert 'data-swap="#noteform"' in admin.get(pg).get_data(as_text=True)
+
+
+def test_custom_formation_is_team_scoped_and_usable(world):
+    app, admin, ca, cb, ta, tb = world
+    ca.post("/lineup/opstillinger/ny", {"game_type": "8v8", "pattern": "1-2-3-2", "name": "Egen"}, page="/lineup/?type=8v8")
+    assert sql(app, "SELECT COUNT(*) FROM team_formations")[0][0] == 1
+    fid = sql(app, "SELECT id FROM team_formations")[0][0]
+    assert ca.get(f"/lineup/opstillinger/{fid}").status_code == 200
+    assert cb.get(f"/lineup/opstillinger/{fid}").status_code == 404                 # andet hold kan ikke se den
+    assert cb.post(f"/lineup/opstillinger/{fid}/delete", {}, page="/lineup/?type=8v8").status_code in (302, 404)
+    assert sql(app, "SELECT COUNT(*) FROM team_formations")[0][0] == 1
+    assert b"Egen" in ca.get("/lineup/?type=8v8").data and b"Egen" not in cb.get("/lineup/?type=8v8").data
+    ca.post("/lineup/new", {"game_type": "8v8", "formation": "Egen", "name": "X"}, page="/lineup/?type=8v8")
+    assert sql(app, "SELECT formation FROM lineups")[0][0] == "Egen"
+    ca.post(f"/lineup/opstillinger/{fid}/delete", {}, page=f"/lineup/opstillinger/{fid}")   # i brug → ikke slettet
+    assert sql(app, "SELECT COUNT(*) FROM team_formations")[0][0] == 1
+    cb.post("/lineup/new", {"game_type": "8v8", "formation": "Egen"}, page="/lineup/?type=8v8")
+    assert sql(app, "SELECT COUNT(*) FROM lineups")[0][0] == 1                          # ugyldig for hold B

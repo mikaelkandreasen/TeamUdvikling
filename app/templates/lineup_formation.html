@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf with context %}{% block title %}{{ F['name'] }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('lineup.index', type=F['game_type']) }}">{{ _("‹ Alle {L}-opstillinger", L=F['game_type']) }}</a></p>
+<h1>{{ F['game_type'] }} · {{ F['name'] }}</h1>
+<div class="card">{{ pitch|safe }}</div>
+<form method="post" class="card">{{ csrf() }}
+  <label for="nm">{{ _("Navn") }}</label><input id="nm" type="text" name="name" maxlength="24" value="{{ F['name'] }}" required>
+  {% for line in lines %}{% set li = loop.index0 %}
+  <fieldset style="border:0;padding:0;margin:.6rem 0"><legend class="muted small">{{ _("Række {n}", n=li + 1) }}</legend>
+    {% for t in line %}<select name="tag_{{ li }}_{{ loop.index0 }}" aria-label="{{ _('Position') }} {{ li + 1 }}.{{ loop.index }}" style="width:auto;display:inline-block">{% for o in pickable %}<option {{ 'selected' if o == t }}>{{ o }}</option>{% endfor %}</select> {% endfor %}
+  </fieldset>{% endfor %}
+  <div class="actions"><button class="btn">{{ _("Gem") }}</button></div>
+</form>
+<form method="post" action="{{ url_for('lineup.formation_delete', fid=F['id']) }}" class="card">{{ csrf() }}
+  {% if in_use %}<p class="muted small">{{ _("Bruges af {n} opstilling(er)/kamp(e) og kan ikke slettes.", n=in_use) }}</p>
+  {% else %}<button class="btn danger">{{ _("Slet opstillingen") }}</button>{% endif %}
+</form>
+{% endblock %}

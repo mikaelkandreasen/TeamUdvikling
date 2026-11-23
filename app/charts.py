@@ -192,7 +192,7 @@ def _unstack(spots, h, dx=58, dy=46):
 def formation_pitch(game_type, placed, label="Opstilling"):
     """placed: [{x, y, tag, player: {name, value, photo?, pid?} | None}] i procent (se formations.slots)."""
     w, h = 400, 560
-    out = _field(w, h, boxes=game_type != "3v3")
+    out = _field(w, h, boxes=any(s["tag"] == "Målmand" for s in placed))
     for s in placed:
         x, y = w * s["x"] / 100, h * s["y"] / 100
         if s["player"]:

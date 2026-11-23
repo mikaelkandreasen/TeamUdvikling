@@ -6,6 +6,8 @@ from . import charts, formations, model, split as splitter
 from .db import audit, get_db
 from .helpers import active_players, default_round, int_in, photo_ids, positions_of, team_id
 
+import json
+
 bp = Blueprint("lineup", __name__, url_prefix="/lineup")
 MAX_PER_TYPE = 30
 MAX_NAME = 60
@@ -35,7 +37,8 @@ def index():
     rows = db.execute("SELECT l.*, (SELECT COUNT(*) FROM lineup_slots s WHERE s.lineup_id=l.id AND s.player_id IS NOT NULL) AS filled "
                       "FROM lineups l WHERE l.team_id=? AND l.game_type=? ORDER BY l.is_ideal DESC, l.updated_at DESC, l.id DESC", (team_id(), gt)).fetchall()
     return render_template("lineup_index.html", gt=gt, size=formations.GAME_TYPES[gt], types=formations.GAME_TYPES, rows=rows,
-                           options=formations.FORMATIONS[gt], default=formations.DEFAULT_FORMATION[gt])
+                           options=formations.catalog()[gt], default=formations.DEFAULT_FORMATION[gt], custom=_custom(db, gt),
+                           pickable=formations.PICKABLE)
 
 
 @bp.route("/new", methods=["POST"])
@@ -126,7 +129,7 @@ def _view(db, L, assign, players, scores, matched_note=None):
     bench = [p for p in players if p["id"] not in assign.values()]
     pitch = charts.formation_pitch(L["game_type"], placed, f"{L['game_type']} {L['formation']}")
     return render_template("lineup_edit.html", L=L, rows=rows, pitch=pitch, bench=bench, photos=photos, matched=matched, filled=len(assign),
-                           total=len(sl), options=formations.FORMATIONS[L["game_type"]])
+                           total=len(sl), options=formations.catalog()[L["game_type"]])
 
 
 @bp.route("/<int:lid>", methods=["GET", "POST"])
@@ -215,3 +218,102 @@ def delete(lid):
     db.commit()
     flash("Opstillingen er slettet.", "ok")
     return redirect(url_for("lineup.index", type=L["game_type"]))
+
+
+# ---------------------------------------------------------------- holdets egne opstillinger
+MAX_CUSTOM = 20
+MAX_FNAME = 24
+
+
+def _custom(db, gt):
+    return [dict(id=r["id"], name=r["name"], lines=json.loads(r["lines"])) for r in db.execute(
+        "SELECT id, name, lines FROM team_formations WHERE team_id=? AND game_type=? ORDER BY name COLLATE NOCASE", (team_id(), gt))]
+
+
+def _get_formation(db, fid):
+    row = db.execute("SELECT * FROM team_formations WHERE id=? AND team_id=?", (fid, team_id())).fetchone()
+    if not row:
+        abort(404)
+    return row
+
+
+def _fname(raw):
+    return " ".join((raw or "").split())[:MAX_FNAME]
+
+
+def _name_taken(db, gt, name, skip=None):
+    base = {k.lower() for k in formations.FORMATIONS.get(gt, {})}
+    own = {r["name"].lower() for r in db.execute("SELECT name FROM team_formations WHERE team_id=? AND game_type=? AND id IS NOT ?", (team_id(), gt, skip))}
+    return name.lower() in base | own
+
+
+def _in_use(db, gt, name):
+    n = db.execute("SELECT COUNT(*) FROM lineups WHERE team_id=? AND game_type=? AND formation=?", (team_id(), gt, name)).fetchone()[0]
+    return n + db.execute("SELECT COUNT(*) FROM matches WHERE team_id=? AND game_type=? AND formation=?", (team_id(), gt, name)).fetchone()[0]
+
+
+@bp.route("/opstillinger/ny", methods=["POST"])
+def formation_new():
+    db = get_db()
+    gt = request.form.get("game_type", "")
+    counts = formations.parse_pattern(request.form.get("pattern"))
+    if gt not in formations.GAME_TYPES or not counts:
+        flash("Skriv mønsteret som tal adskilt af bindestreg, fx 1-3-2-1.", "error")
+        return redirect(url_for("lineup.index", type=gt if gt in formations.GAME_TYPES else None))
+    lines, err = formations.auto_lines(gt, counts, gk=request.form.get("gk") == "ja")
+    name = _fname(request.form.get("name")) or "-".join(map(str, counts))
+    if not err and _name_taken(db, gt, name):
+        err = "Der findes allerede en opstilling med det navn."
+    if not err and db.execute("SELECT COUNT(*) FROM team_formations WHERE team_id=?", (team_id(),)).fetchone()[0] >= MAX_CUSTOM:
+        err = f"Der kan højst oprettes {MAX_CUSTOM} egne opstillinger. Slet en ubrugt først."
+    if err:
+        flash(err, "error")
+        return redirect(url_for("lineup.index", type=gt))
+    cur = db.execute("INSERT INTO team_formations(team_id,game_type,name,lines,created_by) VALUES(?,?,?,?,?)",
+                     (team_id(), gt, name, json.dumps(lines), g.user["username"]))
+    audit(db, g.user["username"], "egen_opstilling_oprettet", f"id={cur.lastrowid}")
+    db.commit()
+    flash("Opstillingen er oprettet. Ret positionerne, hvis du vil.", "ok")
+    return redirect(url_for("lineup.formation_edit", fid=cur.lastrowid))
+
+
+@bp.route("/opstillinger/<int:fid>", methods=["GET", "POST"])
+def formation_edit(fid):
+    db = get_db()
+    F = _get_formation(db, fid)
+    lines = json.loads(F["lines"])
+    if request.method == "POST":
+        new = [[request.form.get(f"tag_{li}_{j}", t) for j, t in enumerate(line)] for li, line in enumerate(lines)]
+        new, err = formations.clean_lines(F["game_type"], new)
+        name = _fname(request.form.get("name")) or F["name"]
+        if not err and _name_taken(db, F["game_type"], name, skip=fid):
+            err = "Der findes allerede en opstilling med det navn."
+        if err:
+            flash(err, "error")
+            return redirect(url_for("lineup.formation_edit", fid=fid))
+        if name != F["name"]:                       # eksisterende opstillinger og kampe følger med det nye navn
+            for table in ("lineups", "matches"):
+                db.execute(f"UPDATE {table} SET formation=? WHERE team_id=? AND game_type=? AND formation=?", (name, team_id(), F["game_type"], F["name"]))
+        db.execute("UPDATE team_formations SET name=?, lines=? WHERE id=? AND team_id=?", (name, json.dumps(new), fid, team_id()))
+        audit(db, g.user["username"], "egen_opstilling_rettet", f"id={fid}")
+        db.commit()
+        flash("Opstillingen er gemt.", "ok")
+        return redirect(url_for("lineup.formation_edit", fid=fid))
+    placed = [dict(x=s["x"], y=s["y"], tag=s["tag"], player=None) for s in formations.slots(F["game_type"], F["name"])]
+    return render_template("lineup_formation.html", F=F, lines=lines, pickable=formations.PICKABLE, in_use=_in_use(db, F["game_type"], F["name"]),
+                           pitch=charts.formation_pitch(F["game_type"], placed, F["name"]))
+
+
+@bp.route("/opstillinger/<int:fid>/delete", methods=["POST"])
+def formation_delete(fid):
+    db = get_db()
+    F = _get_formation(db, fid)
+    n = _in_use(db, F["game_type"], F["name"])
+    if n:
+        flash(f"Opstillingen bruges af {n} opstilling(er)/kamp(e) og kan ikke slettes. Skift dem først.", "error")
+        return redirect(url_for("lineup.formation_edit", fid=fid))
+    db.execute("DELETE FROM team_formations WHERE id=? AND team_id=?", (fid, team_id()))
+    audit(db, g.user["username"], "egen_opstilling_slettet", f"id={fid}")
+    db.commit()
+    flash("Opstillingen er slettet.", "ok")
+    return redirect(url_for("lineup.index", type=F["game_type"]))

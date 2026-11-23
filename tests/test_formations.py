@@ -14,11 +14,11 @@ def test_every_formation_has_the_right_number_of_players():
         for name, lines in formations.items():
             n = sum(len(line) for line in lines)
             assert n == f.GAME_TYPES[gt], (gt, name)
-            outfield = n - (0 if gt == "3v3" else 1)
+            outfield = n - (0 if gt in f.NO_GK else 1)
             assert sum(int(x) for x in name.split("-")) == outfield, (gt, name)         # navnet passer til linjerne
             tags = [t for line in lines for t in line]
             assert all(t in model.POSITIONS for t in tags), (gt, name)                    # pladserne bruger dropdown-positionerne
-            assert (tags.count(f.GK) == 1) == (gt != "3v3"), (gt, name)                    # 3v3 har ingen målmand
+            assert (tags.count(f.GK) == 1) == (gt not in f.NO_GK), (gt, name)              # 3v3 og 4v4 har ingen målmand
 
 
 def test_slots_layout_is_sane():
@@ -108,3 +108,23 @@ def test_suggest_scores_break_ties_but_position_still_matters():
     scored = f.suggest(sl, players, {1: 2.0, 2: 4.5, 3: 4.0})
     assert {scored[3], scored[4]} == {2, 3}                                                    # de to bedste angribere spiller
     assert f.suggest(sl, players, {1: 2.0, 2: 4.5, 3: 4.0}) == scored                         # deterministisk
+
+
+def test_4v4_has_no_goalkeeper_and_two_formations():
+    assert f.GAME_TYPES["4v4"] == 4 and set(f.FORMATIONS["4v4"]) == {"1-2-1", "2-2"}
+    assert all(f.GK not in t for lines in f.FORMATIONS["4v4"].values() for line in lines for t in line)
+    assert len(f.slots("4v4", "2-2")) == 4
+
+
+def test_pattern_and_auto_lines():
+    assert f.parse_pattern("1-3-2-1") == [1, 3, 2, 1] and f.parse_pattern("x") is None and f.parse_pattern("7-1") is None
+    lines, err = f.auto_lines("8v8", [1, 3, 3, 1])
+    assert not err and sum(map(len, lines)) == 8 and lines[0] == [f.GK]
+    assert f.auto_lines("8v8", [1, 3, 3])[1]                     # forkert antal
+    assert f.auto_lines("8v8", [2, 3, 2, 1])[1]                  # første række skal være målmand
+    assert f.auto_lines("4v4", [1, 2, 1])[0][0] == [f.DEF]
+    assert f.clean_lines("4v4", [[f.GK], [f.CM, f.CM, f.ST]])[0]   # målmand er valgfri, også i 4v4
+    assert f.clean_lines("4v4", [[f.GK, f.CM], [f.CM, f.ST]])[1]   # men skal stå alene i første række
+    lines, err = f.auto_lines("8v8", [3, 3, 2], gk=False)           # 8v8 uden målmand
+    assert not err and f.GK not in [t for l in lines for t in l]
+    assert not f.auto_lines("4v4", [1, 2, 1], gk=True)[1]

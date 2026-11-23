@@ -25,6 +25,7 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **I-12** Mørkt udseende: tilpas de sidste inline-farvede bokse (gule/blå noter) og vælg udseende også under Min konto (gemmes pr. bruger).
 
 ## Færdigt
+- [x] **4v4 og egne opstillinger** (v0.39.0) – 4v4 1-2-1/2-2 og holdets egne opstillinger med valgfri målmand.
 - [x] **B-004** Backup-restore afprøvet og bekræftet af dig (lukket).
 - [x] Position og bane: spillere ligger ikke længere oven på hinanden (v0.38.1).
 - [x] **B-12** Backup hentet fra siden har dato og tid i filnavnet (`teamudvikling-2026-11-23_1142.db`) (v0.38.0).

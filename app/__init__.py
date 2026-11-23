@@ -189,7 +189,8 @@ def create_app(config=None):
                     charts=charts, ROLES=model.ROLES, SKILLS=model.SKILLS, POSITIONS=model.POSITIONS,
                     POSITION_GROUPS=model.POSITION_GROUPS, positions_of=helpers.positions_of)
 
-    from . import filters
+    from . import filters, fmcat
+    fmcat.init_app(app)
     filters.register(app)
 
     from . import admin, conversations, devdata, matches, evaluation, invites, lineup, messages, motivation, players, reports, reset, team

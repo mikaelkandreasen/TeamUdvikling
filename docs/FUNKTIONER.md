@@ -75,6 +75,7 @@ En bruger kan have flere profiler (fx træner i én klub og klubadministrator i 
 - Trivsel over tid (tre udsagn), motorik (fire områder), handleplan (tiltag, eget mål, opfølgning, status).
 
 ### 3.9 Holdsætning
+_Kamptyper: 3v3, 4v4, 5v5, 8v8, 11v11. Under hver kamptype kan holdet lave egne opstillinger (mønster som 1-3-2-1, med/uden målmand, ret position pr. plads)._
 - Opstillinger pr. kamptype og formation; idealopstilling; positionsmatch ud fra spillernes positioner.
 - Deling af truppen i op til ni hold (A/B/C) efter niveau.
 

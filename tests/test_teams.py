@@ -152,3 +152,4 @@ def test_parent_report_and_mascot_image(app, two_teams):
     assert t.get("/team/mascot-image").status_code == 404
     assert t.c.post("/team/mascot-image/delete", data={"csrf_token": t.token("/")}).status_code in (302, 403)
     assert admin.get("/team/mascot-image").status_code == 200
+

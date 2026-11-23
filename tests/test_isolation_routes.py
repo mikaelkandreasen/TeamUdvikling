@@ -11,7 +11,7 @@ RES = {
     "devdata.attendance_delete": dict(eid="event"), "devdata.attendance_edit": dict(eid="event"), "devdata.plan": dict(pid="pid"),
     "evaluation.eval_form": dict(rnd=1, pid="pid"), "evaluation.profile": dict(pid="pid"),
     "inbox.delete": dict(mid="msg"), "inbox.reply": dict(mid="msg"),
-    "lineup.delete": dict(lid="lineup"), "lineup.edit": dict(lid="lineup"), "lineup.ideal": dict(lid="lineup"), "lineup.meta": dict(lid="lineup"),
+    "lineup.delete": dict(lid="lineup"), "lineup.formation_delete": dict(fid="tform"), "lineup.formation_edit": dict(fid="tform"), "lineup.edit": dict(lid="lineup"), "lineup.ideal": dict(lid="lineup"), "lineup.meta": dict(lid="lineup"),
     "matches.delete": dict(mid="match"), "matches.edit": dict(mid="match"), "matches.meta": dict(mid="match"), "matches.ical_update": dict(mid="match"),
     "motivation.link_revoke": dict(lid="plink"), "motivation.report": dict(pid="pid"), "motivation.tablet": dict(pid="pid"),
     "players.delete": dict(pid="pid"), "players.edit": dict(pid="pid"), "players.export_json": dict(pid="pid"), "players.move": dict(pid="pid"),
@@ -40,6 +40,7 @@ def setup(world):
     tid = sql(app, "SELECT team_id FROM players WHERE id=?", pid)[0]["team_id"]
     cid = sql(app, "SELECT club_id FROM teams WHERE id=?", tid)[0]["club_id"]
     sql(app, "INSERT INTO lineups(team_id,name,game_type,formation,created_at,updated_at) VALUES(?,?,?,?,datetime('now'),datetime('now'))", tid, "L", "8v8", "3-3-1")
+    sql(app, "INSERT INTO team_formations(team_id,game_type,name,lines) VALUES(?,?,?,?)", tid, "5v5", "Egen", '[["Målmand"],["Forsvar"],["Midtbane","Midtbane"],["Angreb"]]')
     sql(app, "INSERT INTO att_events(team_id,kind,day,created_by) VALUES(?,?,?,?)", tid, "match", "2026-11-01", "x")
     sql(app, "INSERT INTO team_notes(team_id,author,created_at,body) VALUES(?,?,datetime('now'),?)", tid, "x", "n")
     sql(app, "INSERT INTO mascot_log(team_id,player_id,taken_on,reason,created_by) VALUES(?,?,?,?,?)", tid, pid, "2026-11-01", "r", "x")
@@ -48,7 +49,7 @@ def setup(world):
     sql(app, "INSERT INTO conversations(player_id,held_on,notes) VALUES(?,?,?)", pid, "2026-11-01", "n")
     sql(app, "INSERT INTO messages(club_id,team_id,sender_name,title,body,created_at) VALUES(?,?,?,?,?,datetime('now'))", cid, tid, "x", "t", "b")
     one = lambda q: sql(app, q)[0]["id"]
-    ctx = dict(pid=pid, lineup=one("SELECT id FROM lineups"), event=one("SELECT id FROM att_events"), note=one("SELECT id FROM team_notes"),
+    ctx = dict(pid=pid, lineup=one("SELECT id FROM lineups"), tform=one("SELECT id FROM team_formations"), event=one("SELECT id FROM att_events"), note=one("SELECT id FROM team_notes"),
                mascot=one("SELECT id FROM mascot_log"), plink=one("SELECT id FROM player_links"), match=one("SELECT id FROM matches"),
                conv=one("SELECT id FROM conversations"), msg=one("SELECT id FROM messages"))
     return app, ctx, dict(samme_klub=mia, anden_klub=world[5])
