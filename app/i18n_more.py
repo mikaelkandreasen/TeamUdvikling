@@ -863,3 +863,9 @@ MORE.update({   # beskeder (flash) fra Python-koden – slås op, når de vises
 "Vælg type og en gyldig dato.": ("Choose a type and a valid date.", "Wähle einen Typ und ein gültiges Datum.", "Välj en typ och ett giltigt datum.", "Velg en type og en gyldig dato."),
 })
 MORE.update({"Færdig": ("Done", "Fertig", "Klar", "Ferdig")})
+MORE.update({
+"Udseende": ("Appearance", "Darstellung", "Utseende", "Utseende"),
+"Auto": ("Auto", "Automatisch", "Auto", "Auto"),
+"Lyst": ("Light", "Hell", "Ljust", "Lyst"),
+"Mørkt": ("Dark", "Dunkel", "Mörkt", "Mørkt"),
+})

@@ -136,3 +136,18 @@ def set_lang():
     resp = redirect(nxt)
     resp.set_cookie(i18n.COOKIE, lang, max_age=365 * 86400, samesite="Lax", secure=request.is_secure, httponly=True)
     return resp
+
+
+THEMES = ("auto", "light", "dark")
+
+
+@bp.route("/tema", methods=["POST"])
+def set_theme():
+    """Vælg udseende (Auto = følg enheden, Lyst, Mørkt). Gemmes i en cookie på enheden – virker også på login-siden."""
+    theme = request.form.get("theme", "")
+    if theme not in THEMES:
+        abort(400)
+    from .auth import _safe_next
+    resp = redirect(_safe_next(request.form.get("next", "")) or "/")
+    resp.set_cookie("theme", theme, max_age=365 * 86400, samesite="Lax", secure=request.is_secure, httponly=True)
+    return resp

@@ -45,11 +45,12 @@ def test_sysadmin_message_reaches_everyone(world):
     app, admin, ca, cb, ta, tb = world
     sql(app, "UPDATE users SET email='tina@example.dk' WHERE username='tina'")
     sql(app, "UPDATE users SET email='ole@example.dk' WHERE username='ole'")
+    sql(app, "UPDATE users SET email='admin@example.dk' WHERE username='admin'")
     before = len(app.extensions.get("outbox", []))
     admin.post("/inbox/send", {"to": "all", "title": "Vedligehold", "body": "Nede i aften", "email": "1"}, page="/inbox/")
     for c in (ca, cb, ta, tb):
         assert "Nede i aften" in c.get("/?hold=1").get_data(as_text=True)
-    assert sorted(m["to"] for m in app.extensions["outbox"][before:]) == ["ole@example.dk", "tina@example.dk"]
+    assert sorted(m["to"] for m in app.extensions["outbox"][before:]) == ["admin@example.dk", "ole@example.dk", "tina@example.dk"]   # afsenderen får også selv mailen
     assert ta.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
     assert ca.post("/inbox/send", {"to": "all", "title": "x", "body": "y"}, page="/inbox/").status_code == 403
     mid = sql(app, "SELECT id FROM messages")[0]["id"]

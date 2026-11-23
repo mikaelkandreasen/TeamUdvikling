@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Tilføjet
+- Udseende: Auto (følger enheden), Lyst eller Mørkt i sidefoden; valget huskes pr. enhed, også på login-siden. Diagrammer og print tilpasset (print er altid lyst).
+- Når systemadministratoren sender en besked til «Alle brugere» med e-mail, får afsenderen også selv mailen.
+
 ## [0.36.0] - 2026-11-23
 
 ### Tilføjet

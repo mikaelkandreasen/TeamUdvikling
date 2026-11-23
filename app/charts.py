@@ -53,15 +53,15 @@ def radar(labels, series, vmax=5, label="Radardiagram"):
     out = []
     for ring in range(1, vmax + 1):
         pts = " ".join("%.1f,%.1f" % pt(i, ring) for i in range(n))
-        out.append(f'<polygon points="{pts}" fill="none" stroke="#d0d7de" stroke-width="1"/>')
+        out.append(f'<polygon points="{pts}" fill="none" stroke="#d0d7de" class="svg-g" stroke-width="1"/>')
         x, y = pt(0, ring)
         out.append(f'<text x="{x + 3:.1f}" y="{y:.1f}" font-size="9" fill="#888">{ring}</text>')
     for i, lab in enumerate(labels):
         x, y = pt(i, vmax)
-        out.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#d0d7de"/>')
+        out.append(f'<line x1="{cx}" y1="{cy}" x2="{x:.1f}" y2="{y:.1f}" stroke="#d0d7de" class="svg-g"/>')
         lx, ly = cx + (r + 22) * math.cos(ang(i)), cy + (r + 22) * math.sin(ang(i))
         anchor = "middle" if abs(math.cos(ang(i))) < 0.3 else ("start" if math.cos(ang(i)) > 0 else "end")
-        out.append(f'<text x="{lx:.1f}" y="{ly + 4:.1f}" font-size="12" text-anchor="{anchor}" fill="#222">{escape(lab)}</text>')
+        out.append(f'<text x="{lx:.1f}" y="{ly + 4:.1f}" font-size="12" text-anchor="{anchor}" fill="#222" class="svg-t">{escape(lab)}</text>')
     for k, (name, vals, color) in enumerate(series):
         pts = " ".join("%.1f,%.1f" % pt(i, v or 0) for i, v in enumerate(vals))
         out.append(f'<polygon points="{pts}" fill="{color}" fill-opacity="0.18" stroke="{color}" stroke-width="2.2"/>')
@@ -84,10 +84,10 @@ def line_chart(x_labels, series, ymin=1, ymax=5, label="Udvikling"):
     Y = lambda v: mt + ph * (1 - (v - ymin) / (ymax - ymin))
     out = []
     for v in range(int(ymin), int(ymax) + 1):
-        out.append(f'<line x1="{ml}" y1="{Y(v):.1f}" x2="{w - mr}" y2="{Y(v):.1f}" stroke="#e3e8ee"/>'
-                   f'<text x="{ml - 6}" y="{Y(v) + 4:.1f}" font-size="11" text-anchor="end" fill="#666">{v}</text>')
+        out.append(f'<line x1="{ml}" y1="{Y(v):.1f}" x2="{w - mr}" y2="{Y(v):.1f}" stroke="#e3e8ee" class="svg-g"/>'
+                   f'<text x="{ml - 6}" y="{Y(v) + 4:.1f}" font-size="11" text-anchor="end" fill="#666" class="svg-t">{v}</text>')
     for i, lab in enumerate(x_labels):
-        out.append(f'<text x="{X(i):.1f}" y="{h - mb + 16}" font-size="11" text-anchor="middle" fill="#444">{escape(lab)}</text>')
+        out.append(f'<text x="{X(i):.1f}" y="{h - mb + 16}" font-size="11" text-anchor="middle" fill="#444" class="svg-t">{escape(lab)}</text>')
     for k, (name, vals, color) in enumerate(series):
         seg = []
         for i, v in enumerate(list(vals) + [None]):

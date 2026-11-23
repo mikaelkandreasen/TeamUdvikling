@@ -104,13 +104,14 @@ def send():
 
 
 def _email(db, kind, team_id, title, body):
-    """Sender beskeden som e-mail til modtagere med adresse (afsenderen springes over). Hver modtager får sin egen mail."""
+    """Sender beskeden som e-mail til modtagere med adresse (afsenderen springes over – undtagen ved «Alle brugere», hvor afsenderen også får den). Hver modtager får sin egen mail."""
     todo = mailer.missing()
     if todo:
         flash(f"Beskeden er gemt, men e-mail er ikke sat op: mangler {todo}.", "error")
         return
     if kind == "all":
-        rows = db.execute("SELECT DISTINCT email, id FROM users WHERE stopped_at IS NULL AND email IS NOT NULL AND email<>'' AND id<>?", (g.real_user["id"],)).fetchall()
+        # «Alle brugere»: afsenderen (systemadministratoren) får også selv e-mailen, så man kan se, hvordan den ser ud
+        rows = db.execute("SELECT DISTINCT email, id FROM users WHERE stopped_at IS NULL AND email IS NOT NULL AND email<>''").fetchall()
         where = club.info()["app_name"]
     elif kind == "club":
         rows = db.execute("SELECT DISTINCT email, id FROM users WHERE club_id=? AND stopped_at IS NULL AND email IS NOT NULL AND email<>'' AND id<>?",

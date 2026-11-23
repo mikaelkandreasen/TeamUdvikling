@@ -125,3 +125,16 @@ def test_login_page_shows_motto_only_when_device_knows_club(app, team):
         name = remember.club_cookie_name()
     anon.c.set_cookie(name, "1")
     assert "Sammen om fodbold" in anon.get("/login").get_data(as_text=True)
+
+
+def test_theme_choice_is_saved_in_cookie_and_applied(app, team):
+    """Udseende: Auto/Lyst/Mørkt vælges i sidefoden, gemmes i en cookie og sættes som data-theme."""
+    assert 'data-theme="auto"' in team.get("/?hold=1").get_data(as_text=True)
+    r = team.post("/tema", {"theme": "dark", "next": "/"}, page="/?hold=1")
+    assert r.status_code == 302 and "theme=dark" in r.headers["Set-Cookie"]
+    assert 'data-theme="dark"' in team.get("/?hold=1").get_data(as_text=True)
+    assert team.post("/tema", {"theme": "pink"}, page="/?hold=1").status_code == 400
+    anon = Client(app)
+    assert 'data-theme="auto"' in anon.get("/login").get_data(as_text=True)          # også på login-siden
+    anon.post("/tema", {"theme": "light"}, page="/login")
+    assert 'data-theme="light"' in anon.get("/login").get_data(as_text=True)

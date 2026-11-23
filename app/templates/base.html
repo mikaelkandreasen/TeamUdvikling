@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ lang }}">
+<html lang="{{ lang }}" data-theme="{{ theme }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -62,6 +62,8 @@
 </main>
 <footer>{% if club['name'] %}{{ club['name'] }} · {% endif %}{{ club['app_name'] }}{% if user %} v{{ version }}{% endif %} · <a href="{{ url_for('main.privacy') }}">{{ _('Privatliv') }}</a>
   <form method="post" action="{{ url_for('main.set_lang') }}" class="noprint" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}">
-    <select name="lang" data-autosubmit aria-label="{{ _('Sprog') }}" style="min-height:36px;width:auto;padding:.2rem .4rem">{% for k, n in langs.items() %}<option value="{{ k }}" {{ 'selected' if k == lang }}>{{ n }}</option>{% endfor %}</select><noscript> <button>OK</button></noscript></form></footer>
+    <select name="lang" data-autosubmit aria-label="{{ _('Sprog') }}" style="min-height:36px;width:auto;padding:.2rem .4rem">{% for k, n in langs.items() %}<option value="{{ k }}" {{ 'selected' if k == lang }}>{{ n }}</option>{% endfor %}</select><noscript> <button>OK</button></noscript></form>
+  <form method="post" action="{{ url_for('main.set_theme') }}" class="noprint" style="display:inline"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ request.path }}">
+    <select name="theme" data-autosubmit aria-label="{{ _('Udseende') }}" style="min-height:36px;width:auto;padding:.2rem .4rem"><option value="auto" {{ 'selected' if theme == 'auto' }}>{{ _('Auto') }}</option><option value="light" {{ 'selected' if theme == 'light' }}>{{ _('Lyst') }}</option><option value="dark" {{ 'selected' if theme == 'dark' }}>{{ _('Mørkt') }}</option></select><noscript> <button>OK</button></noscript></form></footer>
 </body>
 </html>
