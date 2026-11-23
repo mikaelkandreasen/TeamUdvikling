@@ -49,6 +49,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 - **SemVer**: `0.x` indtil første rigtige brug i drift. Nye funktioner = minor, rettelser = patch, brud på data/URL'er = major (eller minor før 1.0).
 - Udgiv med `scripts/release.sh X.Y.Z` (kører tests, opdaterer `VERSION` + `CHANGELOG`, committer, opretter tag `vX.Y.Z`).
   Push `main` og tags → GitHub Actions bygger og udgiver Docker-imaget til GHCR (`ghcr.io/<bruger>/teamudvikling:X.Y.Z`).
+- **Download efter hver commit/release (fast regel):** lav altid en komplet zip med `scripts/package.sh` (indeholder hele mappen inkl. `.git`, så den kan lægges oven i den lokale repo-mappe og pushes via GitHub Desktop), send den til brugeren, og skriv i rapporten hvilken fil der er den komplette. Brug aldrig `git archive` som leverance (den mangler `.git`).
 - Definition of done: tests grønne, ny adfærd testet, CHANGELOG + BACKLOG opdateret, mobilvisning tjekket, ingen spillerdata i repoet.
 
 ## Når du overtager arbejdet i en ny Claude-session
