@@ -35,6 +35,17 @@ def _public_host(host):
     return ips[0]
 
 
+def normalize_url(url):
+    """Kalenderlinks fra Apple/Google starter ofte med webcal:// (webcals://) – det er blot https."""
+    url = (url or "").strip()
+    low = url.lower()
+    if low.startswith("webcals://"):
+        return "https://" + url[10:]
+    if low.startswith("webcal://"):
+        return "https://" + url[9:]
+    return url
+
+
 def check_url(url):
     p = urllib.parse.urlsplit(url or "")
     if (p.scheme != "https" or not p.hostname or p.username or p.password or (p.port not in (None, 443))

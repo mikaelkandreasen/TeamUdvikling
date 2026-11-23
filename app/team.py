@@ -116,13 +116,13 @@ def settings():
             flash("Andel til A og C skal være mellem 0 og 45 %. De blev ikke ændret.", "error")
         for k in features.KEYS:
             set_setting(db, tid, f"feat_{k}", "1" if request.form.get(f"feat_{k}") else "0")
-        url = (request.form.get("ical_url") or "").strip()[:500]
+        url = ical.normalize_url((request.form.get("ical_url") or "")[:500])
         if url:
             try:
                 ical.check_url(url)
             except ical.FeedError as exc:
                 flash(f"Kalenderadressen blev ikke gemt: {exc}", "error")
-                url = ""
+                url = get_setting(db, tid, "ical_url") or ""        # behold det gamle link ved fejl (slet det ikke)
         if url != (get_setting(db, tid, "ical_url") or ""):
             set_setting(db, tid, "ical_fetched_at", "")             # nyt link: hent forfra ved næste kampforslag
         set_setting(db, tid, "ical_url", url)

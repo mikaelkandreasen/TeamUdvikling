@@ -339,3 +339,21 @@ def test_match_attendance_link_and_ical_changes(world, monkeypatch):
     row = sql(app, "SELECT day, note FROM matches WHERE id=?", m1)[0]
     assert row["day"] == f"{d_new[:4]}-{d_new[4:6]}-{d_new[6:]}" and "Bane 3" in row["note"]
     assert tb.post(f"/kampe/{m1}/kalender", {}, page="/kampe/").status_code == 404           # andet hold
+
+
+def test_webcal_links_are_accepted_and_bad_links_keep_the_old_one(world, monkeypatch):
+    """webcal:// (Apple/Google) er blot https og gemmes som https://; et ugyldigt link sletter ikke det gamle."""
+    from app import ical
+    monkeypatch.setattr(ical, "_public_host", lambda host: "93.184.216.34")
+    app, admin, ca, cb, ta, tb = world
+    tid = team_id(app, "Hold Alfa")
+    base = {"game_type": "5v5", "subs": "1", "feat_notes": "1"}
+    ca.post("/switch-team", {"team_id": tid}, page="/")
+    get = lambda: (sql(app, "SELECT value FROM settings WHERE key=?", f"t{tid}:ical_url") or [{"value": None}])[0]["value"]
+    ca.post("/team/settings", {**base, "ical_url": "webcal://cal.example.dk/hold.ics"}, page="/team/settings")
+    assert get() == "https://cal.example.dk/hold.ics"
+    r = ca.post("/team/settings", {**base, "ical_url": "http://usikker.example/x.ics"}, page="/team/settings", follow_redirects=True)
+    assert "skal være en https-adresse" in r.get_data(as_text=True)
+    assert get() == "https://cal.example.dk/hold.ics"                          # uændret
+    ca.post("/team/settings", {**base, "ical_url": "webcals://cal.example.dk/andet.ics"}, page="/team/settings")
+    assert get() == "https://cal.example.dk/andet.ics"
