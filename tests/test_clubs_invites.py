@@ -13,7 +13,7 @@ BASE = "https://t.example"
 
 @pytest.fixture
 def mailapp(app):
-    app.config.update(MAIL_BACKEND="memory", PUBLIC_URL=BASE, SMTP_FROM="u11@t.example")
+    app.config.update(MAIL_BACKEND="memory", PUBLIC_URL=BASE, SMTP_FROM="noreply@t.example")
     return app
 
 
@@ -35,12 +35,12 @@ def world(mailapp, admin):
     """To klubber med hver sit hold og en klubadministrator + træner i begge."""
     sql(mailapp, "UPDATE clubs SET name='Alfa Klub' WHERE id=1")
     make_club(admin, "Beta Klub")
-    make_team_in(mailapp, admin, "Alfa Klub", "U11 Alfa")
-    make_team_in(mailapp, admin, "Beta Klub", "U11 Beta")
+    make_team_in(mailapp, admin, "Alfa Klub", "Hold Alfa")
+    make_team_in(mailapp, admin, "Beta Klub", "Hold Beta")
     ca = make_user(mailapp, admin, "kaja", "clubadmin", "Alfa Klub")
     cb = make_user(mailapp, admin, "bent", "clubadmin", "Beta Klub")
-    ta = make_user(mailapp, admin, "tina", "trainer", "Alfa Klub", ["U11 Alfa"])
-    tb = make_user(mailapp, admin, "ole", "trainer", "Beta Klub", ["U11 Beta"])
+    ta = make_user(mailapp, admin, "tina", "trainer", "Alfa Klub", ["Hold Alfa"])
+    tb = make_user(mailapp, admin, "ole", "trainer", "Beta Klub", ["Hold Beta"])
     return mailapp, admin, ca, cb, ta, tb
 
 
@@ -62,7 +62,7 @@ def invite(app, c, email="ny@example.dk", role="trainer", club=None, teams=(), u
 # ---------------------------------------------------------------- invitationer
 def test_invitation_flow_creates_user_with_teams_and_requires_2fa(world):
     app, admin, ca, cb, ta, tb = world
-    r = invite(app, admin, "Ny.Traener@Example.DK", teams=[team_id(app, "U11 Alfa")], club=club_id(app, "Alfa Klub"))
+    r = invite(app, admin, "Ny.Traener@Example.DK", teams=[team_id(app, "Hold Alfa")], club=club_id(app, "Alfa Klub"))
     assert "Invitation sendt" in r.get_data(as_text=True) and "7 dage" in r.get_data(as_text=True)
     mail = app.extensions["outbox"][-1]
     assert mail["to"] == "ny.traener@example.dk" and "7 dage" in mail["body"] and "Alfa Klub" in mail["subject"]
@@ -75,7 +75,7 @@ def test_invitation_flow_creates_user_with_teams_and_requires_2fa(world):
     u = sql(app, "SELECT * FROM users WHERE username='nyt'")[0]
     assert u["role"] == "trainer" and u["email"] == "ny.traener@example.dk" and u["club_id"] == club_id(app, "Alfa Klub")
     assert u["must_change_pw"] == 0 and u["totp_enabled"] == 0
-    assert [r["team_id"] for r in sql(app, "SELECT team_id FROM user_teams WHERE user_id=?", u["id"])] == [team_id(app, "U11 Alfa")]
+    assert [r["team_id"] for r in sql(app, "SELECT team_id FROM user_teams WHERE user_id=?", u["id"])] == [team_id(app, "Hold Alfa")]
     assert anon.get("/?hold=1").status_code == 302                                      # ingen adgang før 2FA er sat op
     page = anon.get("/2fa/setup").get_data(as_text=True)
     secret = re.search(r'class="secret">([A-Z2-7]+)<', page).group(1)
@@ -148,11 +148,11 @@ def test_clubadmin_invites_only_trainers_into_own_club(world):
     a, b = club_id(app, "Alfa Klub"), club_id(app, "Beta Klub")
     assert invite(app, ca, "kaja1@example.dk", role="clubadmin", user="kaja").status_code == 404            # kun systemadministrator
     assert not sql(app, "SELECT 1 FROM invitations")
-    invite(app, ca, "kaja2@example.dk", club=b, teams=[team_id(app, "U11 Beta"), team_id(app, "U11 Alfa")], user="kaja")   # klub/hold fra anden klub ignoreres
+    invite(app, ca, "kaja2@example.dk", club=b, teams=[team_id(app, "Hold Beta"), team_id(app, "Hold Alfa")], user="kaja")   # klub/hold fra anden klub ignoreres
     row = sql(app, "SELECT * FROM invitations")[0]
-    assert row["club_id"] == a and row["role"] == "trainer" and row["team_ids"] == str(team_id(app, "U11 Alfa"))
+    assert row["club_id"] == a and row["role"] == "trainer" and row["team_ids"] == str(team_id(app, "Hold Alfa"))
     page = ca.get("/admin/invitations/").get_data(as_text=True)
-    assert "U11 Beta" not in page and "kaja2@example.dk" in page and "Klubadministrator</option>" not in page
+    assert "Hold Beta" not in page and "kaja2@example.dk" in page and "Klubadministrator</option>" not in page
     iid = row["id"]
     assert cb.post(f"/admin/invitations/{iid}/revoke", {}, page="/admin/invitations/").status_code == 404   # anden klubs invitation
     assert "kaja2@example.dk" not in cb.get("/admin/invitations/").get_data(as_text=True)
@@ -225,11 +225,11 @@ def test_clubadmin_cannot_edit_other_clubs_profile(world):
 def test_clubadmin_scoped_teams_and_users(world):
     app, admin, ca, cb, ta, tb = world
     page = ca.get("/admin/teams").get_data(as_text=True)
-    assert "U11 Alfa" in page and "U11 Beta" not in page
-    beta = team_id(app, "U11 Beta")
+    assert "Hold Alfa" in page and "Hold Beta" not in page
+    beta = team_id(app, "Hold Beta")
     assert ca.post(f"/admin/teams/{beta}/rename", {"name": "Hacket"}, page="/admin/teams").status_code == 404
-    assert ca.post(f"/admin/teams/{beta}/delete", {"confirm": "U11 Beta"}, page="/admin/teams").status_code == 404
-    assert sql(app, "SELECT name FROM teams WHERE id=?", beta)[0]["name"] == "U11 Beta"
+    assert ca.post(f"/admin/teams/{beta}/delete", {"confirm": "Hold Beta"}, page="/admin/teams").status_code == 404
+    assert sql(app, "SELECT name FROM teams WHERE id=?", beta)[0]["name"] == "Hold Beta"
     ca.post("/admin/teams", {"name": "U12 Alfa", "club": str(club_id(app, "Beta Klub"))}, page="/admin/teams")      # tvinges til egen klub
     assert sql(app, "SELECT club_id FROM teams WHERE name='U12 Alfa'")[0]["club_id"] == club_id(app, "Alfa Klub")
     users = ca.get("/admin/users").get_data(as_text=True)
@@ -244,10 +244,10 @@ def test_clubadmin_scoped_teams_and_users(world):
 def test_clubadmin_creates_trainers_only_in_own_club_and_cannot_make_admins(world):
     app, admin, ca, cb, ta, tb = world
     ca.post("/admin/users", {"username": "ny", "role": "admin", "club": str(club_id(app, "Beta Klub")),
-                             "teams": [str(team_id(app, "U11 Beta")), str(team_id(app, "U11 Alfa"))]}, page="/admin/users")
+                             "teams": [str(team_id(app, "Hold Beta")), str(team_id(app, "Hold Alfa"))]}, page="/admin/users")
     u = sql(app, "SELECT * FROM users WHERE username='ny'")[0]
     assert u["role"] == "trainer" and u["club_id"] == club_id(app, "Alfa Klub")
-    assert [r["team_id"] for r in sql(app, "SELECT team_id FROM user_teams WHERE user_id=?", u["id"])] == [team_id(app, "U11 Alfa")]
+    assert [r["team_id"] for r in sql(app, "SELECT team_id FROM user_teams WHERE user_id=?", u["id"])] == [team_id(app, "Hold Alfa")]
 
 
 def test_clubadmin_cannot_reach_system_pages(world):
@@ -282,9 +282,9 @@ def test_trainers_and_clubadmins_only_reach_players_of_own_club(world):
         assert c.get(f"/players/{other}/photo.jpg").status_code == 404 and c.get(f"/report/{other}").status_code == 404
         assert c.get(f"/players/{own}/edit").status_code == 200
     assert "Bea Beta" not in ca.get("/players/").get_data(as_text=True)
-    switch(admin, team_id(app, "U11 Alfa"))
+    switch(admin, team_id(app, "Hold Alfa"))
     assert admin.get(f"/players/{pa}/edit").status_code == 200
-    switch(admin, team_id(app, "U11 Beta"))                                       # systemadministrator kan skifte til alle klubbers hold
+    switch(admin, team_id(app, "Hold Beta"))                                       # systemadministrator kan skifte til alle klubbers hold
     assert admin.get(f"/players/{pb}/edit").status_code == 200
 
 
@@ -293,7 +293,7 @@ def test_trainer_with_stale_membership_in_other_club_gets_no_access(world):
     player(tb, "Bea Beta")
     pb = player_id(app, "Bea Beta")
     uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
-    sql(app, "INSERT INTO user_teams(user_id, team_id) VALUES(?,?)", uid, team_id(app, "U11 Beta"))       # fx skrevet direkte i databasen
+    sql(app, "INSERT INTO user_teams(user_id, team_id) VALUES(?,?)", uid, team_id(app, "Hold Beta"))       # fx skrevet direkte i databasen
     assert ta.get(f"/players/{pb}/edit").status_code == 404
 
 
@@ -326,7 +326,7 @@ def test_migration_moves_club_profile_logo_and_teams(tmp_path):
         failed_logins INTEGER NOT NULL DEFAULT 0, locked_until INTEGER NOT NULL DEFAULT 0, must_change_pw INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, email TEXT);
       INSERT INTO users(username,display_name,pw_hash,role,created_at) VALUES('chef','Chef','x','admin','2026-01-01'),('tina','Tina','x','trainer','2026-01-01');
       CREATE TABLE teams(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE, season TEXT, created_at TEXT NOT NULL);
-      INSERT INTO teams(name,created_at) VALUES('U11','2026-01-01');
+      INSERT INTO teams(name,created_at) VALUES('Hold U','2026-01-01');
       CREATE TABLE user_teams(user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, PRIMARY KEY(user_id, team_id));
       INSERT INTO user_teams VALUES(2,1);
       CREATE TABLE players(id INTEGER PRIMARY KEY, team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE, name TEXT NOT NULL, birth_date TEXT, active INTEGER NOT NULL DEFAULT 1);
@@ -345,7 +345,7 @@ def test_migration_moves_club_profile_logo_and_teams(tmp_path):
     assert not con.execute("SELECT 1 FROM settings WHERE key LIKE 'club:%'").fetchall()
     assert con.execute("SELECT value FROM settings WHERE key='t1:rounds_n'").fetchone()[0] == "4"
     con.execute("INSERT INTO clubs(name,created_at) VALUES('Anden','x')")
-    con.execute("INSERT INTO teams(name,created_at,club_id) VALUES('U11','x',2)")            # samme holdnavn i anden klub er nu tilladt
+    con.execute("INSERT INTO teams(name,created_at,club_id) VALUES('Hold U','x',2)")            # samme holdnavn i anden klub er nu tilladt
     assert not con.execute("PRAGMA foreign_key_check").fetchall()
     con.close()
 
@@ -354,7 +354,7 @@ def test_user_list_is_overview_and_detail_holds_actions(world):
     app, admin, ca, cb, ta, tb = world
     uid = lambda n: sql(app, "SELECT id FROM users WHERE username=?", n)[0]["id"]
     page = admin.get("/admin/users").get_data(as_text=True)
-    assert "(tina)" in page and "Alfa Klub" in page and "U11 Alfa" in page
+    assert "(tina)" in page and "Alfa Klub" in page and "Hold Alfa" in page
     assert "Nulstil" not in page and "Slet" not in page                      # handlinger kun på detaljesiden
     assert f"/admin/users/{uid('tina')}" in page
     assert "(ole)" not in admin.get("/admin/users?q=tina").get_data(as_text=True)
@@ -414,26 +414,26 @@ def test_trainer_does_not_see_links_to_pages_without_access(world):
 
 
 def test_import_is_scoped_to_own_club(world):
-    """Klubadmin i Alfa importerer en fil med holdnavnet «U11 Beta» (Beta Klubs hold): må ikke røre Beta Klub."""
+    """Klubadmin i Alfa importerer en fil med holdnavnet «Hold Beta» (Beta Klubs hold): må ikke røre Beta Klub."""
     import io, re
     app, admin, ca, cb, ta, tb = world
-    switch(tb, team_id(app, "U11 Beta"))
+    switch(tb, team_id(app, "Hold Beta"))
     player(tb, "Bea Beta")
-    csv = "Hold;Navn;Fødselsdato;Trøjenr\nU11 Beta;Bea Beta;10-03-2016;99\nU11 Beta;Ny Pige;2016-01-01;5\n".encode()
+    csv = "Hold;Navn;Fødselsdato;Trøjenr\nHold Beta;Bea Beta;10-03-2016;99\nHold Beta;Ny Pige;2016-01-01;5\n".encode()
     r = ca.c.post("/admin/import", data={"csrf_token": ca.token("/admin/import"), "file": (io.BytesIO(csv), "x.csv")}, content_type="multipart/form-data")
     html = r.get_data(as_text=True)
     token = re.search(r'name="token" value="([^"]+)"', html).group(1)
     ca.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
     beta_b = sql(app, "SELECT p.* FROM players p JOIN teams t ON t.id=p.team_id JOIN clubs c ON c.id=t.club_id WHERE c.name='Beta Klub'")
     assert [p["name"] for p in beta_b] == ["Bea Beta"] and beta_b[0]["shirt_no"] in (None, "")   # Beta Klub urørt
-    new = sql(app, "SELECT t.club_id, COUNT(p.id) n FROM teams t JOIN players p ON p.team_id=t.id WHERE t.name='U11 Beta' GROUP BY t.id")
+    new = sql(app, "SELECT t.club_id, COUNT(p.id) n FROM teams t JOIN players p ON p.team_id=t.id WHERE t.name='Hold Beta' GROUP BY t.id")
     assert {(r["club_id"], r["n"]) for r in new} == {(club_id(app, "Beta Klub"), 1), (club_id(app, "Alfa Klub"), 2)}   # nyt hold i Alfa Klub
 
 
 def test_clubadmin_import_preview_cannot_be_committed_by_other_user(world):
     import io, re
     app, admin, ca, cb, ta, tb = world
-    csv = "Hold;Navn\nU11 Alfa;Ida\n".encode()
+    csv = "Hold;Navn\nHold Alfa;Ida\n".encode()
     html = ca.c.post("/admin/import", data={"csrf_token": ca.token("/admin/import"), "file": (io.BytesIO(csv), "x.csv")}, content_type="multipart/form-data").get_data(as_text=True)
     token = re.search(r'name="token" value="([^"]+)"', html).group(1)
     cb.post("/admin/import/commit", {"token": token, "confirm": "ja"}, page="/admin/import")
@@ -446,8 +446,8 @@ def test_clubadmin_has_club_admin_page_with_only_own_club_and_working_links(worl
     assert "Klubadministration" in ca.get("/menu").get_data(as_text=True)
     assert "Klubadministration" not in ta.get("/menu").get_data(as_text=True)                 # trænere ser den ikke
     page = ca.get("/admin/").get_data(as_text=True)
-    assert "Klubadministration – Alfa Klub" in page and "U11 Alfa" in page
-    assert "U11 Beta" not in page and "Beta Klub" not in page                                # anden klub er usynlig
+    assert "Klubadministration – Alfa Klub" in page and "Hold Alfa" in page
+    assert "Hold Beta" not in page and "Beta Klub" not in page                                # anden klub er usynlig
     links = {h for h in re.findall(r'href="(/[^"#]*)"', page) if h.startswith(("/admin", "/inbox", "/team"))}
     assert {"/admin/club", "/admin/users", "/admin/invitations/", "/admin/teams", "/admin/import", "/admin/retention"} <= links
     for h in sorted(links):
@@ -470,3 +470,17 @@ def test_sensitive_user_actions_need_fresh_2fa_code(world):
     admin.post(f"/admin/users/{uid}/email", {"email": "ny@example.dk", "code": code(app, admin, "admin")}, page="/admin/users")
     assert sql(app, "SELECT email FROM users WHERE id=?", uid)[0]["email"] == "ny@example.dk"
     assert "Din 2FA-kode" in admin.get(f"/admin/users/{uid}").get_data(as_text=True)
+
+
+def test_legacy_u11_database_and_backups_are_found(tmp_path, monkeypatch):
+    """Ved omdøbning til TeamUdvikling: gammel u11.db omdøbes, og gamle u11-backups tælles med."""
+    import os
+    from app import create_app, db as appdb
+    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path)); monkeypatch.delenv("TEAMUDVIKLING_DATA_DIR", raising=False)
+    a = create_app({"TESTING": True})
+    assert os.path.isfile(tmp_path / "teamudvikling.db")
+    a.config["TESTING"] = True
+    del a
+    os.replace(tmp_path / "teamudvikling.db", tmp_path / "u11.db")
+    a = create_app({"TESTING": True})
+    assert os.path.isfile(tmp_path / "teamudvikling.db") and not os.path.exists(tmp_path / "u11.db")

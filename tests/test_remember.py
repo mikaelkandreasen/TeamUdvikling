@@ -25,13 +25,13 @@ def login(app, username, secret, remember=True, pw=PW, client=None):
     return c, r
 
 
-def with_cookie(app, value, name="u11_rm"):
+def with_cookie(app, value, name="teamudvikling_rm"):
     cl = app.test_client()
     cl.set_cookie(name, value)
     return cl
 
 
-def tok(c, name="u11_rm"):
+def tok(c, name="teamudvikling_rm"):
     ck = c.c.get_cookie(name)
     return ck.value if ck else None
 
@@ -59,11 +59,11 @@ def test_not_remembered_when_box_unchecked(app, trainer):
 
 
 def test_cookie_flags_and_secure_prefix(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path)); monkeypatch.setenv("SETUP_TOKEN", "x"); monkeypatch.setenv("COOKIE_SECURE", "1")
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path)); monkeypatch.setenv("SETUP_TOKEN", "x"); monkeypatch.setenv("COOKIE_SECURE", "1")
     app = create_app({"TESTING": True})
     with app.test_request_context("/"):
         from app import remember
-        assert remember.cookie_name() == "__Host-u11_rm"
+        assert remember.cookie_name() == "__Host-teamudvikling_rm"
 
 
 def test_set_cookie_attributes(app, trainer):
@@ -74,7 +74,7 @@ def test_set_cookie_attributes(app, trainer):
     con = db.connect(app.config["DATABASE"])
     con.execute("UPDATE users SET last_totp_step=0"); con.commit(); con.close()
     r = c.c.post("/login/2fa", data={"code": totp.totp(trainer.secret), "remember": "1", "csrf_token": c.token("/login/2fa")})
-    header = [h for h in r.headers.getlist("Set-Cookie") if h.startswith("u11_rm=")][0]
+    header = [h for h in r.headers.getlist("Set-Cookie") if h.startswith("teamudvikling_rm=")][0]
     assert "HttpOnly" in header and "SameSite=Lax" in header and "Max-Age=" in header
     assert 29 * 86400 < int(header.split("Max-Age=")[1].split(";")[0]) <= 30 * 86400
 
@@ -178,7 +178,7 @@ def test_locked_user_cannot_restore_and_tokens_limit(app, admin, trainer):
 
 
 def test_feature_can_be_disabled(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path)); monkeypatch.setenv("SETUP_TOKEN", "x"); monkeypatch.setenv("REMEMBER_DAYS", "0")
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path)); monkeypatch.setenv("SETUP_TOKEN", "x"); monkeypatch.setenv("REMEMBER_DAYS", "0")
     app = create_app({"TESTING": True})
     with app.test_request_context("/"):
         from app import remember

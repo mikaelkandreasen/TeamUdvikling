@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Kontrollér en backupfil (kun læsning): integritet, fremmednøgler, skemaversion og antal rækker.
-Brug:  python3 scripts/verify-backup.py u11-20261121-030000.db
+Brug:  python3 scripts/verify-backup.py teamudvikling-20261121-030000.db
 Kør den også på en kopi, der er hentet hjem fra off-site-lageret – en backup er først rigtig, når den er gendannet og kontrolleret."""
 import os
 import sqlite3

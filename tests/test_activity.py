@@ -20,13 +20,13 @@ def sql(app, q, *a):
 
 @pytest.fixture
 def two(app, admin):
-    make_team(admin, "U11 Alfa")
-    make_team(admin, "U12 Beta")
+    make_team(admin, "Hold Alfa")
+    make_team(admin, "Hold Beta")
     return admin
 
 
 def test_activity_recorded_for_logged_in_user_only(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     assert sql(app, "SELECT COUNT(*) c FROM activity")[0]["c"] >= 1
     n = sql(app, "SELECT COUNT(*) c FROM activity")[0]["c"]
     anon = Client(app)
@@ -39,7 +39,7 @@ def test_activity_recorded_for_logged_in_user_only(app, admin):
 
 
 def test_only_one_row_per_user_and_quarter(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     for _ in range(5):
         admin.get("/players/")
     rows = sql(app, "SELECT slot, COUNT(*) c FROM activity GROUP BY user_id, slot")
@@ -53,13 +53,13 @@ def badge(html):
 
 def test_header_badge_counts_self_and_is_scoped_to_team(app, two):
     admin = two
-    t = make_trainer(app, admin, "tina", ["U11 Alfa"], email=None)
-    other = make_trainer(app, admin, "ole", ["U12 Beta"])
+    t = make_trainer(app, admin, "tina", ["Hold Alfa"], email=None)
+    other = make_trainer(app, admin, "ole", ["Hold Beta"])
     sql(app, "UPDATE users SET display_name='Tina Træner' WHERE username='tina'")
     sql(app, "UPDATE users SET display_name='Ole Anden' WHERE username='ole'")
     other.get("/?desktop=1")
     html = t.get("/?desktop=1").get_data(as_text=True)
-    assert badge(html) == "2 aktive"                                         # Tina + administratoren (på U11 Alfa); ikke Ole på U12 Beta
+    assert badge(html) == "2 aktive"                                         # Tina + administratoren (på Hold Alfa); ikke Ole på Hold Beta
     assert "<h2>Aktive nu</h2>" not in html                                  # ikke længere et kort på forsiden
     ah = admin.get("/?desktop=1").get_data(as_text=True)
     assert badge(ah) == "2/3 aktive"                                         # administrator: eget hold / i alt (admin, Tina, Ole)
@@ -67,27 +67,27 @@ def test_header_badge_counts_self_and_is_scoped_to_team(app, two):
 
 def test_activity_page_shows_only_own_team_to_trainers(app, two):
     admin = two
-    t = make_trainer(app, admin, "tina", ["U11 Alfa"], email=None)
-    other = make_trainer(app, admin, "ole", ["U12 Beta"])
+    t = make_trainer(app, admin, "tina", ["Hold Alfa"], email=None)
+    other = make_trainer(app, admin, "ole", ["Hold Beta"])
     sql(app, "UPDATE users SET display_name='Tina Træner' WHERE username='tina'")
     sql(app, "UPDATE users SET display_name='Ole Anden' WHERE username='ole'")
     other.get("/?desktop=1")
     html = t.get("/aktivitet").get_data(as_text=True)
     assert "Tina Træner" in html and "Ole Anden" not in html and "Alle hold" not in html
     ah = admin.get("/aktivitet").get_data(as_text=True)
-    assert "Alle hold" in ah and "Ole Anden" in ah and "U12 Beta" in ah
+    assert "Alle hold" in ah and "Ole Anden" in ah and "Hold Beta" in ah
     assert Client(app).get("/aktivitet").status_code == 302                  # kræver login
 
 
 def test_online_window_and_summary(app, two):
     con = appdb.connect(app.config["DATABASE"])
     uid = con.execute("SELECT id FROM users LIMIT 1").fetchone()["id"]
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     now = 1_800_000_000
     activity.record(con, uid, tid, now)
     assert len(activity.online(con, tid, now=now + 200)) == 1
     assert len(activity.online(con, tid, now=now + 400)) == 0                              # over 5 min
-    assert len(activity.online(con, team_id(app, "U12 Beta"), now=now + 10)) == 0
+    assert len(activity.online(con, team_id(app, "Hold Beta"), now=now + 10)) == 0
     assert len(activity.online(con, everyone=True, now=now + 10)) == 1
     con.close()
 
@@ -113,7 +113,7 @@ def test_usage_buckets_in_local_time(app, two):
 
 def test_usage_page_admin_only_and_renders(app, two):
     admin = two
-    add = make_trainer(app, admin, "tina", ["U11 Alfa"])
+    add = make_trainer(app, admin, "tina", ["Hold Alfa"])
     add.get("/?hold=1")
     for path in ("/admin/usage", "/admin/usage?days=7&team=1", "/admin/usage?days=abc&team=zzz", "/admin/usage?team=999"):
         r = admin.get(path)
@@ -150,7 +150,7 @@ def open_set(html):
 
 
 def test_eval_roles_open_state_is_kept_for_next_player(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     for n in ("Anna Alfa", "Bea Bravo"):
         add_player(admin, n)
     a, b = player_id(app, "Anna Alfa"), player_id(app, "Bea Bravo")
@@ -168,7 +168,7 @@ def test_eval_roles_open_state_is_kept_for_next_player(app, admin):
 
 
 def test_eval_without_js_still_defaults_to_first_role(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     for n in ("Anna Alfa", "Bea Bravo"):
         add_player(admin, n)
     a, b = player_id(app, "Anna Alfa"), player_id(app, "Bea Bravo")

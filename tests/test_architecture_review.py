@@ -18,7 +18,7 @@ def test_selfcheck_flags_dangerous_proxy_settings(tmp_path, monkeypatch):
     cfg = dict(PUBLIC_URL="https://hold.example", SESSION_COOKIE_SECURE=False, TRUSTED_PROXIES=0, BACKUP_DIR=str(tmp_path))
     txt = " ".join(t for _l, t in selfcheck.run(cfg))
     assert "COOKIE_SECURE=1" in txt and "TRUSTED_PROXIES=1" in txt and "SECRET_KEY" in txt and "TOTP_KEY" in txt and "Ingen backup" in txt
-    (tmp_path / "u11-20261122-010101.db").write_text("x")
+    (tmp_path / "teamudvikling-20261122-010101.db").write_text("x")
     monkeypatch.setenv("SECRET_KEY", "x" * 64)
     monkeypatch.setenv("TOTP_KEY", "k")
     monkeypatch.setenv("BACKUP_OFFSITE", "1")

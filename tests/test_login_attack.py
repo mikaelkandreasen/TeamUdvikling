@@ -31,10 +31,10 @@ class Edge:
 
 @pytest.fixture
 def prod(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("SECRET_KEY", raising=False)
     monkeypatch.setenv("SETUP_TOKEN", "test-setup-token")
-    app = create_app({"TESTING": True, "TRUSTED_PROXIES": 1, "SESSION_COOKIE_SECURE": True, "SESSION_COOKIE_NAME": "__Host-u11"})
+    app = create_app({"TESTING": True, "TRUSTED_PROXIES": 1, "SESSION_COOKIE_SECURE": True, "SESSION_COOKIE_NAME": "__Host-teamudvikling"})
     app.edge = Edge(app)
     return app
 
@@ -47,8 +47,8 @@ def world(prod):
     page = a.get("/2fa/setup").get_data(as_text=True)
     a.secret = re.search(r'class="secret">([A-Z2-7]+)<', page).group(1)
     a.post("/2fa/setup", {"code": totp.totp(a.secret)}, page="/2fa/setup")
-    make_team(a, "U11 Alfa")
-    anna = make_trainer(prod, a, "anna", ["U11 Alfa"])
+    make_team(a, "Hold Alfa")
+    anna = make_trainer(prod, a, "anna", ["Hold Alfa"])
     return prod, a, anna
 
 
@@ -158,10 +158,10 @@ def test_session_cookie_dies_on_logout(world):
     app, _, anna = world
     c, r = login_as(app, "anna", PW, anna.secret)
     assert ok_session(c)
-    stolen = c.c.get_cookie("__Host-u11").value             # kopieret cookie
+    stolen = c.c.get_cookie("__Host-teamudvikling").value             # kopieret cookie
     c.post("/logout", {}, page="/account")
     replay = app.test_client()
-    replay.set_cookie("__Host-u11", stolen)
+    replay.set_cookie("__Host-teamudvikling", stolen)
     r = replay.get("/?hold=1")
     assert r.status_code == 302 and "/login" in r.headers["Location"]
 
@@ -169,10 +169,10 @@ def test_session_cookie_dies_on_logout(world):
 def test_forged_or_tampered_session_is_anonymous(world):
     app, _, anna = world
     c, _ = login_as(app, "anna", PW, anna.secret)
-    good = c.c.get_cookie("__Host-u11").value
+    good = c.c.get_cookie("__Host-teamudvikling").value
     for bad in (good[:-3] + ("AAA" if not good.endswith("AAA") else "BBB"), "x" + good, ".".join(["e30", "AAAAAA", "BBBB"]), "garbage"):
         cl = app.test_client()
-        cl.set_cookie("__Host-u11", bad)
+        cl.set_cookie("__Host-teamudvikling", bad)
         r = cl.get("/players/")
         assert r.status_code == 302 and "/login" in r.headers["Location"]
 
@@ -181,7 +181,7 @@ def test_cookie_flags_in_production(world):
     app, _, _ = world
     c = Client(app)
     r = c.c.get("/login")
-    ck = [h for h in r.headers.getlist("Set-Cookie") if h.startswith("__Host-u11=")][0]
+    ck = [h for h in r.headers.getlist("Set-Cookie") if h.startswith("__Host-teamudvikling=")][0]
     low = ck.lower()
     assert "secure" in low and "httponly" in low and "samesite=lax" in low and "path=/" in low and "domain=" not in low
 
@@ -270,7 +270,7 @@ def test_errors_do_not_leak(world):
 
 
 def test_warns_when_secure_cookies_without_proxy_trust(tmp_path, monkeypatch, caplog):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("SETUP_TOKEN", "x")
     import logging
     with caplog.at_level(logging.WARNING):

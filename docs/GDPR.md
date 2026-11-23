@@ -5,7 +5,7 @@
 ## 1. Dataansvar og roller
 - **Dataansvarlig:** klubben (ikke den enkelte træner). Træneren er medarbejder/frivillig under klubbens instruks.
 - **Databehandler:** ingen, så længe systemet driftes på klubbens/trænerens egen server. Hvis det hostes hos en leverandør, skal der laves databehandleraftale.
-- Registrerede: børn (U11, under 13 år), trænere, forældre (kun indirekte).
+- Registrerede: børn (under 13 år), trænere, forældre (kun indirekte).
 
 ## 2. Oversigt over behandling (art. 30)
 | Kategori | Eksempler | Formål | Kilde | Modtagere | Sletning |

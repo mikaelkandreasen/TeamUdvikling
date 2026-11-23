@@ -48,7 +48,7 @@ steder. To indstillinger kan desuden svække login-beskyttelsen, hvis de står f
 
 ### A3 · Porten er åben på LAN — Høj
 **Risiko:** Med `TRUSTED_PROXIES=1` stoler appen på `X-Forwarded-For`. Kan en enhed på hjemmenettet nå port 1020 direkte, kan den angive en vilkårlig IP og omgå IP-spærren mod gætteri af adgangskoder. Porten er heller ikke beskyttet af Cloudflare.
-**Forslag:** Lad kun cloudflared kunne nå appen. Enten `U11_BIND=127.0.0.1` (hvis cloudflared kører på værten eller med host-netværk), eller kør cloudflared i samme Docker-netværk som appen og fjern `ports:` helt. Tjek bagefter fra en anden maskine, at `http://<nuc-ip>:1020` ikke svarer.
+**Forslag:** Lad kun cloudflared kunne nå appen. Enten `TEAMUDVIKLING_BIND=127.0.0.1` (hvis cloudflared kører på værten eller med host-netværk), eller kør cloudflared i samme Docker-netværk som appen og fjern `ports:` helt. Tjek bagefter fra en anden maskine, at `http://<nuc-ip>:1020` ikke svarer.
 
 ### A4 · Farlige indstillinger giver ingen fejl — Høj → rettet
 Driftstjekket (`app/selfcheck.py`) viser nu en rød boks i Administration og skriver i loggen ved start, hvis siden kører på https uden `COOKIE_SECURE=1` eller `TRUSTED_PROXIES`. Det minder også om nøglerne i volumen, manglende backup og off-site-kopi.
@@ -78,7 +78,7 @@ Den daglige backup blev kun udløst af et login. Baggrundstråden tjekker nu hve
 
 ### A11 · Forsyningskæde — Lav–mellem
 **Forslag:**
-1. Sæt `U11_IMAGE=ghcr.io/mikaelkandreasen/u11-udvikling:X.Y.Z` (fast version) i Dockhand frem for `latest`, så en uventet udgivelse ikke rulles ud ved en genstart.
+1. Sæt `TEAMUDVIKLING_IMAGE=ghcr.io/mikaelkandreasen/teamudvikling:X.Y.Z` (fast version) i Dockhand frem for `latest`, så en uventet udgivelse ikke rulles ud ved en genstart.
 2. Lås afhængighederne med hashes (`pip-compile --generate-hashes` → `requirements.lock`, installér med `--require-hashes`).
 3. Fastlås GitHub Actions til commit-SHA, og slå Dependabot til for pip, Docker og Actions.
 

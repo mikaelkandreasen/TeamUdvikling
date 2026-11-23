@@ -4,6 +4,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/da/1.1.0/) · Versionering
 
 ## [Unreleased]
 
+### Ændret
+- Løsningen hedder konsekvent **TeamUdvikling**: image `ghcr.io/…/teamudvikling`, container og volumen `teamudvikling-data`, databasefil `teamudvikling.db`, miljøvariabler `TEAMUDVIKLING_*`, cookies og backupfiler. Eksempler og dokumentation indeholder ikke længere konkrete domæner eller «u11».
+- Bagudkompatibelt: `U11_DATA_DIR` virker stadig, en gammel `u11.db` omdøbes automatisk, og gamle `u11-…`-backups tælles med.
+
+### Bemærk ved opgradering
+- Alle logges ud én gang (nye cookienavne).
+- Volumen hedder nu `teamudvikling-data`: kopiér data før redeploy, se docs/DRIFT.md → «Omdøbning til TeamUdvikling».
+
 ## [0.35.0] - 2026-11-22
 
 ### Tilføjet

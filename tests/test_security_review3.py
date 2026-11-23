@@ -49,7 +49,7 @@ def test_match_suggestions_throttle_outgoing_fetches(world, monkeypatch):
     app, admin, ca, cb, ta, tb = world
     calls = []
     monkeypatch.setattr(ical, "fetch", lambda url: calls.append(url) or "BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n")
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     sql(app, "INSERT INTO settings(key,value) VALUES(?,?)", f"t{tid}:ical_url", "https://x.example/a.ics")
     for _ in range(5):
         assert ta.get("/kampe/forslag").status_code == 200

@@ -106,7 +106,7 @@ def test_login_and_search_sqli(app, admin):
 
 # ---------------------------------------------------------------- opsætning (take-over)
 def test_setup_requires_token_even_without_env(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("SETUP_TOKEN", raising=False)
     app = create_app({"TESTING": True})
     c = Client(app)
@@ -183,7 +183,7 @@ def test_open_redirect_blocked(app, admin):
 
 # ---------------------------------------------------------------- headers / cookies / info
 def test_security_headers_and_cookie_flags(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("COOKIE_SECURE", "1")
     monkeypatch.setenv("SETUP_TOKEN", "x")
     app = create_app({"TESTING": True})

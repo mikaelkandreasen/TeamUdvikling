@@ -537,10 +537,10 @@ def purge_old(db):
 def backup(db_path, backup_dir, keep=14):
     """Konsistent kopi af databasen via SQLite's backup-API. Beholder de seneste `keep` filer."""
     os.makedirs(backup_dir, exist_ok=True)
-    dest = os.path.join(backup_dir, time.strftime("u11-%Y%m%d-%H%M%S.db"))
+    dest = os.path.join(backup_dir, time.strftime("teamudvikling-%Y%m%d-%H%M%S.db"))
     n = 1
     while os.path.exists(dest):                        # to backups i samme sekund overskriver ikke hinanden
-        dest = os.path.join(backup_dir, time.strftime("u11-%Y%m%d-%H%M%S") + f"-{n}.db")
+        dest = os.path.join(backup_dir, time.strftime("teamudvikling-%Y%m%d-%H%M%S") + f"-{n}.db")
         n += 1
     src = sqlite3.connect(db_path)
     dst = sqlite3.connect(dest)
@@ -548,12 +548,12 @@ def backup(db_path, backup_dir, keep=14):
         src.backup(dst)
     src.close()
     dst.close()
-    files = sorted(f for f in os.listdir(backup_dir) if f.startswith("u11-") and f.endswith(".db"))
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
     ok, msgs = verify_backup(dest)
     if not ok:                                        # en ødelagt backup må aldrig fortrænge en god
         os.remove(dest)
         raise RuntimeError("Backup fejlede kontrol: " + "; ".join(msgs))
-    files = sorted(f for f in os.listdir(backup_dir) if f.startswith("u11-") and f.endswith(".db"))
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
     for old in files[:-keep]:
         os.remove(os.path.join(backup_dir, old))
     return dest
@@ -586,7 +586,7 @@ def verify_backup(path):
 
 def backup_if_due(db_path, backup_dir, hours=24):
     os.makedirs(backup_dir, exist_ok=True)
-    files = sorted(f for f in os.listdir(backup_dir) if f.startswith("u11-") and f.endswith(".db"))
+    files = sorted((f for f in os.listdir(backup_dir) if f.startswith(("teamudvikling-", "u11-")) and f.endswith(".db")), key=lambda f: f.split("-", 1)[1])
     if files:
         age = time.time() - os.path.getmtime(os.path.join(backup_dir, files[-1]))
         if age < hours * 3600:

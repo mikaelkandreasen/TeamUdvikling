@@ -9,7 +9,7 @@ from helpers import add_player, make_team, make_trainer, player_id, score_all
 
 @pytest.fixture
 def team(app, admin):
-    make_team(admin, "U11 piger")
+    make_team(admin, "Pigehold")
     return admin
 
 
@@ -30,7 +30,7 @@ def test_all_pages_render_with_data(app, team):
              ("Dora Delta", "2016-11-30", "Målmand", ""), ("Eva Echo", "2016-12-31", "Allround", "Kant")]
     for n, b, p, p2 in names:
         add_player(team, n, b, p, p2)
-    t2 = make_trainer(app, team, "t2", ["U11 piger"])
+    t2 = make_trainer(app, team, "t2", ["Pigehold"])
     for i, (n, *_r) in enumerate(names):
         pid = player_id(app, n)
         for rnd in (1, 2):
@@ -129,7 +129,7 @@ def test_player_validation_and_admin_delete_gdpr(app, team):
 def test_trainer_cannot_delete_or_export_player(app, team):
     add_player(team, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
-    t = make_trainer(app, team, "tr", ["U11 piger"])
+    t = make_trainer(app, team, "tr", ["Pigehold"])
     assert t.get(f"/players/{pid}/export.json").status_code == 403
     assert t.post(f"/players/{pid}/delete", {"confirm": "ja"}, page="/players/").status_code == 403
 

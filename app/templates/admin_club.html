@@ -13,7 +13,7 @@
   <label for="w">{{ _("Hjemmeside") }}</label><input id="w" type="text" name="website" value="{{ c['website'] }}" maxlength="120">
   <label for="mo">{{ _("Klubbens motto") }}</label><input id="mo" type="text" name="motto" value="{{ c['motto'] }}" maxlength="100" placeholder="{{ _("fx Sammen om fodbold") }}">
   <p class="muted small">{{ _("Vises øverst på rapporterne. Holdets eget slogan sættes på holdets side under Holdindstillinger.") }}</p>
-  <label for="f">{{ _("Fodtekst på rapporter") }}</label><textarea id="f" name="footer" maxlength="300" placeholder="{{ _("fx Kontakt: trænerteamet på u11@klub.dk") }}">{{ c['footer'] }}</textarea>
+  <label for="f">{{ _("Fodtekst på rapporter") }}</label><textarea id="f" name="footer" maxlength="300" placeholder="{{ _("fx Kontakt: trænerteamet på kontakt@dit-domæne.example") }}">{{ c['footer'] }}</textarea>
   <label for="c">{{ _("Primær farve (#RRGGBB – skal være mørk nok til hvid tekst)") }}</label>
   <div class="row"><input id="c" type="text" name="color" value="{{ c['color'] }}" maxlength="7" placeholder="{{ _("#1f3a5f") }}" style="max-width:10rem">
     {% if c['color'] %}<span class="badge" style="background:{{ c['color'] }};color:#fff">{{ _("Eksempel") }}</span>{% endif %}</div>

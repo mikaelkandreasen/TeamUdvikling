@@ -7,15 +7,15 @@
 
 ## Kontrollér en backup (kan køres hvor som helst)
 ```bash
-python3 scripts/verify-backup.py u11-20261121-030000.db
+python3 scripts/verify-backup.py teamudvikling-20261121-030000.db
 ```
 Kontrollen er kun-læsning og viser skemaversion og antal rækker.
 
 ## Gendan (Docker)
 ```bash
-docker stop u11-udvikling
-scripts/restore.sh u11-20261121-030000.db      # kontrollerer filen, gemmer den gamle som u11.db.before-restore
-docker start u11-udvikling
+docker stop teamudvikling
+scripts/restore.sh teamudvikling-20261121-030000.db      # kontrollerer filen, gemmer den gamle som teamudvikling.db.before-restore
+docker start teamudvikling
 ```
 Tjek bagefter: log ind, åbn *Spillere*, og se at `/healthz` svarer. Skemaet opgraderes automatisk, hvis backuppen er fra en ældre version. Backup fra en **nyere** version end appen afvises.
 
@@ -28,13 +28,13 @@ Tjek bagefter: log ind, åbn *Spillere*, og se at `/healthz` svarer. Skemaet opg
 ## Kopi uden for serveren (3-2-1)
 Kopiér `/data/backups` til et andet sted end hjemmeserveren, fx hver nat.
 
-**rclone (sky/NAS):** find volumen-stien med `docker volume inspect u11-data` (`Mountpoint`), og læg i `crontab -e` på værten:
+**rclone (sky/NAS):** find volumen-stien med `docker volume inspect teamudvikling-data` (`Mountpoint`), og læg i `crontab -e` på værten:
 ```
-30 3 * * * rclone copy /var/lib/docker/volumes/u11-data/_data/backups remote:team-udvikling-backup --max-age 3d
+30 3 * * * rclone copy /var/lib/docker/volumes/teamudvikling-data/_data/backups remote:team-udvikling-backup --max-age 3d
 ```
 **rsync til NAS:**
 ```
-30 3 * * * rsync -a /var/lib/docker/volumes/u11-data/_data/backups/ nas:/volume1/backup/team-udvikling/
+30 3 * * * rsync -a /var/lib/docker/volumes/teamudvikling-data/_data/backups/ nas:/volume1/backup/team-udvikling/
 ```
 Backups indeholder børns data: krypter dem på den eksterne lagerplads (`rclone crypt` eller krypteret volumen), og begræns adgangen. Slet gamle kopier efter samme frist som i GDPR-dokumentet.
 

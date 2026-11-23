@@ -526,7 +526,7 @@ def make_backup():
     dest = backup(current_app.config["DATABASE"], current_app.config["BACKUP_DIR"])
     audit(get_db(), g.user["username"], "backup_hentet")
     get_db().commit()
-    return send_file(dest, as_attachment=True, download_name="u11-backup.db")
+    return send_file(dest, as_attachment=True, download_name="teamudvikling-backup.db")
 
 
 @bp.route("/usage")
@@ -605,7 +605,7 @@ def export_xlsx():
     buf.seek(0)
     audit(db, g.user["username"], "excel_eksport", g.team["name"])
     db.commit()
-    return send_file(buf, as_attachment=True, download_name=f"u11-eksport-{g.team['name']}.xlsx".replace(" ", "_").replace("/", "-"),
+    return send_file(buf, as_attachment=True, download_name=f"teamudvikling-eksport-{g.team['name']}.xlsx".replace(" ", "_").replace("/", "-"),
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 

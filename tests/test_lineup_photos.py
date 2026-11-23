@@ -30,7 +30,7 @@ def player(admin, name, pos="Angreb", **extra):
 
 @pytest.fixture
 def squad(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     for n, p in SQUAD:
         player(admin, n, p)
     return admin
@@ -72,7 +72,7 @@ def upload(c, pid, data, name="foto.jpg", consent=True, page=None):
 
 # ---------------------------------------------------------------- 4 positioner
 def test_player_can_have_four_positions_via_dropdowns(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     html = admin.get("/players/new").get_data(as_text=True)
     for key in ("position", "position2", "position3", "position4"):
         assert f'name="{key}"' in html
@@ -83,7 +83,7 @@ def test_player_can_have_four_positions_via_dropdowns(app, admin):
 
 
 def test_positions_are_validated_deduplicated_and_compacted(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     player(admin, "Bea Bravo", "", position2="Angreb", position3="Angreb", position4="Rumskib")
     row = sql(app, "SELECT * FROM players")[0]
     assert (row["position"], row["position2"], row["position3"], row["position4"]) == ("Angreb", None, None, None)
@@ -128,15 +128,15 @@ def test_lineup_create_assign_save_and_reload(app, squad):
 
 
 def test_lineup_rejects_duplicates_foreign_inactive_and_garbage(app, admin):
-    make_team(admin, "U11 Alfa")
-    make_team(admin, "U12 Beta")
+    make_team(admin, "Hold Alfa")
+    make_team(admin, "Hold Beta")
     for n in ("Anna Alfa", "Bea Bravo"):
         player(admin, n)
     player(admin, "Inge Inaktiv", active="")
     sql(app, "UPDATE players SET active=0 WHERE name='Inge Inaktiv'")
-    switch(admin, team_id(app, "U12 Beta"))
+    switch(admin, team_id(app, "Hold Beta"))
     player(admin, "Fremmed Fie")
-    switch(admin, team_id(app, "U11 Alfa"))
+    switch(admin, team_id(app, "Hold Alfa"))
     lid = new_lineup(admin, "3v3", "1-2")
     a, b, inactive, foreign = (player_id(app, n) for n in ("Anna Alfa", "Bea Bravo", "Inge Inaktiv", "Fremmed Fie"))
     r = admin.post(f"/lineup/{lid}", {"action": "save", "slot0": a, "slot1": a}, page=f"/lineup/{lid}")
@@ -180,7 +180,7 @@ def test_suggest_uses_positions_and_does_not_save_until_asked(app, squad):
 
 
 def test_left_and_right_wing_are_distinct_in_suggestions(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     player(admin, "Rikke Ret", "Højre kant")
     player(admin, "Karen Kant", "Venstre kant")
     lid = new_lineup(admin, "3v3", "1-2")                           # [Forsvar] [Venstre kant, Højre kant]
@@ -322,12 +322,12 @@ def test_audit_log_has_no_image_data(app, squad):
 
 
 def test_trainer_can_use_lineups_and_photos_but_only_for_own_team(app, admin):
-    make_team(admin, "U11 Alfa")
-    make_team(admin, "U12 Beta")
+    make_team(admin, "Hold Alfa")
+    make_team(admin, "Hold Beta")
     player(admin, "Anna Alfa")
-    switch(admin, team_id(app, "U12 Beta"))
+    switch(admin, team_id(app, "Hold Beta"))
     player(admin, "Fremmed Fie")
-    tr = make_trainer(app, admin, "tina", ["U11 Alfa"])
+    tr = make_trainer(app, admin, "tina", ["Hold Alfa"])
     pid, other = player_id(app, "Anna Alfa"), player_id(app, "Fremmed Fie")
     assert upload(tr, pid, jpeg_with_gps()).status_code == 302
     assert tr.get(f"/players/{pid}/photo.jpg").status_code == 200
@@ -339,7 +339,7 @@ def test_trainer_can_use_lineups_and_photos_but_only_for_own_team(app, admin):
 
 
 def test_importer_accepts_position_3_and_4(app, admin):
-    make_team(admin, "U11 Alfa")
+    make_team(admin, "Hold Alfa")
     csv_data = ("Navn;Position;Sekundær position;Position 3;Position 4\nAnna Alfa;Højre kant;Angreb;Midtbane;Kant\n").encode("utf-8-sig")
     r = admin.c.post("/admin/import", data={"csrf_token": admin.token("/admin/import"), "file": (io.BytesIO(csv_data), "s.csv")}, content_type="multipart/form-data")
     token = re.search(r'name="token" value="([^"]+)"', r.get_data(as_text=True)).group(1)

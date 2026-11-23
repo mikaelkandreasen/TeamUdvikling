@@ -26,12 +26,12 @@ def days():
 
 
 def cookie_name():
-    return "__Host-u11_rm" if current_app.config["SESSION_COOKIE_SECURE"] else "u11_rm"
+    return "__Host-teamudvikling_rm" if current_app.config["SESSION_COOKIE_SECURE"] else "teamudvikling_rm"
 
 
 def club_cookie_name():
     """Husker kun hvilken klubs udseende loginsiden må vise på denne enhed (sættes kun ved «husk mig»)."""
-    return "__Host-u11_lc" if current_app.config["SESSION_COOKIE_SECURE"] else "u11_lc"
+    return "__Host-teamudvikling_lc" if current_app.config["SESSION_COOKIE_SECURE"] else "teamudvikling_lc"
 
 
 def _hash(token):

@@ -27,13 +27,13 @@ def save(admin, **fields):
 
 @pytest.fixture
 def team(app, admin):
-    make_team(admin, "U11 piger")
+    make_team(admin, "Pigehold")
     return admin
 
 
 def test_profile_text_color_and_footer_show_up(app, team):
     add_player(team, "Anna Alfa")
-    r = save(team, name="Virring Fodbold", address="Virringvej 1", email="u11@klub.dk", footer="Kontakt trænerne", color="#14532d")
+    r = save(team, name="Virring Fodbold", address="Virringvej 1", email="kontakt@dit-domæne.example", footer="Kontakt trænerne", color="#14532d")
     assert "Klubprofilen er gemt" in r.get_data(as_text=True)
     page = team.get("/?hold=1").get_data(as_text=True)
     assert "--navy2:#14532d" in page and "Virring Fodbold" in page
@@ -52,10 +52,10 @@ def test_logo_upload_served_publicly_and_removable(app, team):
     page = anon.get("/login").get_data(as_text=True)               # loginsiden er neutral: hverken logo, farve eller klubnavn
     assert "/branding/logo/" not in page and "--navy2" not in page and "Klub" not in page
     known = app.test_client()                                    # enheden husker seneste login → klubbens udseende
-    known.set_cookie("u11_lc", "1")
+    known.set_cookie("teamudvikling_lc", "1")
     assert "/branding/logo/1?v=" in known.get("/login").get_data(as_text=True)
     junk = app.test_client()
-    junk.set_cookie("u11_lc", "999")
+    junk.set_cookie("teamudvikling_lc", "999")
     assert "/branding/logo/" not in junk.get("/login").get_data(as_text=True)
     assert "/branding/logo/1?v=" in team.get("/?hold=1").get_data(as_text=True)
     team.post("/admin/club", {"action": "remove_logo"}, page="/admin/club")
@@ -82,7 +82,7 @@ def test_bad_color_rejected(team, color):
 
 
 def test_trainer_cannot_edit_club(app, team):
-    t = make_trainer(app, team, "tr", ["U11 piger"])
+    t = make_trainer(app, team, "tr", ["Pigehold"])
     assert t.get("/admin/club").status_code == 403
     assert t.post("/admin/club", {"action": "remove_logo"}, page="/").status_code == 403
 
@@ -90,13 +90,13 @@ def test_trainer_cannot_edit_club(app, team):
 def test_compose_uses_port_1020():
     import pathlib
     root = pathlib.Path(__file__).resolve().parent.parent
-    assert "${U11_PORT:-1020}:8000" in (root / "compose.yaml").read_text()
-    assert "U11_PORT=1020" in (root / ".env.example").read_text()
+    assert "${TEAMUDVIKLING_PORT:-1020}:8000" in (root / "compose.yaml").read_text()
+    assert "TEAMUDVIKLING_PORT=1020" in (root / ".env.example").read_text()
 
 
 def test_app_name_defaults_and_is_configurable(app, team):
     html = team.get("/?hold=1").get_data(as_text=True)
-    assert "Team Udvikling" in html and "U11 Udvikling" not in html
+    assert "Team Udvikling" in html
     save(team, app_name="Holdets Model")
     html = team.get("/?hold=1").get_data(as_text=True)
     assert "Holdets Model" in html and "Team Udvikling" not in html

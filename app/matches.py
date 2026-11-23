@@ -60,7 +60,7 @@ _SPLIT = re.compile(r"\s+(?:-|–|—|vs\.?|v|mod)\s+", re.I)
 
 
 def guess_opponent(summary, own_names):
-    """Modstanderen ud fra en titel som 'U11 Piger: Virring IF - Skanderborg': delen, der ikke ligner eget hold/klub. Returnerer (navn, ligner_kamp)."""
+    """Modstanderen ud fra en titel som 'Pigehold: Virring IF - Skanderborg': delen, der ikke ligner eget hold/klub. Returnerer (navn, ligner_kamp)."""
     s = re.sub(r"^\s*(kamp|[A-ZÆØÅ]\d{1,2}\b[^:]*):\s*", "", summary or "").strip()
     parts = [p.strip() for p in _SPLIT.split(s) if p.strip()]
     if len(parts) < 2:

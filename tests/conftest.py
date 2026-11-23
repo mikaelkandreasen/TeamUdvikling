@@ -10,7 +10,7 @@ PW = "correct-horse-battery-12"
 
 @pytest.fixture
 def app(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("SECRET_KEY", raising=False)
     monkeypatch.setenv("SETUP_TOKEN", "test-setup-token")
     return create_app({"TESTING": True})

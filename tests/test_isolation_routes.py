@@ -5,7 +5,7 @@ import pytest
 from helpers import add_player, player_id
 from test_clubs_invites import make_team_in, make_user, mailapp, sql, world  # noqa: F401
 
-# endpoint -> hvilke ressource-id'er fra holdet "U11 Alfa" ruten får (nøgle = URL-parameter)
+# endpoint -> hvilke ressource-id'er fra holdet "Hold Alfa" ruten får (nøgle = URL-parameter)
 RES = {
     "conv.add": dict(pid="pid"), "conv.delete": dict(pid="pid", cid="conv"), "conv.index": dict(pid="pid"),
     "devdata.attendance_delete": dict(eid="event"), "devdata.attendance_edit": dict(eid="event"), "devdata.plan": dict(pid="pid"),
@@ -33,8 +33,8 @@ EXEMPT = {"invites.accept", "invites.check_username", "reset.link", "playerlink.
 @pytest.fixture
 def setup(world):
     app, admin, ca, cb, ta, tb = world
-    make_team_in(app, admin, "Alfa Klub", "U11 Alfa2")
-    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa2"])         # samme klub, andet hold
+    make_team_in(app, admin, "Alfa Klub", "Hold Alfa2")
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["Hold Alfa2"])         # samme klub, andet hold
     add_player(ta, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
     tid = sql(app, "SELECT team_id FROM players WHERE id=?", pid)[0]["team_id"]

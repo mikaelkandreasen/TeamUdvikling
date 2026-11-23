@@ -17,8 +17,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 
 ## Teknisk gæld og forbedringer (P1)
 - **B-046 · Off-site-backup og afprøvet gendannelse** · S (drift, din opgave) – restic/rclone crypt til ekstern placering, `BACKUP_OFFSITE=1` (A1/A12, se docs/ARKITEKTURGENNEMGANG.md).
-- **B-047 · Nøgler som miljøvariabler og lukket port** · S (drift) – `SECRET_KEY`/`TOTP_KEY` i Dockhand, `U11_BIND=127.0.0.1` eller ingen `ports:` (A2/A3).
-- **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `U11_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
+- **B-047 · Nøgler som miljøvariabler og lukket port** · S (drift) – `SECRET_KEY`/`TOTP_KEY` i Dockhand, `TEAMUDVIKLING_BIND=127.0.0.1` eller ingen `ports:` (A2/A3).
+- **B-049 · Overvågning og fast image-version** · S – Uptime Kuma mod /healthz, `TEAMUDVIKLING_IMAGE` med fast version, Dependabot, låste hashes (A9/A11).
 
 ## Idéer (uprioriteret)
 (ingen åbne)

@@ -37,7 +37,7 @@ def test_stylesheet_text_colours_meet_aa():
 @pytest.fixture
 def team(app, admin):
     from helpers import make_team
-    make_team(admin, "U11 piger")
+    make_team(admin, "Pigehold")
     return admin
 
 

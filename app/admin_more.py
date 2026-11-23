@@ -149,7 +149,7 @@ def import_data():
         except importer.ImportError_ as e:
             flash(str(e), "error")
             return redirect(url_for("admin.import_data"))
-        token = importer.stash(current_app.config["U11_DATA_DIR"], g.user["id"], parsed)
+        token = importer.stash(current_app.config["TEAMUDVIKLING_DATA_DIR"], g.user["id"], parsed)
         return render_template("admin_import_preview.html", p=parsed, token=token, shown=parsed["rows"][:100], club_name=club_get(db, cid)["name"])
     return render_template("admin_import.html", club_name=club_get(db, cid)["name"])
 
@@ -160,7 +160,7 @@ MAX_IMPORT = 1024 * 1024
 @bp.route("/import/commit", methods=["POST"])
 def import_commit():
     db = get_db()
-    parsed = importer.unstash(current_app.config["U11_DATA_DIR"], g.user["id"], request.form.get("token", ""))
+    parsed = importer.unstash(current_app.config["TEAMUDVIKLING_DATA_DIR"], g.user["id"], request.form.get("token", ""))
     if not parsed or request.form.get("confirm") != "ja":
         flash("Importen er udløbet eller ikke bekræftet. Upload filen igen.", "error")
         return redirect(url_for("admin.import_data"))

@@ -40,7 +40,7 @@ def missing():
     if not configured():
         todo.append("SMTP_HOST og SMTP_FROM")
     if not public_url():
-        todo.append("PUBLIC_URL (fx https://teamudvikling.saem.dk)")
+        todo.append("PUBLIC_URL (fx https://dit-domæne.example)")
     return " og ".join(todo)
 
 

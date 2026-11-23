@@ -3,7 +3,7 @@
 Læs denne fil først, derefter `BACKLOG.md` (hvad der skal laves) og `docs/ARCHITECTURE.md` (hvordan det hænger sammen). Funktioner: `docs/FUNKTIONER.md`; processer: `docs/SWIMLANES.md`. Opdatér dem, når du ændrer arkitektur, roller eller processer.
 
 ## Hvad er projektet?
-**Team Udvikling** (repo: u11-udvikling; navnet kan ændres under Klubprofil) er en selvhostet webapp (Flask + SQLite) til trænere på børnehold. Den erstatter en Excel-model og samler:
+**Team Udvikling** (repo: teamudvikling; navnet kan ændres under Klubprofil) er en selvhostet webapp (Flask + SQLite) til trænere på børnehold. Den erstatter en Excel-model og samler:
 - **Evaluering** af spillere på DBU's 4 roller (boldholder, medspiller, presspiller, støttespiller) × 6 nøglefærdigheder
   (teknik, bevægelse, scanning, timing, positionering, maskering) = 24 kriterier, scoret 1–5, i 4 runder, af flere trænere.
 - **Teamoversigt** (rolle-gennemsnit, samlet, enighed mellem trænere), **udvikling**, **position/bane**, **områder**, **spillerprofil** (radar).
@@ -11,13 +11,13 @@ Læs denne fil først, derefter `BACKLOG.md` (hvad der skal laves) og `docs/ARCH
 - **Udviklingsdata**: relativ alder (fødselskvartal), fremmøde, kampdeltagelse, trivsel, motorik, handleplan.
 - **Spillerrapport** (A4-print) pr. spiller. **Flere hold** med separate trænerlogins. **Login med adgangskode + TOTP-2FA.**
 
-Brugeren (træner for et U11-pigehold) driver den på en hjemmeserver via Docker/Dockhand. UI og tekster er på **dansk**.
+Brugeren (træner for et børnehold) driver den på en hjemmeserver via Docker/Dockhand. UI og tekster er på **dansk**.
 
 ## Kør og test
 ```bash
 python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt
 python3 -m pytest -q                      # alle tests skal være grønne før commit
-U11_DATA_DIR=./data flask --app wsgi run --debug   # lokal udvikling på http://127.0.0.1:5000 (første besøg: /setup)
+TEAMUDVIKLING_DATA_DIR=./data flask --app wsgi run --debug   # lokal udvikling på http://127.0.0.1:5000 (første besøg: /setup)
 docker compose up --build                 # kør som container (se README.md)
 ```
 Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdata skal være opdigtede (fx "Anna Alfa").
@@ -48,7 +48,7 @@ Der må ikke indlæses spillerdata i repoet, testene eller seed-scripts. Testdat
 - Opdatér **`CHANGELOG.md`** under `## [Unreleased]` for alt brugersynligt. Opdatér **`BACKLOG.md`** (flyt punktet til "Færdigt", tilføj nye opdagede opgaver).
 - **SemVer**: `0.x` indtil første rigtige brug i drift. Nye funktioner = minor, rettelser = patch, brud på data/URL'er = major (eller minor før 1.0).
 - Udgiv med `scripts/release.sh X.Y.Z` (kører tests, opdaterer `VERSION` + `CHANGELOG`, committer, opretter tag `vX.Y.Z`).
-  Push `main` og tags → GitHub Actions bygger og udgiver Docker-imaget til GHCR (`ghcr.io/<bruger>/u11-udvikling:X.Y.Z`).
+  Push `main` og tags → GitHub Actions bygger og udgiver Docker-imaget til GHCR (`ghcr.io/<bruger>/teamudvikling:X.Y.Z`).
 - Definition of done: tests grønne, ny adfærd testet, CHANGELOG + BACKLOG opdateret, mobilvisning tjekket, ingen spillerdata i repoet.
 
 ## Når du overtager arbejdet i en ny Claude-session

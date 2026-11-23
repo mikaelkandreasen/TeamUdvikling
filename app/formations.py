@@ -8,7 +8,7 @@ DM, CM, AM = "Defensiv midtbane", "Midtbane", "Offensiv midtbane"
 RW, LW, ST = "Højre kant", "Venstre kant", "Angreb"
 
 GAME_TYPES = {"3v3": 3, "5v5": 5, "8v8": 8, "11v11": 11}          # antal spillere på banen
-DEFAULT_TYPE = "8v8"                                                # U11 spiller typisk 8-mands
+DEFAULT_TYPE = "8v8"                                                # børnehold spiller typisk 8-mands
 
 FORMATIONS = {
     "3v3": {                                                        # ingen målmand

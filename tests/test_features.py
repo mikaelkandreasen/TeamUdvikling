@@ -136,21 +136,21 @@ def test_view_as_cannot_target_admin_or_be_started_by_trainer(app, admin):
 
 # ------------------------------------------------------------------ én træner, flere hold
 def test_trainer_on_multiple_teams_switches_and_stays_isolated(app, admin):
-    for n in ("U10", "U11", "U12"):
+    for n in ("U9", "UB", "U13"):
         make_team(admin, n)
-    for n in ("U10", "U11", "U12"):
+    for n in ("U9", "UB", "U13"):
         switch(admin, team_id(app, n)); add_player(admin, f"Spiller {n}")
-    t = make_trainer(app, admin, "tr", ["U10", "U11"])
+    t = make_trainer(app, admin, "tr", ["U9", "UB"])
     home = t.get("/?hold=1").get_data(as_text=True)
-    assert "U10" in home and "U11" in home and "U12" not in home
-    assert switch(t, team_id(app, "U11")).status_code == 302
-    assert "Spiller U11" in t.get("/players/").get_data(as_text=True)
-    assert switch(t, team_id(app, "U10")).status_code == 302
+    assert "U9" in home and "UB" in home and "U13" not in home
+    assert switch(t, team_id(app, "UB")).status_code == 302
+    assert "Spiller UB" in t.get("/players/").get_data(as_text=True)
+    assert switch(t, team_id(app, "U9")).status_code == 302
     page = t.get("/players/").get_data(as_text=True)
-    assert "Spiller U10" in page and "Spiller U11" not in page
-    assert switch(t, team_id(app, "U12")).status_code == 403
-    assert t.get(f"/profile/{player_id(app, 'Spiller U12')}").status_code == 404
+    assert "Spiller U9" in page and "Spiller UB" not in page
+    assert switch(t, team_id(app, "U13")).status_code == 403
+    assert t.get(f"/profile/{player_id(app, 'Spiller U13')}").status_code == 404
     # tildel flere hold efterfølgende
     uid = rows(app, "SELECT id FROM users WHERE username='tr'")[0]["id"]
-    admin.c.post(f"/admin/users/{uid}/teams", data={"teams": [str(team_id(app, "U12"))], "csrf_token": admin.token("/admin/users")})
-    assert switch(t, team_id(app, "U12")).status_code == 302
+    admin.c.post(f"/admin/users/{uid}/teams", data={"teams": [str(team_id(app, "U13"))], "csrf_token": admin.token("/admin/users")})
+    assert switch(t, team_id(app, "U13")).status_code == 302

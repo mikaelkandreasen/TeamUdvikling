@@ -35,7 +35,7 @@ flowchart LR
   subgraph NUC[NUC – Docker / Dockhand]
     CT[cloudflared tunnel]
     APP[Team Udvikling-container<br/>gunicorn + Flask]
-    VOL[(Volumen /data<br/>u11.db, backups/, secret_key, totp_key)]
+    VOL[(Volumen /data<br/>teamudvikling.db, backups/, secret_key, totp_key)]
   end
   SMTP[SMTP-udbyder<br/>fx Brevo]
   CAL[Kalenderfeed<br/>iCal, fx KampKlar]
@@ -63,10 +63,10 @@ flowchart TB
     SMOKE --> IMG[image: byg og udgiv]
     AUDIT --> IMG
   end
-  IMG -->|ghcr.io/…/u11-udvikling:X.Y.Z + latest| GHCR[(GHCR)]
+  IMG -->|ghcr.io/…/teamudvikling:X.Y.Z + latest| GHCR[(GHCR)]
   GHCR -->|Redeploy| DH[Dockhand på NUC]
   DH --> C[Container: read-only rod, cap_drop ALL,<br/>no-new-privileges, 512 MB, 200 pids, bruger 10001]
-  C --> V[(u11-data → /data)]
+  C --> V[(teamudvikling-data → /data)]
 ```
 
 Containerindstillinger (`compose.yaml`): skrivebeskyttet rodfilsystem, `/tmp` som tmpfs, alle Linux-capabilities fjernet,
@@ -280,13 +280,13 @@ Detaljer: [SECURITY.md](SECURITY.md).
 | `TOTP_KEY` | Krypterer 2FA-hemmeligheder | Sæt (samme indhold som `/data/totp_key`), gem uden for backup |
 | `COOKIE_SECURE` | Secure-cookie, HSTS | `1` |
 | `TRUSTED_PROXIES` | Antal proxyer foran (ægte klient-IP) | `1` (cloudflared) |
-| `PUBLIC_URL` | Links i mails | `https://teamudvikling.saem.dk` |
+| `PUBLIC_URL` | Links i mails | `https://dit-domæne.example` |
 | `SMTP_*` | Udgående mail | Efter udbyder |
 | `REMEMBER_DAYS` | «Husk enhed» | 30 (0 = fra) |
 | `SETUP_TOKEN` | Kræves for første administrator | Tom (genereres) |
 | `PWNED_CHECK` | Tjek mod lækkede adgangskoder | Valgfri |
 | `BACKUP_OFFSITE` | Fjerner påmindelse, når backup kopieres væk | `1`, når det er på plads |
-| `U11_BIND`, `U11_PORT`, `U11_IMAGE` | Port-binding og image | `127.0.0.1` hvis tunnel kører på værten; fast version |
+| `TEAMUDVIKLING_BIND`, `TEAMUDVIKLING_PORT`, `TEAMUDVIKLING_IMAGE` | Port-binding og image | `127.0.0.1` hvis tunnel kører på værten; fast version |
 
 ## 12. Kvalitet og udvikling
 

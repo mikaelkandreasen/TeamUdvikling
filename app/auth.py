@@ -467,7 +467,7 @@ def setup():
             _bind(db.execute("SELECT pw_hash FROM users WHERE id=?", (cur.lastrowid,)).fetchone()[0])
             session["stage"] = "needs_setup"
             try:
-                os.remove(os.path.join(current_app.config["U11_DATA_DIR"], "setup_token"))   # engangskode
+                os.remove(os.path.join(current_app.config["TEAMUDVIKLING_DATA_DIR"], "setup_token"))   # engangskode
             except OSError:
                 pass
             return redirect(url_for("auth.twofa_setup"))

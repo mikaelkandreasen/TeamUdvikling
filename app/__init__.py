@@ -56,16 +56,21 @@ def _setup_token(data_dir):
 
 def create_app(config=None):
     app = Flask(__name__)
-    data_dir = os.environ.get("U11_DATA_DIR", str(ROOT / "data"))
+    data_dir = os.environ.get("TEAMUDVIKLING_DATA_DIR") or os.environ.get("U11_DATA_DIR") or str(ROOT / "data")   # U11_DATA_DIR: gammelt navn
+    _legacy_db = os.path.join(data_dir, "u11.db")                          # databasen hed før u11.db: omdøb én gang, så eksisterende data findes
+    if os.path.isfile(_legacy_db) and not os.path.exists(os.path.join(data_dir, "teamudvikling.db")):
+        for _ext in ("", "-wal", "-shm"):
+            if os.path.exists(_legacy_db + _ext):
+                os.replace(_legacy_db + _ext, os.path.join(data_dir, "teamudvikling.db" + _ext))
     app.config.update(
-        U11_DATA_DIR=data_dir,
-        DATABASE=os.path.join(data_dir, "u11.db"),
+        TEAMUDVIKLING_DATA_DIR=data_dir,
+        DATABASE=os.path.join(data_dir, "teamudvikling.db"),
         BACKUP_DIR=os.path.join(data_dir, "backups"),
         SETUP_TOKEN=os.environ.get("SETUP_TOKEN", ""),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1",
-        SESSION_COOKIE_NAME="__Host-u11" if os.environ.get("COOKIE_SECURE", "0") == "1" else "session",
+        SESSION_COOKIE_NAME="__Host-teamudvikling" if os.environ.get("COOKIE_SECURE", "0") == "1" else "session",
         TRUSTED_PROXIES=int(os.environ.get("TRUSTED_PROXIES", "0") or 0),
         REMEMBER_DAYS=int(os.environ.get("REMEMBER_DAYS", "30") or 0),
         SMTP_HOST=os.environ.get("SMTP_HOST", ""),
@@ -83,19 +88,19 @@ def create_app(config=None):
     )
     if config:
         app.config.update(config)
-    os.makedirs(app.config["U11_DATA_DIR"], exist_ok=True)
+    os.makedirs(app.config["TEAMUDVIKLING_DATA_DIR"], exist_ok=True)
     # Én proces ad gangen: gunicorns workers starter samtidig og må ikke køre migrationer eller oprette nøglefiler parallelt
-    with _init_lock(app.config["U11_DATA_DIR"]):
-        app.config.setdefault("SECRET_KEY", _secret_key(app.config["U11_DATA_DIR"]))
+    with _init_lock(app.config["TEAMUDVIKLING_DATA_DIR"]):
+        app.config.setdefault("SECRET_KEY", _secret_key(app.config["TEAMUDVIKLING_DATA_DIR"]))
         if not app.config.get("SECRET_KEY"):
-            app.config["SECRET_KEY"] = _secret_key(app.config["U11_DATA_DIR"])
+            app.config["SECRET_KEY"] = _secret_key(app.config["TEAMUDVIKLING_DATA_DIR"])
         db.init_db(app.config["DATABASE"], backup_dir=app.config["BACKUP_DIR"])
         mail_queue.start_worker(app)
         if not app.config.get("TESTING"):
             from . import selfcheck
             for lvl, txt in selfcheck.run(app.config):
                 app.logger.warning("DRIFTSTJEK (%s): %s", lvl, txt)
-        app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["U11_DATA_DIR"], os.environ.get("TOTP_KEY"))
+        app.config["TOTP_KEY_BYTES"] = secrets_box.load_key(app.config["TEAMUDVIKLING_DATA_DIR"], os.environ.get("TOTP_KEY"))
         _con = db.connect(app.config["DATABASE"])
         secrets_box.encrypt_all(_con, app.config["TOTP_KEY_BYTES"])
         _con.close()
@@ -106,8 +111,8 @@ def create_app(config=None):
         no_users = con.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
         con.close()
         if no_users and not app.config.get("SETUP_TOKEN"):
-            app.config["SETUP_TOKEN"] = _setup_token(app.config["U11_DATA_DIR"])
-            app.logger.warning("FØRSTE OPSÆTNING: opsætningskoden står i %s/setup_token (og vises ikke igen).", app.config["U11_DATA_DIR"])
+            app.config["SETUP_TOKEN"] = _setup_token(app.config["TEAMUDVIKLING_DATA_DIR"])
+            app.logger.warning("FØRSTE OPSÆTNING: opsætningskoden står i %s/setup_token (og vises ikke igen).", app.config["TEAMUDVIKLING_DATA_DIR"])
 
     if app.config["SESSION_COOKIE_SECURE"] and not app.config["TRUSTED_PROXIES"]:
         app.logger.warning("COOKIE_SECURE=1 men TRUSTED_PROXIES=0: appen ser kun proxyens IP, så alle brugere deler én IP-spærre. "

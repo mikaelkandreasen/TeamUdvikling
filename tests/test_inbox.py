@@ -23,12 +23,12 @@ def test_club_message_scope_read_and_rights(world):
 
 def test_head_coach_team_message_and_email(world):
     app, admin, ca, cb, ta, tb = world
-    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa"])
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["Hold Alfa"])
     sql(app, "UPDATE users SET email='tina@example.dk' WHERE username='tina'")
     sql(app, "UPDATE users SET email='mia@example.dk' WHERE username='mia'")
     sql(app, "UPDATE users SET email='ole@example.dk' WHERE username='ole'")
     sql(app, "UPDATE users SET email='kaja@example.dk' WHERE username='kaja'")
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     uid = sql(app, "SELECT id FROM users WHERE username='tina'")[0]["id"]
     sql(app, "INSERT INTO team_heads(team_id,user_id) VALUES(?,?)", tid, uid)
     before = len(app.extensions.get("outbox", []))
@@ -93,7 +93,7 @@ def test_parent_reports_whole_team_and_motivation_history(world):
 
 def test_reply_private_and_read_stats(world):
     app, admin, ca, cb, ta, tb = world
-    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa"])
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["Hold Alfa"])
     ca.post("/inbox/send", {"to": "club", "title": "Møde", "body": "Torsdag?"}, page="/inbox/")
     page = ca.get("/inbox/").get_data(as_text=True)
     assert "Læst af 0 af 2" in page                                   # tina + mia (afsenderen tæller ikke)
@@ -174,8 +174,8 @@ def test_assistant_evaluates_but_counts_only_if_head_coach_includes(world):
     from helpers import add_player, player_id, score_all
     from app import db as appdb, model
     app, admin, ca, cb, ta, tb = world
-    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["U11 Alfa"])
-    tid = team_id(app, "U11 Alfa")
+    mia = make_user(app, admin, "mia", "trainer", "Alfa Klub", ["Hold Alfa"])
+    tid = team_id(app, "Hold Alfa")
     add_player(mia, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
     sql(app, "UPDATE users SET readonly=1 WHERE username='tina'")                     # tina er assistent
@@ -203,7 +203,7 @@ ICS = """BEGIN:VCALENDAR\r
 BEGIN:VEVENT\r
 UID:a1@x\r
 DTSTART:{d1}T080000Z\r
-SUMMARY:U11 Piger: Alfa IF - Beta\\, BK\r
+SUMMARY:Pigehold: Alfa IF - Beta\\, BK\r
 LOCATION:Bane 3\\, Beta\r
 END:VEVENT\r
 BEGIN:VEVENT\r
@@ -229,7 +229,7 @@ END:VCALENDAR\r
 
 def test_guess_opponent():
     from app.matches import guess_opponent
-    assert guess_opponent("U11 Piger: Alfa IF - Beta, BK", ["U11 Alfa", "Alfa IF", "Alfa"]) == ("Beta, BK", True)
+    assert guess_opponent("Pigehold: Alfa IF - Beta, BK", ["Hold Alfa", "Alfa IF", "Alfa"]) == ("Beta, BK", True)
     assert guess_opponent("Gamma vs Alfa IF", ["Alfa"]) == ("Gamma", True)
     assert guess_opponent("Træning", ["Alfa"]) == ("Træning", False)
 
@@ -241,7 +241,7 @@ def test_match_suggestions_import_no_duplicates(world, monkeypatch):
     d1 = (datetime.date.today() + datetime.timedelta(days=20)).strftime("%Y%m%d")
     d2 = (datetime.date.today() + datetime.timedelta(days=21)).strftime("%Y%m%d")
     monkeypatch.setattr(ical, "fetch", lambda url: ICS.format(d1=d1, d2=d2))
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     assert ta.get("/kampe/forslag").status_code == 302                                       # intet link endnu
     sql(app, "INSERT INTO settings(key,value) VALUES(?,?)", f"t{tid}:ical_url", "https://x.example/a.ics")
     page = ta.get("/kampe/forslag").get_data(as_text=True)
@@ -277,7 +277,7 @@ def test_suggest_algorithm_prioritises_white_spots_and_balances_time():
 
 def test_suggest_route_does_not_save_until_gem(world):
     app, admin, ca, cb, ta, tb = world
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     for n in ("Anna", "Bo", "Cille", "Dina", "Ella", "Fie", "Gry", "Hanne"):
         sql(app, "INSERT INTO players(team_id,name,active) VALUES(?,?,1)", tid, n)
     ta.post("/kampe/ny", {"day": "2030-05-01", "opponent": "X"}, page="/kampe/")
@@ -309,7 +309,7 @@ def test_match_attendance_link_and_ical_changes(world, monkeypatch):
     for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"):
         add_player(ta, n)
     a, b, c = (player_id(app, n) for n in ("Anna Alfa", "Bo Beta", "Cille Gamma"))
-    tid = team_id(app, "U11 Alfa")
+    tid = team_id(app, "Hold Alfa")
     ta.post("/kampe/ny", {"day": "2026-11-01", "opponent": "Rivalerne", "game_type": "8v8", "formation": "3-3-1", "periods": "2", "period_min": "10"}, page="/kampe/")
     mid = sql(app, "SELECT id FROM matches")[0]["id"]
     ta.post(f"/kampe/{mid}", {"p0s0": a, "p0s7": b, "p1s0": b, "p1s7": a}, page=f"/kampe/{mid}")

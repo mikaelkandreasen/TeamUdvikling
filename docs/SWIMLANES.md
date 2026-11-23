@@ -362,7 +362,7 @@ sequenceDiagram
   OP->>GH: git push && git push --tags (GitHub Desktop)
   GH->>CI: test · audit (pip-audit) · smoke (image som i drift) · bandit
   alt alt grønt
-    CI->>REG: Udgiv u11-udvikling:X.Y.Z og :latest
+    CI->>REG: Udgiv teamudvikling:X.Y.Z og :latest
   else fejl
     CI-->>OP: Rød build – intet image
   end

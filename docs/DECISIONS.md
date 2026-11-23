@@ -157,3 +157,8 @@ Kontekst: trænere skal kunne få nulstillet adgangskode/2FA uden at admin læse
 **Kontekst:** Sætninger med variable og links midt i kan ikke oversættes stykkevis, fordi ordstillingen er forskellig.
 **Valg:** `gettext(tekst, **værdier)` slår hele den danske sætning op og indsætter `{pladsholdere}` bagefter; HTML-værdier (Markup) flettes uden dobbelt-escaping. Python-beskeder slås op ved visning i `base.html`. Test sikrer, at alle sprog har samme pladsholdere som dansk.
 **Konsekvens:** Nye tekster skal tilføjes i `i18n_more.py`; uoversat tekst vises på dansk.
+
+## D-036 · Ét navn: TeamUdvikling (2026-11-23)
+**Kontekst:** Navnet «u11» (alder) stod i image, volumen, filer og eksempler, og et konkret domæne stod i dokumentationen.
+**Valg:** Alt omdøbt til TeamUdvikling; eksempler bruger `dit-domæne.example`. Appen omdøber selv gammel `u11.db`, læser `U11_DATA_DIR` som reserve og tæller `u11-`-backups med.
+**Konsekvens:** Docker-volumen kan ikke omdøbes automatisk – data skal kopieres én gang til `teamudvikling-data`.

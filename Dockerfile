@@ -1,13 +1,13 @@
 FROM python:3.13-slim
 
 ARG VERSION=dev
-LABEL org.opencontainers.image.title="U11 Udvikling" \
+LABEL org.opencontainers.image.title="Team Udvikling" \
       org.opencontainers.image.description="Spillerudvikling for børnehold (DBU-roller x nøglefærdigheder)" \
       org.opencontainers.image.version="${VERSION}"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    U11_DATA_DIR=/data
+    TEAMUDVIKLING_DATA_DIR=/data
 
 WORKDIR /app
 RUN useradd --system --uid 10001 --create-home app && mkdir /data && chown app:app /data

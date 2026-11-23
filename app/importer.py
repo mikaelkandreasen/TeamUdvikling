@@ -249,7 +249,7 @@ def template_csv():
     out = io.StringIO()
     w = csv.writer(out, delimiter=";")
     w.writerow(COLUMNS)
-    w.writerow(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
+    w.writerow(["Pigehold", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
     return ("﻿" + out.getvalue()).encode("utf8")
 
 
@@ -259,7 +259,7 @@ def template_xlsx():
     ws = wb.active
     ws.title = "Spillere"
     ws.append(COLUMNS)
-    ws.append(["U11 piger", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
+    ws.append(["Pigehold", "2026/27", "Anna Alfa", "2016-03-10", "7", "Midtbane", "Angreb", "Højre kant", "", "Højre", "2026-08-01", "Scanning", "Timing", "", "ja"])
     info = wb.create_sheet("Vejledning")
     for line in ("Kolonnen Navn er påkrævet. Hold er valgfri (uden Hold bruges det aktive hold; nye hold oprettes).",
                  "Datoer: ÅÅÅÅ-MM-DD eller DD-MM-ÅÅÅÅ.", "Position, Sekundær position, Position 3, Position 4 (op til 4 valg): " + ", ".join(model.POSITIONS), "Fod: " + ", ".join(model.FEET),

@@ -24,14 +24,14 @@ def test_secret_is_encrypted_in_database_but_login_works(app, admin):
 def test_plaintext_secrets_are_encrypted_on_startup(app, admin, tmp_path):
     raw(app, "UPDATE users SET totp_secret=? WHERE username='admin'", admin.secret)       # simulér ældre klartekst
     assert not raw(app, "SELECT totp_secret FROM users")[0]["totp_secret"].startswith("enc1:")
-    app2 = create_app({"DATABASE": app.config["DATABASE"], "U11_DATA_DIR": app.config["U11_DATA_DIR"], "TESTING": True, "SECRET_KEY": "x" * 32})
+    app2 = create_app({"DATABASE": app.config["DATABASE"], "TEAMUDVIKLING_DATA_DIR": app.config["TEAMUDVIKLING_DATA_DIR"], "TESTING": True, "SECRET_KEY": "x" * 32})
     assert raw(app2, "SELECT totp_secret FROM users WHERE username='admin'")[0]["totp_secret"].startswith("enc1:")
     c = Client(app2)
     assert c.login("admin", PW, secret=admin.secret).status_code in (200, 302)
 
 
 def test_wrong_key_rejects_2fa_instead_of_crashing(app, admin):
-    key = secrets_box.load_key(app.config["U11_DATA_DIR"])
+    key = secrets_box.load_key(app.config["TEAMUDVIKLING_DATA_DIR"])
     other = secrets_box.Fernet.generate_key()
     token = secrets_box.encrypt(key, "ABCDEF")
     assert secrets_box.decrypt(other, token) is None and secrets_box.decrypt(key, token) == "ABCDEF"

@@ -44,7 +44,7 @@ def test_weak_password_rejected(app):
 
 
 def test_setup_token_enforced(tmp_path, monkeypatch):
-    monkeypatch.setenv("U11_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("TEAMUDVIKLING_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("SETUP_TOKEN", "hemmelig")
     from app import create_app
     c = Client(create_app({"TESTING": True}))

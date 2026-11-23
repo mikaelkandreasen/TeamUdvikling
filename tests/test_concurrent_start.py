@@ -5,7 +5,7 @@ import os
 
 def _boot(data_dir, q):
     try:
-        os.environ["U11_DATA_DIR"] = data_dir
+        os.environ["TEAMUDVIKLING_DATA_DIR"] = data_dir
         os.environ.pop("SECRET_KEY", None)
         os.environ.pop("TOTP_KEY", None)
         from app import create_app
@@ -29,6 +29,6 @@ def test_parallel_workers_start_on_fresh_and_on_migrating_database(tmp_path):
         assert len({r[1] for r in res}) == 1 and len({r[2] for r in res}) == 1 and len({r[3] for r in res}) == 1, round_
         if round_ == "frisk":                     # simulér en opdatering med ventende migrationer
             import sqlite3
-            con = sqlite3.connect(tmp_path / "u11.db")
+            con = sqlite3.connect(tmp_path / "teamudvikling.db")
             con.execute("DELETE FROM schema_migrations WHERE id IN ('012_kamp_ical_uid','013_team_kriterier','014_bruger_sprog')")
             con.commit(); con.close()

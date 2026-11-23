@@ -15,14 +15,14 @@ BASE = "https://t.example"
 
 @pytest.fixture
 def mailapp(app):
-    app.config.update(MAIL_BACKEND="memory", PUBLIC_URL=BASE, SMTP_FROM="u11@t.example")
+    app.config.update(MAIL_BACKEND="memory", PUBLIC_URL=BASE, SMTP_FROM="noreply@t.example")
     return app
 
 
 @pytest.fixture
 def setup(mailapp, admin):
-    make_team(admin, "U11 Alfa")
-    tr = make_trainer(mailapp, admin, "anna", ["U11 Alfa"], email="Anna@Example.DK")
+    make_team(admin, "Hold Alfa")
+    tr = make_trainer(mailapp, admin, "anna", ["Hold Alfa"], email="Anna@Example.DK")
     return mailapp, admin, tr
 
 
@@ -229,8 +229,8 @@ def test_changing_email_or_password_kills_pending_links(setup):
 
 
 def test_not_configured_or_no_email(app, admin):
-    make_team(admin, "U11 Alfa")
-    make_trainer(app, admin, "bo", ["U11 Alfa"])                     # ingen e-mail, og mail er ikke sat op
+    make_team(admin, "Hold Alfa")
+    make_trainer(app, admin, "bo", ["Hold Alfa"])                     # ingen e-mail, og mail er ikke sat op
     r = admin.get("/admin/users")
     assert "Send nulstilling på e-mail" not in r.get_data(as_text=True)
     app.config.update(MAIL_BACKEND="memory", PUBLIC_URL=BASE)
@@ -312,7 +312,7 @@ def test_smtp_send_uses_starttls_and_login(app, monkeypatch):
 
     import smtplib
     monkeypatch.setattr(smtplib, "SMTP", FakeSMTP)
-    app.config.update(SMTP_HOST="smtp.t.example", SMTP_PORT="2525", SMTP_USER="u", SMTP_PASSWORD="p", SMTP_FROM="u11@t.example")
+    app.config.update(SMTP_HOST="smtp.t.example", SMTP_PORT="2525", SMTP_USER="u", SMTP_PASSWORD="p", SMTP_FROM="noreply@t.example")
     from app import mailer
     with app.app_context():
         mailer.send("a@b.dk", "Emne", "Tekst")

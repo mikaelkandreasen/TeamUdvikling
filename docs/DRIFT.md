@@ -4,10 +4,10 @@
 CI (`.github/workflows/ci.yml`) kører tests, en **røgtest af Docker-imaget** (startes ikke-root, `cap_drop ALL`, skrivebeskyttet rod; `/healthz` og `/setup` skal svare) og udgiver derefter imaget.
 1. Push `main` og tags: `git push && git push --tags`.
 2. GitHub → fanen **Actions** → kør `ci` for tagget. Alle jobs skal være grønne (`security` må give advarsler).
-3. GitHub → din profil → **Packages** → `u11-udvikling`: der skal ligge tags `0.10.1`, `0.10`, `latest`. Første gang: *Package settings → Change visibility → Public* (eller giv Dockhand et token med `read:packages`).
+3. GitHub → din profil → **Packages** → `teamudvikling`: der skal ligge tags `0.10.1`, `0.10`, `latest`. Første gang: *Package settings → Change visibility → Public* (eller giv Dockhand et token med `read:packages`).
 4. Dockhand → stacken → **Redeploy** (hent nyeste image). Tjek versionsnummeret nederst på siden.
-5. Fast version i stedet for `latest`: sæt `U11_IMAGE=ghcr.io/mikaelkandreasen/u11-udvikling:0.10.1` i stacken.
-Rulle tilbage: sæt `U11_IMAGE` til forrige version og Redeploy (databasen opgraderes kun fremad – gendan først en backup fra før opgraderingen, se `docs/BACKUP.md`).
+5. Fast version i stedet for `latest`: sæt `TEAMUDVIKLING_IMAGE=ghcr.io/mikaelkandreasen/teamudvikling:0.10.1` i stacken.
+Rulle tilbage: sæt `TEAMUDVIKLING_IMAGE` til forrige version og Redeploy (databasen opgraderes kun fremad – gendan først en backup fra før opgraderingen, se `docs/BACKUP.md`).
 
 ## 2. Første gennemløb med trænere (B-003)
 Mål: ét hold, to trænere, én runde – og en liste over friktion.
@@ -27,12 +27,21 @@ Scan kun dit eget system, og helst uden for træningstid. Cloudflare-reglen (`/l
 ```bash
 # OWASP ZAP baseline (passiv; sikker at køre mod produktion)
 docker run --rm -t -v "$PWD":/zap/wrk ghcr.io/zaproxy/zaproxy:stable \
-  zap-baseline.py -t https://teamudvikling.saem.dk -r zap-rapport.html
+  zap-baseline.py -t https://dit-domæne.example -r zap-rapport.html
 
 # nuclei (kendte svagheder og fejlkonfigurationer)
-docker run --rm projectdiscovery/nuclei -u https://teamudvikling.saem.dk -severity medium,high,critical
+docker run --rm projectdiscovery/nuclei -u https://dit-domæne.example -severity medium,high,critical
 
 # Sikkerhedsheadere og TLS
-curl -sI https://teamudvikling.saem.dk | grep -iE 'strict-transport|content-security|x-frame|referrer|permissions'
+curl -sI https://dit-domæne.example | grep -iE 'strict-transport|content-security|x-frame|referrer|permissions'
 ```
 Forventet: HSTS, CSP uden `unsafe-inline` for scripts, ingen åbne mapper, alt bag login svarer med omdirigering. Gem rapporten uden for repoet, læs advarslerne, og opret et backlog-punkt for hver reel fund.
+
+
+## Omdøbning til TeamUdvikling (engangs, fra v0.35.1)
+Volumen og image har fået nyt navn. Gør dette **før** Redeploy, så databasen ikke starter tom:
+1. Stop stacken i Dockhand.
+2. Find den gamle volumen: `docker volume ls | grep u11-data` (navnet kan have et stack-præfiks).
+3. Kopiér: `docker volume create teamudvikling-data && docker run --rm -v <gammel-volumen>:/fra -v teamudvikling-data:/til alpine sh -c "cp -a /fra/. /til/"`
+4. Redeploy. Appen omdøber selv `u11.db` til `teamudvikling.db`. Slet den gamle volumen, når alt virker.
+5. Har du sat `U11_IMAGE`, `U11_PORT` eller `U11_BIND` i stacken, så omdøb dem til `TEAMUDVIKLING_IMAGE`, `TEAMUDVIKLING_PORT` og `TEAMUDVIKLING_BIND`. Image-pakken på GHCR hedder nu `teamudvikling` og skal gøres offentlig første gang.

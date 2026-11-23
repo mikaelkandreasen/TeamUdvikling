@@ -29,7 +29,7 @@ Modstod angrebet: falsk `X-Forwarded-For` (appen bruger kun det sidste led, som 
 Vurderet og ikke indført: `ALLOWED_HOSTS`/origin-hemmelighed (tunnelen gør originen utilgængelig fra internettet; links i mails bruger `PUBLIC_URL`); tjek mod lækkede adgangskoder (kræver ekstern tjeneste).
 
 ### Cloudflare-indstillinger (gør dette)
-1. **Ingen Access-login** på `teamudvikling.saem.dk` (appen har egen adgangskode + 2FA), men behold resten af beskyttelsen.
+1. **Ingen Access-login** på din adresse (appen har egen adgangskode + 2FA), men behold resten af beskyttelsen.
 2. **Rate limiting-regel:** sti `/login` og `/nulstil`, maks. 10 forespørgsler/minut pr. IP, handling Block. (Appen har egen spærre, men Cloudflare stopper trafikken, før den rammer din NUC.)
 3. **Bot Fight Mode** til. **Always Use HTTPS** til. Minimum TLS 1.2.
 4. **Slå fra:** Rocket Loader, Email Address Obfuscation og Web Analytics-injektion. De indsætter scripts i siden, som appens CSP (`script-src 'self'`) blokerer, og det giver fejl.
@@ -69,12 +69,12 @@ Restrisiko: mailen sendes via den SMTP-udbyder, du vælger (databehandler). Brug
 - Sessioner er signerede cookies (ikke server-side); idle-timeout 45 min, maks. 8 timer.
 
 ## Internet-checkliste (skal være opfyldt, før porten åbnes)
-1. Kør **kun** bag HTTPS-reverse proxy (Caddy / Nginx Proxy Manager / Traefik). Åbn ikke port 1020 direkte mod internettet; sæt `U11_BIND=127.0.0.1` hvis proxyen er på samme maskine.
+1. Kør **kun** bag HTTPS-reverse proxy (Caddy / Nginx Proxy Manager / Traefik). Åbn ikke port 1020 direkte mod internettet; sæt `TEAMUDVIKLING_BIND=127.0.0.1` hvis proxyen er på samme maskine.
 2. `COOKIE_SECURE=1`, `TRUSTED_PROXIES=1`, fast `SECRET_KEY` (32+ tilfældige bytes).
 3. Proxyen skal sætte `X-Forwarded-For` og `X-Forwarded-Proto` og fjerne tilsvarende headers fra klienten.
 4. Brug en dedikeret firewallregel (kun 443 udad). Overvej IP-begrænsning/VPN (fx Tailscale/Cloudflare Access), da dataene er børns oplysninger – det er den stærkeste beskyttelse.
 5. Opret administrator med det samme efter første start (opsætningskoden står i loggen), og sæt 2FA op.
-6. Tag backup af volumen `u11-data` krypteret, og test gendannelse (B-004).
+6. Tag backup af volumen `teamudvikling-data` krypteret, og test gendannelse (B-004).
 7. Hold afhængigheder opdateret (Dependabot) og redeploy ved sikkerhedsopdateringer.
 
 ## Chef-trænere og invitationer (v0.10.0)

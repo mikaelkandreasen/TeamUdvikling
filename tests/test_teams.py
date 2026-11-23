@@ -6,17 +6,17 @@ from helpers import add_player, make_team, make_trainer, player_id, score_all, s
 
 @pytest.fixture
 def two_teams(app, admin):
-    make_team(admin, "U11 piger")
+    make_team(admin, "Pigehold")
     make_team(admin, "U13 drenge")
     return admin
 
 
 def test_trainer_only_sees_assigned_team(app, two_teams):
     admin = two_teams
-    add_player(admin, "Anna Alfa")                      # admin starter på første hold alfabetisk: "U11 piger"
+    add_player(admin, "Anna Alfa")                      # admin starter på første hold alfabetisk: "Pigehold"
     switch(admin, team_id(app, "U13 drenge"))
     add_player(admin, "Bo Bravo")
-    t = make_trainer(app, admin, "trainer11", ["U11 piger"])
+    t = make_trainer(app, admin, "trainer11", ["Pigehold"])
     html = t.get("/players/").get_data(as_text=True)
     assert "Anna Alfa" in html and "Bo Bravo" not in html
     # direkte adgang til den andres spiller giver 404
@@ -31,9 +31,9 @@ def test_trainer_only_sees_assigned_team(app, two_teams):
 
 
 def test_trainer_cannot_switch_to_unassigned_team(app, two_teams):
-    t = make_trainer(app, two_teams, "trainer11", ["U11 piger"])
+    t = make_trainer(app, two_teams, "trainer11", ["Pigehold"])
     assert switch(t, team_id(app, "U13 drenge")).status_code == 403
-    assert "U11 piger" in t.get("/players/").get_data(as_text=True)
+    assert "Pigehold" in t.get("/players/").get_data(as_text=True)
 
 
 def test_trainer_with_two_teams_can_switch(app, two_teams):
@@ -41,7 +41,7 @@ def test_trainer_with_two_teams_can_switch(app, two_teams):
     add_player(admin, "Anna Alfa")
     switch(admin, team_id(app, "U13 drenge"))
     add_player(admin, "Bo Bravo")
-    t = make_trainer(app, admin, "begge", ["U11 piger", "U13 drenge"])
+    t = make_trainer(app, admin, "begge", ["Pigehold", "U13 drenge"])
     assert "Anna Alfa" in t.get("/players/").get_data(as_text=True)
     assert switch(t, team_id(app, "U13 drenge")).status_code == 302
     html = t.get("/players/").get_data(as_text=True)
@@ -49,7 +49,7 @@ def test_trainer_with_two_teams_can_switch(app, two_teams):
 
 
 def test_trainer_has_no_admin_access(app, two_teams):
-    t = make_trainer(app, two_teams, "trainer11", ["U11 piger"])
+    t = make_trainer(app, two_teams, "trainer11", ["Pigehold"])
     for path in ("/admin/", "/admin/users", "/admin/teams", "/admin/export.xlsx", "/admin/audit"):
         assert t.get(path).status_code == 403, path
     assert t.post("/admin/teams", {"name": "Hack"}, page="/").status_code == 403
@@ -69,7 +69,7 @@ def test_settings_and_questions_are_per_team(app, two_teams):
     form = {f"q_{i}": "" for i in range(22)}
     form.update({"title_0": "Drenge-titel", "q_0": "Kun for drenge", "title_1": "B", "title_2": "C"})
     admin.post("/motivation/questions", form, page="/motivation/questions")
-    switch(admin, team_id(app, "U11 piger"))
+    switch(admin, team_id(app, "Pigehold"))
     html = admin.get("/motivation/questions").get_data(as_text=True)
     assert "Hvorfor går jeg til fodbold?" in html and "Kun for drenge" not in html
 
@@ -79,10 +79,10 @@ def test_delete_team_removes_all_its_data(app, two_teams):
     add_player(admin, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
     score_all(admin, 1, pid, 4)
-    tid = team_id(app, "U11 piger")
+    tid = team_id(app, "Pigehold")
     r = admin.post(f"/admin/teams/{tid}/delete", {"confirm": "forkert"}, page="/admin/teams")
     assert "bekræft" in admin.get("/admin/teams").get_data(as_text=True) or r.status_code == 302
-    admin.post(f"/admin/teams/{tid}/delete", {"confirm": "U11 piger"}, page="/admin/teams")
+    admin.post(f"/admin/teams/{tid}/delete", {"confirm": "Pigehold"}, page="/admin/teams")
     from app import db
     con = db.connect(app.config["DATABASE"])
     assert con.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 0
@@ -94,8 +94,8 @@ def test_two_trainers_scores_are_averaged_per_team(app, two_teams):
     admin = two_teams
     add_player(admin, "Anna Alfa")
     pid = player_id(app, "Anna Alfa")
-    t1 = make_trainer(app, admin, "t1", ["U11 piger"])
-    t2 = make_trainer(app, admin, "t2", ["U11 piger"])
+    t1 = make_trainer(app, admin, "t1", ["Pigehold"])
+    t2 = make_trainer(app, admin, "t2", ["Pigehold"])
     score_all(t1, 1, pid, 2)
     score_all(t2, 1, pid, 5)
     html = t1.get("/overview/1").get_data(as_text=True)
@@ -117,7 +117,7 @@ def test_lineups_and_photos_are_isolated_between_teams(app, two_teams):
                                               "photo": (io.BytesIO(buf.getvalue()), "x.jpg")}, content_type="multipart/form-data")
     r = admin.post("/lineup/new", {"game_type": "3v3", "formation": "1-2", "name": "Hemmeligt"}, page="/lineup/")
     lid = int(r.headers["Location"].rsplit("/", 1)[1])
-    t = make_trainer(app, admin, "trainer11", ["U11 piger"])
+    t = make_trainer(app, admin, "trainer11", ["Pigehold"])
     assert t.get(f"/players/{bo}/photo.jpg").status_code == 404
     assert t.get(f"/players/{bo}/photo.jpg?s=full").status_code == 404
     assert t.get(f"/lineup/{lid}").status_code == 404

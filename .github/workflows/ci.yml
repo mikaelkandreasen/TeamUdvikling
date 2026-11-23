@@ -54,22 +54,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t u11-smoke --build-arg VERSION="$(cat VERSION)" .
+      - run: docker build -t teamudvikling-smoke --build-arg VERSION="$(cat VERSION)" .
       - name: Start og kontrollér
         run: |
-          docker volume create u11-smoke-data
-          docker run -d --name u11-smoke -p 8000:8000 --cap-drop ALL --read-only --tmpfs /tmp \
-            -v u11-smoke-data:/data -e U11_DATA_DIR=/data u11-smoke
+          docker volume create teamudvikling-smoke-data
+          docker run -d --name teamudvikling-smoke -p 8000:8000 --cap-drop ALL --read-only --tmpfs /tmp \
+            -v teamudvikling-smoke-data:/data -e TEAMUDVIKLING_DATA_DIR=/data teamudvikling-smoke
           for i in $(seq 1 30); do curl -fs http://127.0.0.1:8000/healthz && break; sleep 2; done
           curl -fs http://127.0.0.1:8000/healthz
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/setup); test "$code" = "200"
-          test "$(docker exec u11-smoke id -u)" != "0"
-          docker exec u11-smoke python -c "import PIL, qrcode; print('pakker ok')"
+          test "$(docker exec teamudvikling-smoke id -u)" != "0"
+          docker exec teamudvikling-smoke python -c "import PIL, qrcode; print('pakker ok')"
           curl -s -o /dev/null http://127.0.0.1:8000/nulstil/HEMMELIGTTOKEN123 || true
           sleep 1
-          ! docker logs u11-smoke 2>&1 | grep -q HEMMELIGTTOKEN123      # engangstokens må ikke stå i adgangsloggen
+          ! docker logs teamudvikling-smoke 2>&1 | grep -q HEMMELIGTTOKEN123      # engangstokens må ikke stå i adgangsloggen
       - if: failure()
-        run: docker logs u11-smoke || true
+        run: docker logs teamudvikling-smoke || true
 
   image:
     needs: [test, smoke, audit]
@@ -89,7 +89,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/u11-udvikling
+          images: ghcr.io/${{ github.repository_owner }}/teamudvikling
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

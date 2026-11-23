@@ -3,7 +3,7 @@
 <h1>{{ _("Hold") }}</h1>
 <form method="post" class="card">{{ csrf() }}<h2>{{ _("Opret hold") }}</h2>
   {% if clubs|length > 1 %}<label for="cb">{{ _("Klub") }}</label><select id="cb" name="club">{% for k in clubs %}<option value="{{ k['id'] }}">{{ k['name'] or '(uden navn)' }}</option>{% endfor %}</select>{% endif %}
-  <div class="row"><div><label for="n">{{ _("Holdnavn") }}</label><input id="n" type="text" name="name" placeholder="{{ _("fx U11 piger") }}" required maxlength="80"></div>
+  <div class="row"><div><label for="n">{{ _("Holdnavn") }}</label><input id="n" type="text" name="name" placeholder="{{ _("fx Pigehold") }}" required maxlength="80"></div>
   <div><label for="s">{{ _("Sæson (valgfri)") }}</label><input id="s" type="text" name="season" placeholder="2026/27" maxlength="20"></div></div>
   <div class="actions"><button class="btn">{{ _("Opret") }}</button></div></form>
 {% for t in teams %}

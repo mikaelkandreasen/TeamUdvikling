@@ -1,11 +1,11 @@
 # Stack til Dockhand / docker compose. Henter det færdigbyggede image fra GitHub (bygges automatisk af GitHub Actions).
 # Lokal bygning (uden Dockhand): docker compose -f compose.yaml -f compose.build.yaml up --build
 # Variabler sættes i Dockhand (eller i .env ved lokal brug – se .env.example). Alle har fornuftige standardværdier.
-# Appen kører på port 1020 på serveren (U11_PORT).
+# Appen kører på port 1020 på serveren (TEAMUDVIKLING_PORT).
 services:
-  u11:
-    image: ${U11_IMAGE:-ghcr.io/mikaelkandreasen/u11-udvikling:latest}   # fast version: U11_IMAGE=ghcr.io/mikaelkandreasen/u11-udvikling:0.2.3
-    container_name: u11-udvikling
+  teamudvikling:
+    image: ${TEAMUDVIKLING_IMAGE:-ghcr.io/mikaelkandreasen/teamudvikling:latest}   # fast version: TEAMUDVIKLING_IMAGE=ghcr.io/mikaelkandreasen/teamudvikling:0.2.3
+    container_name: teamudvikling
     restart: unless-stopped
     environment:
       TZ: Europe/Copenhagen
@@ -21,7 +21,7 @@ services:
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-0}
       # Dage en enhed kan huskes uden kode/2FA (0 = slået fra).
       REMEMBER_DAYS: ${REMEMBER_DAYS:-30}
-      # E-mail til nulstilling af adgangskode/2FA (valgfrit). PUBLIC_URL = adressen brugerne bruger, fx https://teamudvikling.saem.dk
+      # E-mail til nulstilling af adgangskode/2FA (valgfrit). PUBLIC_URL = adressen brugerne bruger, fx https://dit-domæne.example
       PUBLIC_URL: ${PUBLIC_URL:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -37,9 +37,9 @@ services:
       # 1 når backupperne kopieres krypteret til et andet sted (fjerner påmindelsen i Administration).
       BACKUP_OFFSITE: ${BACKUP_OFFSITE:-0}
     volumes:
-      - u11-data:/data          # database + automatiske backups (/data/backups)
+      - teamudvikling-data:/data          # database + automatiske backups (/data/backups)
     ports:
-      - "${U11_BIND:-0.0.0.0}:${U11_PORT:-1020}:8000"   # U11_BIND=127.0.0.1 hvis reverse proxy kører på samme maskine
+      - "${TEAMUDVIKLING_BIND:-0.0.0.0}:${TEAMUDVIKLING_PORT:-1020}:8000"   # TEAMUDVIKLING_BIND=127.0.0.1 hvis reverse proxy kører på samme maskine
     read_only: true
     tmpfs:
       - /tmp
@@ -50,4 +50,4 @@ services:
     mem_limit: 512m
 
 volumes:
-  u11-data:
+  teamudvikling-data:
