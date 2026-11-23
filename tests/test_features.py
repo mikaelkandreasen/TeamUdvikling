@@ -154,3 +154,19 @@ def test_trainer_on_multiple_teams_switches_and_stays_isolated(app, admin):
     uid = rows(app, "SELECT id FROM users WHERE username='tr'")[0]["id"]
     admin.c.post(f"/admin/users/{uid}/teams", data={"teams": [str(team_id(app, "U13"))], "csrf_token": admin.token("/admin/users")})
     assert switch(t, team_id(app, "U13")).status_code == 302
+
+
+def test_pitch_players_never_overlap():
+    """Position og bane: «Kant»-spillere lægges ikke oven på venstre/højre kant, og ingen spillere overlapper."""
+    import re
+    from app import charts
+    mk = lambda n, pos: {"name": n + " A", "position": pos, "value": 2.0}
+    players = [mk("Annabell", "Venstre kant"), mk("Isabell", "Kant"), mk("Ellen", "Højre kant"), mk("Mia", "Kant"),
+               mk("A1", "Midtbane"), mk("A2", "Midtbane"), mk("A3", "Midtbane"), mk("A4", "Midtbane"), mk("A5", "Midtbane"), mk("Fie", "Offensiv midtbane"),
+               mk("B1", "Forsvar"), mk("B2", "Forsvar"), mk("B3", "Forsvar"), mk("B4", "Forsvar")]
+    svg = charts.pitch(players)
+    pts = [(float(x), float(y)) for x, y in re.findall(r'<circle cx="([\d.]+)" cy="([\d.]+)" r="15"', svg)]
+    assert len(pts) == len(players)
+    for i, a in enumerate(pts):
+        for b in pts[i + 1:]:
+            assert abs(a[0] - b[0]) >= 58 or abs(a[1] - b[1]) >= 46, (a, b)

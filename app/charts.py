@@ -151,24 +151,42 @@ def pitch(players, label="Bane"):
     cells = {}
     for p in players:
         y, lane = _POS_XY.get(p["position"], _POS_XY["Allround"])
-        cells.setdefault((y, lane), []).append(p)
+        if lane != "B":
+            cells.setdefault((y, lane), []).append(p)
+    for p in players:                                               # «Kant» (begge sider): fordeles på den side, der har færrest på samme række,
+        y, lane = _POS_XY.get(p["position"], _POS_XY["Allround"])   # så de ikke lægges oven på spillere, der allerede står på venstre/højre kant
+        if lane == "B":
+            side = "L" if len(cells.get((y, "L"), [])) <= len(cells.get((y, "R"), [])) else "R"
+            cells.setdefault((y, side), []).append(p)
+    spots = []
     for (y, lane), plist in cells.items():
-        if lane == "B":                                             # «Kant»: begge sider – skiftevis venstre og højre
-            for side, items in (("L", plist[0::2]), ("R", plist[1::2])):
-                _row(out, items, y, h, *_LANE[side])
-        else:
-            _row(out, plist, y, h, *_LANE[lane], wide=len(plist) > 3)
+        spots += _row(plist, y, h, *_LANE[lane], wide=len(plist) > 3)
+    for x, yy, p in _unstack(spots, h):
+        _dot(out, x, yy, p)
     return _svg(w, h, "".join(out), label)
 
 
-def _row(out, items, y, h, lo, hi, wide=False):
+def _row(items, y, h, lo, hi, wide=False):
+    """Returnerer [(x, y, spiller)] for en række spillere (jævnt fordelt i banen lo–hi)."""
     if not items:
-        return
+        return []
     if wide:
         lo, hi = 40, 360
     xs = _spread(len(items), lo, hi)
-    for i, (x, p) in enumerate(zip(xs, items)):
-        _dot(out, x, h * y / 100 + (14 if wide and i % 2 else 0), p)
+    return [(x, h * y / 100 + (14 if wide and i % 2 else 0), p) for i, (x, p) in enumerate(zip(xs, items))]
+
+
+def _unstack(spots, h, dx=58, dy=46):
+    """Sikrer, at ingen spillere ligger oven på hinanden (cirkel + navn): overlappende flyttes lodret, til der er plads."""
+    placed = []
+    for x, y, p in spots:
+        for _ in range(8):
+            hit = next((q for q in placed if abs(q[0] - x) < dx and abs(q[1] - y) < dy), None)
+            if not hit:
+                break
+            y = y + dy if y + dy < h - 40 else y - dy
+        placed.append((x, y, p))
+    return placed
 
 
 def formation_pitch(game_type, placed, label="Opstilling"):

@@ -4,7 +4,7 @@ Prioriteret liste. Øverst = næste. Format: `ID · titel · størrelse (S/M/L) 
 Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye opdagelser nederst i "Idéer".
 
 ## Næste (P0 – før første rigtige brug)
-- **B-004 · Backup-restore afprøvet** · S – `scripts/restore.sh` testet mod en rigtig backup; beskrivelse af off-site kopi (fx rsync/rclone af volumen). *Status: Backup kontrolleres automatisk; scripts/restore.sh + verify-backup.py; docs/BACKUP.md (off-site med rclone/rsync).*
+(ingen åbne)
 
 ## Senere (P1)
 - ~~B-014 · Trivsel og motivation over tid~~ (færdig i v0.22.0) – · M – flere målinger (datoer) i stedet for én værdi; linjediagram i rapporten.
@@ -25,6 +25,8 @@ Opdatér ved hver ændring: flyt færdige punkter til "Færdigt" og tilføj nye 
 - **I-12** Mørkt udseende: tilpas de sidste inline-farvede bokse (gule/blå noter) og vælg udseende også under Min konto (gemmes pr. bruger).
 
 ## Færdigt
+- [x] **B-004** Backup-restore afprøvet og bekræftet af dig (lukket).
+- [x] Position og bane: spillere ligger ikke længere oven på hinanden (v0.38.1).
 - [x] **B-12** Backup hentet fra siden har dato og tid i filnavnet (`teamudvikling-2026-11-23_1142.db`) (v0.38.0).
 - [x] **B-13** Planlagt automatisk backup: systemadministrator vælger ugedage, klokkeslæt og antal; `latest.db` + `latest.json` efter hver backup til eksterne hentejobs; status og næste kørsel vises (v0.38.0). Samtidig rettet: to backups i samme sekund kunne slettes ved oprydning.
 - [x] **v0.37.0** – Mørkt udseende (Auto/Lyst/Mørkt) og besked til alle sendes også til afsenderen.
